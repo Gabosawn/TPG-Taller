@@ -1,7 +1,9 @@
 import Config
 
+config :tpg, ecto_repos: [Tpg.Repo]
+
 config :tpg, Tpg.Repo,
   database: "tpg_repo",
-  username: "user",
-  password: "pass",
+  username: "tpg_user",
+  password: "tpg_password",
   hostname: "localhost"

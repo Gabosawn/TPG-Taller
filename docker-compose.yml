@@ -2,9 +2,9 @@ services:
   db:
     image: postgres:17
     environment:
-      POSTGRES_USER: gabosawn
-      POSTGRES_PASSWORD: 140703
-      POSTGRES_DB: ledger_repo
+      POSTGRES_USER: tpg_user
+      POSTGRES_PASSWORD: tpg_password
+      POSTGRES_DB: tpg_repo
     ports:
       - "5432:5432"
     volumes:

@@ -8,6 +8,7 @@ defmodule Tpg.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      Tpg.Repo
       # Starts a worker by calling: Tpg.Worker.start_link(arg)
       # {Tpg.Worker, arg}
     ]

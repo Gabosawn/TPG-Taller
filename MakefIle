@@ -1,0 +1,11 @@
+up-docker:
+	docker-compose up -d
+
+down-docker:
+	docker-compose down
+
+psql-dev:
+	docker-compose exec db psql -U gabosawn -d ledger_repo
+
+psql-test:
+	docker-compose exec db psql -U gabosawn -d ledger_repo_test
