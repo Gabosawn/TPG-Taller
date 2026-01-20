@@ -1,21 +1,14 @@
 # Tpg
 
-**TODO: Add description**
+Servicio de mensajeria instantanea Cliente-Servidor usando Cowboy, Ecto y GenServers.
 
-## Installation
+## Setup
+Make sure docker is running to run it locally. Then run:
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `tpg` to your list of dependencies in `mix.exs`:
+`mix deps.get`
+`docker compose up -d`
+`mix exto.create`
+`mix ecto.migrate`
 
-```elixir
-def deps do
-  [
-    {:tpg, "~> 0.1.0"}
-  ]
-end
-```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/tpg>.
-
+## Running
+`iex -S mix` o `iex.bat -S mix` desde Windows
