@@ -1,18 +1,9 @@
 defmodule Tpg do
-  @moduledoc """
-  Documentation for `Tpg`.
-  """
+  @doc "Punto de entrada único para la mensajería"
 
-  @doc """
-  Hello world.
+  def loggear(usuario), do: Tpg.Runtime.Server.start_link(usuario)
 
-  ## Examples
+  def enviar(de, para, msg), do: GenServer.cast(para, {:recibir, de, msg})
 
-      iex> Tpg.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
+  def leer_mensajes(usuario), do: GenServer.call(usuario, :ver_historial)
 end
