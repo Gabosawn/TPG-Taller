@@ -5,6 +5,3 @@ config :tpg, Tpg.Repo,
   username: "tpg_user",
   password: "tpg_password",
   hostname: "localhost"
-
-config :tpg, ecto_repos: [Tpg.Repo]
-import_config "#{config_env()}.exs"
