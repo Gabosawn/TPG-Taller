@@ -1,26 +1,27 @@
 defmodule Tpg.Runtime.Server do
   use GenServer
-  alias Tpg.Services.Chat
 
-  # API Pública
-  def start_link(nombre) do
-    GenServer.start_link(__MODULE__, nil, name: nombre)
+  def start_link(usuario) do
+    GenServer.start_link(__MODULE__, usuario, name: {:global, usuario})
   end
 
-  # Callbacks
-  @impl true
-  def init(_) do
-    {:ok, Chat.nuevo()} # Inicializa el núcleo funcional
+  def init(usuario) do
+    {:ok, %{usuario: usuario, mensajes: []}}
   end
 
-  @impl true
-  def handle_cast({:recibir, de, contenido}, chat_state) do
-    nuevo_estado = Chat.agregar_mensaje(chat_state, de, contenido)
-    {:noreply, nuevo_estado}
+  def handle_cast({:recibir, de, mensaje}, state) do
+    nuevo_mensaje = %{
+      de: de,
+      mensaje: mensaje,
+      timestamp: DateTime.utc_now()
+    }
+
+    nuevos_mensajes = [nuevo_mensaje | state.mensajes]
+    {:noreply, %{state | mensajes: nuevos_mensajes}}
   end
 
-  @impl true
-  def handle_call(:ver_historial, _from, chat_state) do
-    {:reply, Chat.obtener_historial(chat_state), chat_state}
+  def handle_call(:ver_historial, _from, state) do
+    mensajes_ordenados = Enum.reverse(state.mensajes)
+    {:reply, mensajes_ordenados, state}
   end
 end
