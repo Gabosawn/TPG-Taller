@@ -4,7 +4,7 @@ defmodule Tpg.Router do
   plug Plug.Parsers, parsers: [:json], json_decoder: Jason
   plug :match
   plug :dispatch
-
+  plug Plug.Logger, log: :info
   # Iniciar sesión de usuario
   post "/login" do
     %{"usuario" => usuario} = conn.body_params
