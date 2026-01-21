@@ -15,7 +15,7 @@ Servicio de mensajeria instantanea Cliente-Servidor usando Cowboy, Ecto y GenSer
 ```bash
 mix deps.get
 docker compose up -d
-mix setup_app
+mix setup_db
 ```
 Una vez conseguido esto ya tendremos la base de datos lista dentro de nuestro contenedor de docker.
 

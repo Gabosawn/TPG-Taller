@@ -7,6 +7,7 @@ defmodule Tpg.MixProject do
       version: "0.1.0",
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
+      aliases: aliases(),
       deps: deps()
     ]
   end
@@ -28,6 +29,12 @@ defmodule Tpg.MixProject do
       {:jason, "~> 1.2"}
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+    ]
+  end
+
+  defp aliases do
+    [
+      setup_db: [" ecto.create ", " ecto.migrate"]
     ]
   end
 end
