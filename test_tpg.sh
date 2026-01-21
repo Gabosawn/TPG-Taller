@@ -67,10 +67,36 @@ make_request "GET" "/mensajes/pedro" "" "10. Leyendo mensajes de Pedro"
 # 5. Probar error: usuario no existente
 make_request "POST" "/enviar" '{"de": "juan", "para": "inexistente", "mensaje": "Hola"}' "11. Probando envío a usuario inexistente"
 
-echo -e "${BLUE}=== Pruebas completadas ===${NC}"
-```
+echo -e "${BLUE}=== PRUEBAS DE DESLOGUEO ===${NC}\n"
 
-Haz el script ejecutable:
-```bash
-chmod +x test_tpg.sh
-```
+# 6. Desloguear a Juan
+make_request "POST" "/logout" '{"usuario": "juan"}' "12. Deslogueando a Juan"
+
+# 7. Verificar usuarios activos (Juan no debería aparecer)
+make_request "GET" "/usuarios" "" "13. Verificando usuarios activos (sin Juan)"
+
+# 8. Intentar enviar mensaje a Juan (debería fallar)
+make_request "POST" "/enviar" '{"de": "maria", "para": "juan", "mensaje": "¿Sigues ahí Juan?"}' "14. Intentando enviar mensaje a Juan deslogueado"
+
+# 9. Intentar leer mensajes de Juan (debería fallar)
+make_request "GET" "/mensajes/juan" "" "15. Intentando leer mensajes de Juan deslogueado"
+
+# 10. Juan puede volver a loguearse
+make_request "POST" "/login" '{"usuario": "juan"}' "16. Juan se loguea nuevamente"
+
+# 11. Juan ahora puede recibir mensajes otra vez
+make_request "POST" "/enviar" '{"de": "maria", "para": "juan", "mensaje": "¡Bienvenido de vuelta!"}' "17. María envía mensaje a Juan relogueado"
+
+# 12. Juan puede leer sus mensajes (solo el nuevo, los anteriores se perdieron)
+make_request "GET" "/mensajes/juan" "" "18. Juan lee sus mensajes (solo nuevos)"
+
+# 13. Desloguear a todos
+echo -e "${BLUE}=== DESLOGUEANDO A TODOS ===${NC}\n"
+make_request "POST" "/logout" '{"usuario": "juan"}' "19. Deslogueando a Juan"
+make_request "POST" "/logout" '{"usuario": "maria"}' "20. Deslogueando a María"
+make_request "POST" "/logout" '{"usuario": "pedro"}' "21. Deslogueando a Pedro"
+
+# 14. Verificar que no hay usuarios activos
+make_request "GET" "/usuarios" "" "22. Verificando que no quedan usuarios activos"
+
+echo -e "${BLUE}=== Pruebas completadas ===${NC}"

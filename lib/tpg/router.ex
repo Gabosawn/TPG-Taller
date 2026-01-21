@@ -24,6 +24,24 @@ defmodule Tpg.Router do
     end
   end
 
+  # Desloggear
+  post "/logout" do
+    %{"usuario" => usuario} = conn.body_params
+    case Tpg.desloggear(usuario) do
+      {:ok, pid} ->
+        send_resp(conn, 200, Jason.encode!(%{
+          status: "success",
+          message: "Usuario #{usuario} deslogueado. Hasta pronto!",
+          pid: inspect(pid)
+        }))
+      {:error, reason} ->
+        send_resp(conn, 400, Jason.encode!(%{
+          status: "error",
+          message: inspect(reason)
+        }))
+    end
+  end
+
   # Enviar mensaje
   post "/enviar" do
     %{"de" => de, "para" => para, "mensaje" => msg} = conn.body_params
@@ -64,7 +82,7 @@ defmodule Tpg.Router do
 
   # Listar usuarios activos
   get "/usuarios" do
-    usuarios = :global.registered_names()
+    usuarios = Tpg.obtener_usuarios_activos()
     send_resp(conn, 200, Jason.encode!(%{
       status: "success",
       usuarios: usuarios
