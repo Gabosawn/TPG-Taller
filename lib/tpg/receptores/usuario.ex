@@ -1,16 +1,17 @@
-defmodule Tpg.Usuario do
+defmodule Tpg.Receptores.Usuario do
   use Ecto.Schema
   import Ecto.Changeset
-  alias Tpg.Repo, as: Repo
 
-  @primary_key {:nombre, :string, autogenerate: false}
+  @primary_key false
   schema "usuarios" do
+    belongs_to :receptores, Tpg.Receptores.Receptor, foreign_key: :receptor_id, primary_key: true
+    field :nombre, :string
     field :contrasenia, :string
-    belongs_to :receptores, Tpg.Receptor, foreign_key: :tipo, references: :receptor_type, type: :string
+    field :ultima_conexion, :utc_datetime
   end
 
   def changeset(tipoOperacion, attrs) do
-    changeset = cast(%Tpg.Usuario{}, attrs, [:nombre, :contrasenia, :tipo])
+    changeset = cast(%Tpg.Receptores.Usuario{}, attrs, [:receptor_id, :nombre, :contrasenia])
 
     case tipoOperacion do
       :crear -> crear_usuario(changeset)
@@ -21,8 +22,9 @@ defmodule Tpg.Usuario do
 
   def crear_usuario(changeset) do
     changeset
-    |> validate_required([:nombre, :contrasenia, :tipo], message: "El campo es obligatorio")
-    |> unique_constraint(:nombre, name: "usuarios_pkey", message: "El nombre de usuario ya existe")
+    |> validate_required([:receptor_id, :nombre, :contrasenia], message: "El campo es obligatorio")
+    |> put_change(:ultima_conexion, DateTime.utc_now() |> DateTime.truncate(:second))
+    |> unique_constraint(:nombre, name: "usuarios_nombre_index", message: "El nombre de usuario ya existe")
     |> validate_format(:nombre, ~r/^[a-zA-Z0-9]+$/, mensaje: "El nombre de usuario debe ser alfanumérico")
     |> check_constraint(:nombre, name: "nombre_alfanumerico", message: "El nombre de usuario debe ser alfanumérico")
     |> validate_length(:nombre, min: 8, max: 50)
@@ -30,7 +32,6 @@ defmodule Tpg.Usuario do
     |> validate_length(:contrasenia, min: 8, max: 50)
     |> check_constraint(:contrasenia, name: "contrasenia_longitud", message: "La contraseña debe tener entre 8 y 50 caracteres")
     |> validate_format(:contrasenia, ~r/[¡!-.*=@]/, mensaje: "La contraseña debe contener al menos un carácter especial")
-    |> IO.inspect()
     |> check_constraint(:contrasenia, name: "contrasenia_especial", message: "La contraseña debe contener al menos un carácter especial")
     |> validate_format(:contrasenia, ~r/[A-Z]/, mensaje: "La contraseña debe contener al menos una letra mayúscula")
     |> check_constraint(:contrasenia, name: "contrasenia_mayuscula", message: "La contraseña debe contener al menos una letra mayúscula")
@@ -40,7 +41,6 @@ defmodule Tpg.Usuario do
     |> check_constraint(:contrasenia, name: "contrasenia_sin_espacios", message: "La contraseña no debe contener espacios")
     |> validate_format(:contrasenia, ~r/[0-9]/, mensaje: "La contraseña debe contener al menos un número")
     |> check_constraint(:contrasenia, name: "contrasenia_numero", message: "La contraseña debe contener al menos un número")
-    |> Repo.insert()
   end
 
 end

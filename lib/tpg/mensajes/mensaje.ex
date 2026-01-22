@@ -1,0 +1,15 @@
+defmodule Tpg.Mensajes.Mensaje do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  schema "mensajes" do
+    field :contenido, :string
+    field :estado, :string
+    timestamps()
+  end
+
+  def changeset(attrs) do
+    cast(%Tpg.Mensajes.Mensaje{}, attrs, [:contenido, :estado])
+    |> validate_required([:contenido])
+  end
+end
