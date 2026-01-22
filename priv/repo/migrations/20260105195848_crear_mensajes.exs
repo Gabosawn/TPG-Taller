@@ -4,7 +4,7 @@ defmodule Tpg.Repo.Migrations.CrearMensajes do
   def change do
     create table(:mensajes) do
       add :contenido, :text, null: false
-      add :estado, :varchar, size: 10, null: false
+      add :estado, :varchar, size: 10, null: false, default: "ENVIADO"
       timestamps()
     end
 
