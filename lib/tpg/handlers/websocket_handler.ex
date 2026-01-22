@@ -1,5 +1,6 @@
 defmodule Tpg.WebSocketHandler do
   @behaviour :cowboy_websocket
+  require Logger
 
   def init(req, _state) do
     # Extraer parámetros de la query string
