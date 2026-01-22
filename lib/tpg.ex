@@ -1,7 +1,15 @@
 defmodule Tpg do
   @doc "Punto de entrada único para la mensajería"
 
-  def loggear(usuario), do: Tpg.Runtime.Server.start_link(usuario)
+  def loggear(usuario) do
+    case DynamicSupervisor.start_child(
+      Tpg.DynamicSupervisor,
+      {Tpg.Runtime.Server, usuario}
+    ) do
+      {:ok, pid} -> {:ok, pid}
+      {:error, {:already_started, pid}} -> {:error, {:already_started, pid}}
+    end
+  end
 
   def enviar(de, para, msg), do: GenServer.cast(para, {:recibir, de, msg})
 
@@ -9,10 +17,9 @@ defmodule Tpg do
 
   def desloggear(usuario) do
     case :global.whereis_name(usuario) do
-      :undefined ->
-        {:error, "Usuario no encontrado"}
+      :undefined -> {:error, :not_found}
       pid ->
-        :ok = GenServer.stop(pid)
+        DynamicSupervisor.terminate_child(Tpg.DynamicSupervisor, pid)
         {:ok, pid}
     end
   end
