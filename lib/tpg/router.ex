@@ -2,10 +2,10 @@ defmodule Tpg.Router do
   use Plug.Router
 
   plug Plug.Parsers, parsers: [:json], json_decoder: Jason
+  plug Plug.Static, at: "/static", from: :tpg
   plug :match
   plug :dispatch
-  # plug Plug.Logger, log: :info
-  # Iniciar sesión de usuario
+
   post "/login" do
     %{"usuario" => usuario} = conn.body_params
 
@@ -24,7 +24,6 @@ defmodule Tpg.Router do
     end
   end
 
-  # Desloggear
   post "/logout" do
     %{"usuario" => usuario} = conn.body_params
     case Tpg.desloggear(usuario) do
@@ -42,11 +41,9 @@ defmodule Tpg.Router do
     end
   end
 
-  # Enviar mensaje
   post "/enviar" do
     %{"de" => de, "para" => para, "mensaje" => msg} = conn.body_params
 
-    # Buscar el PID del usuario destinatario
     case :global.whereis_name(para) do
       :undefined ->
         send_resp(conn, 404, Jason.encode!(%{
@@ -62,7 +59,6 @@ defmodule Tpg.Router do
     end
   end
 
-  # Leer mensajes
   get "/mensajes/:usuario" do
     case :global.whereis_name(usuario) do
       :undefined ->
@@ -80,7 +76,6 @@ defmodule Tpg.Router do
     end
   end
 
-  # Listar usuarios activos
   get "/usuarios" do
     usuarios = Tpg.obtener_usuarios_activos()
     send_resp(conn, 200, Jason.encode!(%{
@@ -89,10 +84,18 @@ defmodule Tpg.Router do
     }))
   end
 
+  # Página de prueba HTML usando vista EEx
+  get "/" do
+    conn
+    |> put_resp_content_type("text/html")
+    |> send_resp(200, Tpg.Views.PageView.render_index())
+  end
+
   match _ do
     send_resp(conn, 404, Jason.encode!(%{
       status: "error",
       message: "Ruta no encontrada"
     }))
   end
+
 end
