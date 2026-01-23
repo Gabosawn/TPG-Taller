@@ -10,7 +10,7 @@ defmodule Tpg.Receptores.UsuariosGrupo do
 
   def changeset(tipoOperacion, attrs) do
     changeset = cast(%Tpg.Receptores.UsuariosGrupo{}, attrs, [:usuario_id, :grupo_id])
-
+    |> IO.inspect()
     case tipoOperacion do
       :crear -> crear_grupo(changeset)
       _ -> {:error, "Operación no soportada"}
