@@ -4,9 +4,44 @@ defmodule Tpg do
 
   @doc "Punto de entrada único para la mensajería"
 
-  def loggear(usuario) do
-    Logger.info("Intentando loguear usuario: #{usuario}")
+  def loggear(typeOp, usuario) do
+    Logger.info("Intentando loguear usuario: #{usuario.nombre}")
 
+    #------------------------------------------------------
+
+    case typeOp do
+      :crear ->
+        case Tpg.Receptores.Cuentas.crear_usuario(usuario) do
+          {:ok, usuario_creado} ->
+            Logger.info("Usuario #{usuario.nombre} creado en la base de datos")
+            crear_proceso(usuario_creado.receptor_id)
+
+          {:error, changeset} ->
+            [first_error | _] = changeset.errors
+            {field, {message, _opts}} = first_error
+            Logger.warn("La creación del usuario #{usuario.nombre} falló: {#{field}: #{message}}")
+            {:error, {field, message}}
+        end
+      :conectar ->
+        case Tpg.Receptores.Usuario.changeset(:conectar, usuario) do
+          nil ->
+            Logger.warn("Usuario #{usuario.nombre} no encontrado o credenciales inválidas")
+            {:error, :invalid_credentials}
+
+          {:ok, usuario_encontrado} ->
+            Logger.info("Usuario #{usuario.nombre} encontrado en la base de datos")
+            crear_proceso(usuario_encontrado.receptor_id)
+        end
+      _ ->
+        Logger.warn("Operación desconocida: #{inspect(typeOp)}")
+        {:ok, usuario.nombre}
+    end
+
+    #------------------------------------------------------
+
+  end
+
+  def crear_proceso(usuario) do # Usuario en realidad es el Id de este
     case DynamicSupervisor.start_child(
       Tpg.DynamicSupervisor,
       {Tpg.Runtime.Server, usuario}

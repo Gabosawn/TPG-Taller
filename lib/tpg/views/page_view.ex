@@ -14,6 +14,8 @@ defmodule Tpg.Views.PageView do
 
       <div>
         <input type="text" id="usuario" placeholder="Tu nombre" />
+        <input type="text" id="contrasenia" placeholder="Tu contraseña" />
+        <button onclick="registrar()">Registrar</button>
         <button onclick="conectar()">Conectar</button>
         <button onclick="desconectar()">Desconectar</button>
       </div>
