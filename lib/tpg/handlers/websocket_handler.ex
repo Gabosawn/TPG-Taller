@@ -20,18 +20,13 @@ defmodule Tpg.WebSocketHandler do
     # Intentar loggear al usuario
     case Tpg.loggear(operacion, %{nombre: usuario, contrasenia: contrasenia}) do
       {:ok, res} ->
-        # Suscribirse a este proceso para recibir notificaciones
-        Tpg.registrar_sesion(res.pid)
         # Enviar mensaje de bienvenida
         mensaje_bienvenida = Jason.encode!(%{
           tipo: "sistema",
           mensaje: "Conectado como #{usuario}",
           timestamp: DateTime.utc_now()
         })
-
-        state = %{state | server_pid: res.pid}
-
-        {:reply, {:text, mensaje_bienvenida}, %{state | id: res.id}}
+        {:reply, {:text, mensaje_bienvenida}, state }
 
       {:error, {:already_started, _pid}} ->
         # Usuario ya está logueado
@@ -53,6 +48,9 @@ defmodule Tpg.WebSocketHandler do
   # Manejar mensajes entrantes del cliente
   def websocket_handle({:text, json}, state) do
     case Jason.decode(json) do
+      {:ok, %{"accion" => "abrir_chat", "receptor_id" => id}} ->
+        manejar_abrir_chat(id, state)
+
       {:ok, %{"accion" => "enviar", "para" => destinatario, "mensaje" => mensaje}} ->
         manejar_envio(destinatario, mensaje, state)
 
@@ -118,7 +116,11 @@ defmodule Tpg.WebSocketHandler do
     :ok
   end
 
-  # Funciones auxiliares privadas
+  def manejar_abrir_chat(id_receptor, state) do
+    # Suscribirse a este proceso para recibir notificaciones
+    Tpg.oir_chat(id_receptor, self())
+  end
+
   defp manejar_envio(destinatario, mensaje, state) do
     case :global.whereis_name(destinatario) do
       :undefined ->

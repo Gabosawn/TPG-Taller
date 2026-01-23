@@ -30,12 +30,11 @@ defmodule Tpg.Runtime.Server do
       mensaje: mensaje,
       timestamp: DateTime.utc_now()
     }
-    # Notificar a todos los WebSockets conectados
+    Tpg.Services.Chat.agregar_mensaje(state, de, mensaje)
     Enum.each(state.websocket_pids, fn ws_pid ->
       Logger.info("Notificando a WS PID=#{inspect(ws_pid)} asociado a Usuario=#{state.usuario}, el mensaje=#{mensaje}")
       send(ws_pid, {:nuevo_mensaje, de, mensaje, nuevo_mensaje.timestamp})
     end)
-    Tpg.Services.Chat.agregar_mensaje(state, de, mensaje)
 
     {:noreply, state}
   end
