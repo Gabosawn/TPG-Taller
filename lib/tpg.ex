@@ -1,7 +1,6 @@
 # lib/tpg.ex
 defmodule Tpg do
   require Logger
-  alias Tpg.Services.Chat
 
   @doc "Punto de entrada único para la mensajería"
 
@@ -20,13 +19,13 @@ defmodule Tpg do
           {:error, changeset} ->
             [first_error | _] = changeset.errors
             {field, {message, _opts}} = first_error
-            Logger.warn("La creación del usuario #{usuario.nombre} falló: {#{field}: #{message}}")
+            Logger.warning("La creación del usuario #{usuario.nombre} falló: {#{field}: #{message}}")
             {:error, {field, message}}
         end
       :conectar ->
         case Tpg.Receptores.Usuario.changeset(:conectar, usuario) do
           nil ->
-            Logger.warn("Usuario #{usuario.nombre} no encontrado o credenciales inválidas")
+            Logger.warning("Usuario #{usuario.nombre} no encontrado o credenciales inválidas")
             {:error, :invalid_credentials}
 
           {:ok, usuario_encontrado} ->
@@ -34,7 +33,7 @@ defmodule Tpg do
             crear_proceso(Integer.to_string(usuario_encontrado.receptor_id))
         end
       _ ->
-        Logger.warn("Operación desconocida: #{inspect(typeOp)}")
+        Logger.warning("Operación desconocida: #{inspect(typeOp)}")
         {:ok, usuario.nombre}
     end
 
@@ -48,10 +47,10 @@ defmodule Tpg do
       {Tpg.Runtime.Server, usuario}
     ) do
       {:ok, pid} ->
-        Logger.info("Usuario #{usuario} logueado exitosamente", usuario: usuario, pid: inspect(pid))
+        Logger.info("Usuario #{usuario} logueado exitosamente en ", usuario: usuario)
         {:ok, %{pid: pid, id: usuario}}
       {:error, {:already_started, pid}} ->
-        Logger.warn("Usuario #{usuario} ya estaba logueado", usuario: usuario)
+        Logger.warning("Usuario #{usuario} ya estaba logueado", usuario: usuario)
         {:error, {:already_started, pid}}
     end
   end
@@ -72,7 +71,7 @@ defmodule Tpg do
 
     case :global.whereis_name(usuario) do
       :undefined ->
-        Logger.warn("Usuario #{usuario} no encontrado para desloguear")
+        Logger.warning("Usuario #{usuario} no encontrado para desloguear")
         {:error, :not_found}
       pid ->
         DynamicSupervisor.terminate_child(Tpg.DynamicSupervisor, pid)
@@ -87,7 +86,7 @@ defmodule Tpg do
     usuarios
   end
 
-  def registrar_websocket(_usuario, server_pid) do
+  def registrar_sesion(server_pid) do
     ws_pid = self() # el metodo es llamado por un Websocket
     GenServer.call(server_pid, {:registrar_websocket, ws_pid})
   end

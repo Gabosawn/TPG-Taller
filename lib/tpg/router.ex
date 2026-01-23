@@ -9,7 +9,7 @@ defmodule Tpg.Router do
   post "/login" do
     %{"usuario" => usuario} = conn.body_params
 
-    case Tpg.loggear(usuario) do
+    case Tpg.loggear(:conectar, usuario) do
       {:ok, pid} ->
         send_resp(conn, 200, Jason.encode!(%{
           status: "success",

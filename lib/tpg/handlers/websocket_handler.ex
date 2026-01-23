@@ -21,7 +21,7 @@ defmodule Tpg.WebSocketHandler do
     case Tpg.loggear(operacion, %{nombre: usuario, contrasenia: contrasenia}) do
       {:ok, res} ->
         # Suscribirse a este proceso para recibir notificaciones
-        Process.monitor(res.pid)
+        Tpg.registrar_sesion(res.pid)
         # Enviar mensaje de bienvenida
         mensaje_bienvenida = Jason.encode!(%{
           tipo: "sistema",
@@ -33,7 +33,7 @@ defmodule Tpg.WebSocketHandler do
 
         {:reply, {:text, mensaje_bienvenida}, %{state | id: res.id}}
 
-      {:error, {:already_started, pid}} ->
+      {:error, {:already_started, _pid}} ->
         # Usuario ya está logueado
         mensaje_error = Jason.encode!(%{
           tipo: "error",
