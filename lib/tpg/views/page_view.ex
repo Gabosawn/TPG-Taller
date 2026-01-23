@@ -20,27 +20,33 @@ defmodule Tpg.Views.PageView do
         <button onclick="desconectar()">Desconectar</button>
       </div>
 
-      <div id="mensajes"></div>
+      <div class="chat-container">
+        <div class="sidebar">
+          <h3>Conversaciones</h3>
+          <ul id="lista-usuarios"></ul>
+        </div>
 
-      <div>
-        <input type="text" id="destinatario" placeholder="Para (usuario)" />
-        <input type="text" id="mensaje" placeholder="Mensaje" />
-        <button onclick="enviarMensaje()">Enviar</button>
+        <div class="chat-area">
+          <div class="chat-header">
+            <div id="nombre-chat-actual">Selecciona un chat</div>
+          </div>
+
+          <div id="mensajes"></div>
+
+          <div class="chat-input">
+            <input type="text" id="mensaje" placeholder="Escribe un mensaje..." />
+            <button onclick="enviarMensaje()">Enviar</button>
+          </div>
+        </div>
       </div>
 
       <div>
         <button onclick="verHistorial()">Ver Historial</button>
         <button onclick="listarUsuarios()">Usuarios Activos</button>
       </div>
+      <button id="displayCrearGrupo">Crear Grupo</button>
 
-      <div>
-        <div>Lista Usuarios:</div>
-        <ul id="lista-usuarios">
-
-        </ul>
-      </div>
-
-      <div class="crear-grupo">
+      <div class="crear-grupo" style="display:none;">
         <h3>Crear Grupo</h3>
         <input type="text" id="nombre-grupo" placeholder="Nombre del grupo" />
         <div>
@@ -49,7 +55,6 @@ defmodule Tpg.Views.PageView do
         </div>
         <button onclick="crearGrupo()">Crear Grupo</button>
       </div>
-
       <script src="/static/app.js"></script>
     </body>
     </html>

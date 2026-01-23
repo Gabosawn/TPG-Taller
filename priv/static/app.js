@@ -1,6 +1,6 @@
 
 let ws = null;
-
+let chatActual = null
 document.getElementById('lista-usuarios')
 
 
@@ -141,6 +141,9 @@ function manejarMensaje(data) {
 		case 'usuarios':
 			listar_todos_usuarios(data.usuarios);
 			break;
+		case 'chat_abierto':
+			mostrarChat(data);
+			break;
 		case 'error':
 			agregarMensaje('error', '❌ ' + data.mensaje);
 			break;
@@ -168,6 +171,8 @@ function listar_todos_usuarios(usuarios) {
 		const li = document.createElement('li');
 		li.id = usuario.receptor_id;
 		li.textContent = usuario.nombre;
+		li.className = 'chat-item';
+		li.onclick = () => abrirChat(usuario.receptor_id, usuario.nombre);
 		lista.appendChild(li);
 		
 		// Crear checkbox para selección de grupo
@@ -188,6 +193,66 @@ function listar_todos_usuarios(usuarios) {
 		checkboxContainer.appendChild(checkboxDiv);
 	});
 }
+
+function abrirChat(receptorId, nombreReceptor) {
+	chatActual = receptorId;
+	
+	// Remover clase active de todos los chats
+	document.querySelectorAll('.chat-item').forEach(item => {
+		item.classList.remove('active');
+	});
+	
+	// Agregar clase active al chat seleccionado
+	document.getElementById(receptorId).classList.add('active');
+	
+	// Actualizar el header del chat
+	document.getElementById('nombre-chat-actual').textContent = nombreReceptor;
+	
+	// Enviar solicitud para abrir el chat
+	const payload = {
+		accion: 'abrir_chat',
+		receptor_id: receptorId
+	};
+	
+	ws.send(JSON.stringify(payload));
+}
+
+function mostrarChat(data) {
+	const mensajesDiv = document.getElementById('mensajes');
+	mensajesDiv.innerHTML = '';
+	
+	if (data.mensajes && data.mensajes.length > 0) {
+		data.mensajes.forEach(m => {
+			agregarMensaje(m.es_mio ? 'enviado' : 'recibido', m.mensaje, m.timestamp);
+		});
+	} else {
+		agregarMensaje('sistema', 'No hay mensajes en esta conversación');
+	}
+}
+
+function enviarMensaje() {
+	const mensaje = document.getElementById('mensaje').value;
+
+	if (!mensaje) {
+		alert('Escribe un mensaje');
+		return;
+	}
+	
+	if (!chatActual) {
+		alert('Selecciona un chat primero');
+		return;
+	}
+
+	const payload = {
+		accion: 'enviar',
+		para: chatActual,
+		mensaje: mensaje
+	};
+
+	ws.send(JSON.stringify(payload));
+	document.getElementById('mensaje').value = '';
+}
+
 
 function crearGrupo() {
 	const nombreGrupo = document.getElementById('nombre-grupo').value;
@@ -224,3 +289,12 @@ function agregarMensaje(tipo, texto) {
 	document.getElementById('mensajes').appendChild(div);
 	div.scrollIntoView();
 }
+
+document.getElementById('displayCrearGrupo').addEventListener('click', function() {
+  var crearGrupoDiv = document.querySelector('.crear-grupo');
+  if (crearGrupoDiv.style.display === 'none') {
+    crearGrupoDiv.style.display = 'block';
+  } else {
+    crearGrupoDiv.style.display = 'none';
+  }
+});
