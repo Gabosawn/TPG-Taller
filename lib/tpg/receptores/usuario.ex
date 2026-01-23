@@ -1,6 +1,8 @@
 defmodule Tpg.Receptores.Usuario do
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query
+  alias Tpg.Repo
 
   @primary_key false
   schema "usuarios" do
@@ -12,12 +14,29 @@ defmodule Tpg.Receptores.Usuario do
 
   def changeset(tipoOperacion, attrs) do
     changeset = cast(%Tpg.Receptores.Usuario{}, attrs, [:receptor_id, :nombre, :contrasenia])
-
+    |> IO.inspect()
     case tipoOperacion do
       :crear -> crear_usuario(changeset)
+      :conectar -> obtener_usuario(attrs)
+      :listar -> listar_usuarios()
       _ -> {:error, "Operación no soportada"}
     end
 
+  end
+
+  def existe?(id) do
+    Repo.get(Tpg.Receptores.Usuario, id) != nil
+  end
+
+  def listar_usuarios() do
+    Repo.all(from u in Tpg.Receptores.Usuario, select: %{nombre: u.nombre, receptor_id: u.receptor_id})
+  end
+
+  def obtener_usuario(attrs) do
+    Repo.get_by(Tpg.Receptores.Usuario, [nombre: attrs.nombre, contrasenia: attrs.contrasenia])
+    |> cast(%{}, [])
+    |> put_change(:ultima_conexion, DateTime.utc_now() |> DateTime.truncate(:second))
+    |> Repo.update()
   end
 
   def crear_usuario(changeset) do

@@ -5,16 +5,20 @@ defmodule Tpg.WebSocketHandler do
   def init(req, _state) do
     # Extraer parámetros de la query string
     qs = :cowboy_req.parse_qs(req)
-    usuario = :proplists.get_value("usuario", qs, "anonimo")
+    usuario = :proplists.get_value("usuario", qs)
+    contrasenia = :proplists.get_value("contrasenia", qs)
+    operacion = :proplists.get_value("operacion", qs)
 
-    {:cowboy_websocket, req, %{usuario: usuario, server_pid: nil}}
+    {:cowboy_websocket, req, %{usuario: usuario, contrasenia: contrasenia, operacion: operacion, server_pid: nil}}
   end
 
   def websocket_init(state) do
     usuario = state.usuario
+    contrasenia = state.contrasenia
+    operacion = String.to_atom(state.operacion)
 
     # Intentar loggear al usuario
-    case Tpg.loggear(usuario) do
+    case Tpg.loggear(operacion, %{nombre: usuario, contrasenia: contrasenia}) do
       {:ok, pid} ->
         # Suscribirse a este proceso para recibir notificaciones
         Tpg.registrar_websocket(usuario, pid)
@@ -55,6 +59,9 @@ defmodule Tpg.WebSocketHandler do
 
       {:ok, %{"accion" => "listar_usuarios"}} ->
         manejar_listar_usuarios(state)
+
+      {:ok, %{"accion" => "listar_usuarios_db"}} ->
+        manejar_listar_usuarios_db(state)
 
       {:ok, payload} ->
         respuesta = Jason.encode!(%{
@@ -154,4 +161,14 @@ defmodule Tpg.WebSocketHandler do
     })
     {:reply, {:text, respuesta}, state}
   end
+
+  defp manejar_listar_usuarios_db(state) do
+    usuarios = Tpg.Receptores.Usuario.changeset(:listar, %{})
+    respuesta = Jason.encode!(%{
+      tipo: "usuarios",
+      usuarios: usuarios
+    })
+    {:reply, {:text, respuesta}, state}
+  end
+
 end
