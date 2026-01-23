@@ -14,7 +14,7 @@ defmodule Tpg do
         case Tpg.Receptores.Cuentas.crear_usuario(usuario) do
           {:ok, usuario_creado} ->
             Logger.info("Usuario #{usuario.nombre} creado en la base de datos")
-            crear_proceso(usuario_creado.receptor_id)
+            crear_proceso(Integer.to_string(usuario_creado.receptor_id))
 
           {:error, changeset} ->
             [first_error | _] = changeset.errors
@@ -30,7 +30,7 @@ defmodule Tpg do
 
           {:ok, usuario_encontrado} ->
             Logger.info("Usuario #{usuario.nombre} encontrado en la base de datos")
-            crear_proceso(usuario_encontrado.receptor_id)
+            crear_proceso(Integer.to_string(usuario_encontrado.receptor_id))
         end
       _ ->
         Logger.warn("Operación desconocida: #{inspect(typeOp)}")
@@ -41,7 +41,7 @@ defmodule Tpg do
 
   end
 
-  def crear_proceso(usuario) do # Usuario en realidad es el Id de este
+  def crear_proceso(usuario) do # Usuario en realidad es el Id y nombre de este %{receptor_id, nombre}
     case DynamicSupervisor.start_child(
       Tpg.DynamicSupervisor,
       {Tpg.Runtime.Server, usuario}

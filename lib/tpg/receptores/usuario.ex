@@ -1,6 +1,7 @@
 defmodule Tpg.Receptores.Usuario do
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query
   alias Tpg.Repo
 
   @primary_key false
@@ -23,8 +24,12 @@ defmodule Tpg.Receptores.Usuario do
 
   end
 
+  def existe?(id) do
+    Repo.get(Tpg.Receptores.Usuario, id) != nil
+  end
+
   def listar_usuarios() do
-    Repo.all(Tpg.Receptores.Usuario)
+    Repo.all(from u in Tpg.Receptores.Usuario, select: %{nombre: u.nombre, receptor_id: u.receptor_id})
   end
 
   def obtener_usuario(attrs) do
