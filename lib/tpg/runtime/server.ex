@@ -1,5 +1,6 @@
 defmodule Tpg.Runtime.Server do
   use GenServer
+  alias Tpg.Services.Chat
   require Logger
 
   def start_link(usuario) do
