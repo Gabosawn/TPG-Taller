@@ -33,6 +33,13 @@ defmodule Tpg.Views.PageView do
         <button onclick="listarUsuarios()">Usuarios Activos</button>
       </div>
 
+      <div>
+        <div>Lista Usuarios:</div>
+        <ul id="lista-usuarios">
+
+        </ul>
+      </div>
+
       <script src="/static/app.js"></script>
     </body>
     </html>

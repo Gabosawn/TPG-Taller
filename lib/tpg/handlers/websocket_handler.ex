@@ -61,6 +61,9 @@ defmodule Tpg.WebSocketHandler do
       {:ok, %{"accion" => "listar_usuarios"}} ->
         manejar_listar_usuarios(state)
 
+      {:ok, %{"accion" => "listar_usuarios_db"}} ->
+        manejar_listar_usuarios_db(state)
+
       {:ok, payload} ->
         respuesta = Jason.encode!(%{
           tipo: "error",
@@ -159,4 +162,14 @@ defmodule Tpg.WebSocketHandler do
     })
     {:reply, {:text, respuesta}, state}
   end
+
+  defp manejar_listar_usuarios_db(state) do
+    usuarios = Tpg.Receptores.Usuario.changeset(:listar, %{})
+    respuesta = Jason.encode!(%{
+      tipo: "usuarios",
+      usuarios: usuarios
+    })
+    {:reply, {:text, respuesta}, state}
+  end
+
 end

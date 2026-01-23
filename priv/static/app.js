@@ -65,7 +65,7 @@ function conectar() {
 		document.getElementById('status').style.color = 'green';
 		agregarMensaje('sistema', 'Conectado al servidor');
 	};
-
+	
 	ws.onmessage = (event) => {
 		const data = JSON.parse(event.data);
 		manejarMensaje(data);
@@ -114,6 +114,7 @@ function verHistorial() {
 
 function listarUsuarios() {
 	ws.send(JSON.stringify({ accion: 'listar_usuarios' }));
+	ws.send(JSON.stringify({ accion: 'listar_usuarios_db' }));
 }
 
 function manejarMensaje(data) {
@@ -133,6 +134,9 @@ function manejarMensaje(data) {
 		case 'confirmacion':
 			agregarMensaje('sistema', '✓ ' + data.mensaje);
 			break;
+		case 'usuarios':
+			listar_todos_usuarios(data.usuarios);
+			break;
 		case 'error':
 			agregarMensaje('error', '❌ ' + data.mensaje);
 			break;
@@ -141,9 +145,7 @@ function manejarMensaje(data) {
 	}
 }
 
-function listar_todos_usuarios() {
-	ws.send(JSON.stringify({ accion: 'listar_usuarios_db' }));
-
+function listar_todos_usuarios(usuarios) {
 	const lista = document.getElementById('lista-usuarios');
 	lista.innerHTML = '';
 	
@@ -157,7 +159,8 @@ function listar_todos_usuarios() {
 	
 	usuarios.forEach(usuario => {
 		const li = document.createElement('li');
-		li.textContent = usuario;
+		li.id = usuario.receptor_id;
+		li.textContent = usuario.nombre;
 		lista.appendChild(li);
 	});
 }
