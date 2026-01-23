@@ -1,93 +1,38 @@
-# lib/tpg.ex
 defmodule Tpg do
   require Logger
 
-  @doc "Punto de entrada único para la mensajería"
-
-  def loggear(typeOp, usuario) do
-    Logger.info("Intentando loguear usuario: #{usuario.nombre}")
-
-    #------------------------------------------------------
-
-    case typeOp do
-      :crear ->
-        case Tpg.Receptores.Cuentas.crear_usuario(usuario) do
-          {:ok, usuario_creado} ->
-            Logger.info("Usuario #{usuario.nombre} creado en la base de datos")
-            crear_proceso(Integer.to_string(usuario_creado.receptor_id))
-
-          {:error, changeset} ->
-            [first_error | _] = changeset.errors
-            {field, {message, _opts}} = first_error
-            Logger.warning("La creación del usuario #{usuario.nombre} falló: {#{field}: #{message}}")
-            {:error, {field, message}}
-        end
-      :conectar ->
-        case Tpg.Receptores.Usuario.changeset(:conectar, usuario) do
-          nil ->
-            Logger.warning("Usuario #{usuario.nombre} no encontrado o credenciales inválidas")
-            {:error, :invalid_credentials}
-
-          {:ok, usuario_encontrado} ->
-            Logger.info("Usuario #{usuario.nombre} encontrado en la base de datos")
-            crear_proceso(Integer.to_string(usuario_encontrado.receptor_id))
-        end
-      _ ->
-        Logger.warning("Operación desconocida: #{inspect(typeOp)}")
-        {:ok, usuario.nombre}
-    end
-
-    #------------------------------------------------------
-
+  def habilitar_canales(id_emisor) do
+    canales = Tpg.Receptores.UsuariosGrupo.get_grupo_ids_by_usuario(id_emisor)
+    IO.inspect(canales)
+    Logger.info("[tpg] habilitando canales.. ")
+    Enum.each(canales, fn id_grupo ->
+      Logger.info("[tpg] habilitando grupo id #{id_grupo}")
+      crear_canal(id_grupo)
+    end)
+    {:ok, %{id: id_emisor}}
   end
 
-  def crear_proceso(usuario) do # Usuario en realidad es el Id y nombre de este %{receptor_id, nombre}
+  defp crear_canal(id_grupo) do
     case DynamicSupervisor.start_child(
       Tpg.DynamicSupervisor,
-      {Tpg.Runtime.Server, usuario}
+      {Tpg.Runtime.Room, id_grupo}
     ) do
       {:ok, pid} ->
-        Logger.info("Usuario #{usuario} logueado exitosamente en ", usuario: usuario)
-        {:ok, %{pid: pid, id: usuario}}
-      {:error, {:already_started, pid}} ->
-        Logger.warning("Usuario #{usuario} ya estaba logueado", usuario: usuario)
-        {:error, {:already_started, pid}}
-    end
-  end
-
-  def enviar(de, para, msg) do
-    Logger.debug("Enviando mensaje de #{inspect(de)} a #{inspect(para)}: #{msg}")
-    GenServer.cast(para, {:recibir, de, msg})
-  end
-
-  def leer_mensajes(usuario) do
-    Logger.debug("Leyendo mensajes de #{inspect(usuario)}")
-    GenServer.call(usuario, :ver_historial)
-  end
-
-  def desloggear(usuario) do
-
-    Logger.info("Intentando desloguear usuario: #{usuario}")
-
-    case :global.whereis_name(usuario) do
-      :undefined ->
-        Logger.warning("Usuario #{usuario} no encontrado para desloguear")
-        {:error, :not_found}
-      pid ->
-        DynamicSupervisor.terminate_child(Tpg.DynamicSupervisor, pid)
-        Logger.info("Usuario #{usuario} deslogueado exitosamente")
+        Logger.info("[tpg] Canal #{id_grupo} creado exitosamente")
         {:ok, pid}
+
+      {:error, {:already_started, pid}} ->
+        Logger.info("[tpg] Canal #{id_grupo} ya estaba activo")
+        {:ok, pid}
+
+      {:error, reason} ->
+        Logger.error("[tpg] Error al crear canal #{id_grupo}: #{inspect(reason)}")
+        {:error, reason}
     end
   end
 
-  def obtener_usuarios_activos() do
-    usuarios = :global.registered_names()
-    Logger.debug("Usuarios activos: #{inspect(usuarios)}")
-    usuarios
+  def oir_chat(group_id, ws_pid) do
+    Tpg.Runtime.Room.agregar_oyente(group_id, ws_pid)
   end
 
-  def registrar_sesion(server_pid) do
-    ws_pid = self() # el metodo es llamado por un Websocket
-    GenServer.call(server_pid, {:registrar_websocket, ws_pid})
-  end
 end

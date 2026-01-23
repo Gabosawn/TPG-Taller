@@ -1,6 +1,7 @@
 defmodule Tpg.Receptores.UsuariosGrupo do
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query
 
   @primary_key false
   schema "usuarios_grupo" do
@@ -20,5 +21,13 @@ defmodule Tpg.Receptores.UsuariosGrupo do
   def crear_grupo(changeset) do
     changeset
     |> validate_required([:usuario_id, :grupo_id], message: "El campo es obligatorio")
+  end
+
+  def get_grupo_ids_by_usuario(emisor_id) do
+    from(ug in __MODULE__,
+      where: ug.usuario_id == ^emisor_id,
+      select: ug.grupo_id
+    )
+    |> Tpg.Repo.all()
   end
 end

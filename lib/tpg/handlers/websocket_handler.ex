@@ -1,6 +1,8 @@
 defmodule Tpg.WebSocketHandler do
   @behaviour :cowboy_websocket
   require Logger
+  alias Tpg.Services.ChatService
+  alias Tpg.Services.SessionService
 
   def init(req, _state) do
     # Extraer parámetros de la query string
@@ -18,7 +20,7 @@ defmodule Tpg.WebSocketHandler do
     operacion = String.to_atom(state.operacion)
 
     # Intentar loggear al usuario
-    case Tpg.loggear(operacion, %{nombre: usuario, contrasenia: contrasenia}) do
+    case SessionService.loggear(operacion, %{nombre: usuario, contrasenia: contrasenia}) do
       {:ok, res} ->
         # Enviar mensaje de bienvenida
         mensaje_bienvenida = Jason.encode!(%{
@@ -26,15 +28,15 @@ defmodule Tpg.WebSocketHandler do
           mensaje: "Conectado como #{usuario}",
           timestamp: DateTime.utc_now()
         })
-        {:reply, {:text, mensaje_bienvenida}, state }
+        {:reply, {:text, mensaje_bienvenida}, %{state | server_pid: res.pid} }
 
-      {:error, {:already_started, _pid}} ->
+      {:error, {:already_started, pid}} ->
         # Usuario ya está logueado
         mensaje_error = Jason.encode!(%{
           tipo: "error",
           mensaje: "Usuario #{usuario} ya está conectado"
         })
-        {:reply, {:text, mensaje_error}, state}
+        {:reply, {:text, mensaje_error}, %{state | server_pid: pid}}
 
       {:error, reason} ->
         mensaje_error = Jason.encode!(%{
@@ -111,17 +113,15 @@ defmodule Tpg.WebSocketHandler do
 
   # Cleanup cuando se cierra la conexión
   def terminate(_reason, _req, state) do
-
-    IO.inspect(state, label: "Terminando conexión para el usuario")
     if state.server_pid do
-      Tpg.desloggear(state.id)
+      SessionService.desloggear(state.usuario)
     end
     :ok
   end
 
   def manejar_abrir_chat(id_receptor, state) do
     # Suscribirse a este proceso para recibir notificaciones
-    Tpg.oir_chat(id_receptor, self())
+    Tpg.oir_chat(id_receptor, state.server_pid)
   end
 
   defp manejar_envio(destinatario, mensaje, state) do
@@ -134,7 +134,7 @@ defmodule Tpg.WebSocketHandler do
         {:reply, {:text, respuesta}, state}
 
       pid ->
-        Tpg.enviar(state.id, pid, mensaje)
+        ChatService.enviar(state.id, pid, mensaje)
         respuesta = Jason.encode!(%{
           tipo: "confirmacion",
           mensaje: "Mensaje enviado a #{destinatario}"
@@ -153,7 +153,7 @@ defmodule Tpg.WebSocketHandler do
         {:reply, {:text, respuesta}, state}
 
       pid ->
-        mensajes = Tpg.leer_mensajes(pid)
+        mensajes = ChatService.leer_mensajes(pid)
         respuesta = Jason.encode!(%{
           tipo: "historial",
           mensajes: mensajes
@@ -163,7 +163,7 @@ defmodule Tpg.WebSocketHandler do
   end
 
   defp manejar_listar_usuarios(state) do
-    usuarios = Tpg.obtener_usuarios_activos()
+    usuarios = SessionService.obtener_usuarios_activos()
     respuesta = Jason.encode!(%{
       tipo: "usuarios_activos",
       usuarios: usuarios

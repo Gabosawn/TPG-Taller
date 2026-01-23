@@ -5,16 +5,17 @@ defmodule Tpg.Application do
   def start(_type, _args) do
     children = [
       Tpg.Repo,
-      {DynamicSupervisor, name: Tpg.DynamicSupervisor, strategy: :one_for_one},
+      {Registry, keys: :unique, name: Tpg.RoomRegistry},
       # Cowboy HTTP con dispatch personalizado
-      {Plug.Cowboy,
+        {Plug.Cowboy,
         scheme: :http,
         plug: Tpg.Router,
         options: [
           port: 4000,
           dispatch: cowboy_dispatch()
         ]
-      }
+      },
+      {DynamicSupervisor, name: Tpg.DynamicSupervisor, strategy: :one_for_one}
     ]
 
     opts = [strategy: :one_for_one, name: Tpg.Supervisor]

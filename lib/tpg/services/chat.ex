@@ -1,25 +1,19 @@
-defmodule Tpg.Services.Chat do
-  defstruct messages: []
+defmodule Tpg.Services.ChatService do
   require Logger
 
-  def nuevo() do
-    %__MODULE__{}
+  def agregar_oyente(chat, websocket_pid) do
+    Process.monitor(websocket_pid)
+    %{chat | listeners: [websocket_pid | chat.listeners]}
   end
 
-  def agregar_mensaje(chat, de, contenido) do
-    nuevo_msg = %{emisor: de, contenido: contenido, estado: "ENVIADO", fecha: Time.utc_now()}
-    Logger.info("Guardando mensaje...: #{nuevo_msg.contenido}, de #{de}")
-    case Tpg.Mensajes.MultiInsert.enviar_mensaje( chat.usuario, de, nuevo_msg ) do
-      {:ok, mensaje} ->
-        Logger.info("Mensaje guardado: #{nuevo_msg.contenido}, de #{de}")
-        {:ok, %{chat | mensajes: [nuevo_msg | chat.mensajes]}}
-      {:error, motivo} ->
-        Logger.alert("Mensaje perdido: #{nuevo_msg.contenido}, de #{de}. Motivo: #{inspect(motivo)}")
-        {:error, motivo}
-    end
+  def enviar(de, para, msg) do
+    Logger.debug("Enviando mensaje de #{inspect(de)} a #{inspect(para)}: #{msg}")
+    GenServer.cast(para, {:recibir, de, msg})
   end
 
-  def obtener_historial(chat) do
-    Enum.reverse(chat.mensajes)
+  def leer_mensajes(usuario) do
+    Logger.debug("Leyendo mensajes de #{inspect(usuario)}")
+    GenServer.call(usuario, :ver_historial)
   end
+
 end
