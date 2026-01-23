@@ -9,7 +9,7 @@ defmodule Tpg.WebSocketHandler do
     contrasenia = :proplists.get_value("contrasenia", qs)
     operacion = :proplists.get_value("operacion", qs)
 
-    {:cowboy_websocket, req, %{usuario: usuario, contrasenia: contrasenia, operacion: operacion, server_pid: nil}}
+    {:cowboy_websocket, req, %{usuario: usuario, contrasenia: contrasenia, operacion: operacion, id: nil, server_pid: nil}}
   end
 
   def websocket_init(state) do
@@ -19,9 +19,9 @@ defmodule Tpg.WebSocketHandler do
 
     # Intentar loggear al usuario
     case Tpg.loggear(operacion, %{nombre: usuario, contrasenia: contrasenia}) do
-      {:ok, pid} ->
+      {:ok, res} ->
         # Suscribirse a este proceso para recibir notificaciones
-        Tpg.registrar_websocket(usuario, pid)
+        Process.monitor(res.pid)
         # Enviar mensaje de bienvenida
         mensaje_bienvenida = Jason.encode!(%{
           tipo: "sistema",
@@ -29,7 +29,9 @@ defmodule Tpg.WebSocketHandler do
           timestamp: DateTime.utc_now()
         })
 
-        {:reply, {:text, mensaje_bienvenida}, %{state | server_pid: pid}}
+        state = %{state | server_pid: res.pid}
+
+        {:reply, {:text, mensaje_bienvenida}, %{state | id: res.id}}
 
       {:error, {:already_started, pid}} ->
         # Usuario ya está logueado
@@ -108,8 +110,10 @@ defmodule Tpg.WebSocketHandler do
 
   # Cleanup cuando se cierra la conexión
   def terminate(_reason, _req, state) do
+
+    IO.inspect(state, label: "Terminando conexión para el usuario")
     if state.server_pid do
-      Tpg.desloggear(state.usuario)
+      Tpg.desloggear(state.id)
     end
     :ok
   end

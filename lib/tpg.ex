@@ -48,7 +48,7 @@ defmodule Tpg do
     ) do
       {:ok, pid} ->
         Logger.info("Usuario #{usuario} logueado exitosamente", usuario: usuario, pid: inspect(pid))
-        {:ok, pid}
+        {:ok, %{pid: pid, id: usuario}}
       {:error, {:already_started, pid}} ->
         Logger.warn("Usuario #{usuario} ya estaba logueado", usuario: usuario)
         {:error, {:already_started, pid}}
@@ -66,6 +66,7 @@ defmodule Tpg do
   end
 
   def desloggear(usuario) do
+
     Logger.info("Intentando desloguear usuario: #{usuario}")
 
     case :global.whereis_name(usuario) do
