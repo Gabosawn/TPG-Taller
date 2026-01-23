@@ -138,6 +138,10 @@ function manejarMensaje(data) {
 		case 'confirmacion':
 			agregarMensaje('sistema', '✓ ' + data.mensaje);
 			break;
+
+		case 'grupo_creado':
+			agregarMensaje('sistema', `✅ Grupo "${data.grupo}" creado con éxito.`);
+			break;
 		case 'usuarios':
 			listar_todos_usuarios(data.usuarios);
 			break;
@@ -181,7 +185,7 @@ function listar_todos_usuarios(usuarios) {
 		
 		const checkbox = document.createElement('input');
 		checkbox.type = 'checkbox';
-		checkbox.id = `user-${usuario.receptor_id}`;
+		checkbox.id = usuario.receptor_id;
 		checkbox.value = usuario.receptor_id;
 		
 		const label = document.createElement('label');
@@ -264,9 +268,9 @@ function crearGrupo() {
 	
 	const checkboxes = document.querySelectorAll('#usuarios-checkbox input[type="checkbox"]:checked');
 	const miembros = Array.from(checkboxes).map(cb => cb.value);
-	
-	if (miembros.length === 0) {
-		alert('Selecciona al menos un miembro para el grupo');
+
+	if (miembros.length < 3) {
+		alert('Selecciona al menos 3 miembros para el grupo');
 		return;
 	}
 	

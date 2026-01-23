@@ -63,6 +63,9 @@ defmodule Tpg.WebSocketHandler do
       {:ok, %{"accion" => "listar_usuarios_db"}} ->
         manejar_listar_usuarios_db(state)
 
+      {:ok, %{"accion" => "crear_grupo", "miembros" => miembros, "nombre" => nombre_grupo}} ->
+        manejar_creacion_grupo(nombre_grupo, miembros, state)
+
       {:ok, payload} ->
         respuesta = Jason.encode!(%{
           tipo: "error",
@@ -175,6 +178,28 @@ defmodule Tpg.WebSocketHandler do
       usuarios: usuarios
     })
     {:reply, {:text, respuesta}, state}
+  end
+
+  defp manejar_creacion_grupo(nombre_grupo, miembros, state) do
+    IO.inspect([state.id | miembros], label: "Miembros para el nuevo grupo")
+
+
+    case Tpg.Receptores.Cuentas.crear_grupo(%{nombre: nombre_grupo}, [state.id | miembros]) do
+      {:ok, resultado} ->
+        respuesta = Jason.encode!(%{
+          tipo: "grupo_creado",
+          grupo: resultado.nombre,
+        })
+        {:reply, {:text, respuesta}, state}
+
+      {:error, _} ->
+        respuesta = Jason.encode!(%{
+          tipo: "error",
+          mensaje: "No se creo ningun grupo"
+        })
+        {:reply, {:text, respuesta}, state}
+
+    end
   end
 
 end
