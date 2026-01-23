@@ -1,6 +1,7 @@
 # lib/tpg.ex
 defmodule Tpg do
   require Logger
+  alias Tpg.Services.Chat
 
   @doc "Punto de entrada único para la mensajería"
 

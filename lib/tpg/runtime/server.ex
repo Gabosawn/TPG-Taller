@@ -19,7 +19,7 @@ defmodule Tpg.Runtime.Server do
   end
 
   def handle_call(:ver_historial, _from, state) do
-    mensajes_ordenados = Enum.reverse(state.mensajes)
+    mensajes_ordenados = Chat.obtener_historial(state)
     {:reply, mensajes_ordenados, state}
   end
 
@@ -29,16 +29,14 @@ defmodule Tpg.Runtime.Server do
       mensaje: mensaje,
       timestamp: DateTime.utc_now()
     }
-
-    nuevos_mensajes = [nuevo_mensaje | state.mensajes]
-
     # Notificar a todos los WebSockets conectados
     Enum.each(state.websocket_pids, fn ws_pid ->
       Logger.info("Notificando a WS PID=#{inspect(ws_pid)} asociado a Usuario=#{state.usuario}, el mensaje=#{mensaje}")
       send(ws_pid, {:nuevo_mensaje, de, mensaje, nuevo_mensaje.timestamp})
     end)
+    Tpg.Services.Chat.agregar_mensaje(state, de, mensaje)
 
-    {:noreply, %{state | mensajes: nuevos_mensajes}}
+    {:noreply, state}
   end
 
 
