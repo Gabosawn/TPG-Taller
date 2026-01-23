@@ -64,6 +64,7 @@ function conectar() {
 		document.getElementById('status').textContent = 'Conectado';
 		document.getElementById('status').style.color = 'green';
 		agregarMensaje('sistema', 'Conectado al servidor');
+		listarTodosLosUsuarios();
 	};
 	
 	ws.onmessage = (event) => {
@@ -114,6 +115,9 @@ function verHistorial() {
 
 function listarUsuarios() {
 	ws.send(JSON.stringify({ accion: 'listar_usuarios' }));
+}
+
+function listarTodosLosUsuarios() {
 	ws.send(JSON.stringify({ accion: 'listar_usuarios_db' }));
 }
 
@@ -149,6 +153,9 @@ function listar_todos_usuarios(usuarios) {
 	const lista = document.getElementById('lista-usuarios');
 	lista.innerHTML = '';
 	
+	const checkboxContainer = document.getElementById('usuarios-checkbox');
+	checkboxContainer.innerHTML = '';
+	
 	if (usuarios.length === 0) {
 		const li = document.createElement('li');
 		li.textContent = 'No hay usuarios conectados';
@@ -162,7 +169,52 @@ function listar_todos_usuarios(usuarios) {
 		li.id = usuario.receptor_id;
 		li.textContent = usuario.nombre;
 		lista.appendChild(li);
+		
+		// Crear checkbox para selección de grupo
+		const checkboxDiv = document.createElement('div');
+		checkboxDiv.className = 'checkbox-item';
+		
+		const checkbox = document.createElement('input');
+		checkbox.type = 'checkbox';
+		checkbox.id = `user-${usuario.receptor_id}`;
+		checkbox.value = usuario.receptor_id;
+		
+		const label = document.createElement('label');
+		label.htmlFor = usuario.receptor_id;
+		label.textContent = usuario.nombre;
+		
+		checkboxDiv.appendChild(checkbox);
+		checkboxDiv.appendChild(label);
+		checkboxContainer.appendChild(checkboxDiv);
 	});
+}
+
+function crearGrupo() {
+	const nombreGrupo = document.getElementById('nombre-grupo').value;
+	
+	if (!nombreGrupo) {
+		alert('Ingresa un nombre para el grupo');
+		return;
+	}
+	
+	const checkboxes = document.querySelectorAll('#usuarios-checkbox input[type="checkbox"]:checked');
+	const miembros = Array.from(checkboxes).map(cb => cb.value);
+	
+	if (miembros.length === 0) {
+		alert('Selecciona al menos un miembro para el grupo');
+		return;
+	}
+	
+	const payload = {
+		accion: 'crear_grupo',
+		nombre: nombreGrupo,
+		miembros: miembros
+	};
+	
+	ws.send(JSON.stringify(payload));
+	
+	document.getElementById('nombre-grupo').value = '';
+	checkboxes.forEach(cb => cb.checked = false);
 }
 
 function agregarMensaje(tipo, texto) {
