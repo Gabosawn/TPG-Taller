@@ -49,4 +49,9 @@ defmodule Tpg do
     Logger.debug("Usuarios activos: #{inspect(usuarios)}")
     usuarios
   end
+
+  def registrar_websocket(_usuario, server_pid) do
+    ws_pid = self() # el metodo es llamado por un Websocket
+    GenServer.call(server_pid, {:registrar_websocket, ws_pid})
+  end
 end
