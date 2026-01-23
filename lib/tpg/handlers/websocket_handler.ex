@@ -129,7 +129,7 @@ defmodule Tpg.WebSocketHandler do
         {:reply, {:text, respuesta}, state}
 
       pid ->
-        Tpg.enviar(state.usuario, pid, mensaje)
+        Tpg.enviar(state.id, pid, mensaje)
         respuesta = Jason.encode!(%{
           tipo: "confirmacion",
           mensaje: "Mensaje enviado a #{destinatario}"

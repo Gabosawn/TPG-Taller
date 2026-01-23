@@ -3,6 +3,7 @@ defmodule Tpg.Mensajes.MultiInsert do
   alias Tpg.Repo
 
   def enviar_mensaje(reciever, sender, message) do
+    IO.inspect(%{reciever: reciever, sender: sender, message: message})
     Multi.new()
     |> Multi.insert(:mensaje, fn _ ->
       Tpg.Mensajes.Mensaje.changeset(message)
