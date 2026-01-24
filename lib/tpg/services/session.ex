@@ -78,7 +78,6 @@ defmodule Tpg.Services.SessionService do
       {:ok, res} ->
         {:ok, res}
       {:error, motivo} ->
-        Logger.error("[session service] Error agendando un contacto")
         {:error, motivo}
     end
   end

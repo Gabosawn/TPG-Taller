@@ -70,6 +70,8 @@ defmodule Tpg.Receptores.Usuario do
     else
       {:error, :usuario_no_existe} ->
         {:error, "El usuario con ID #{id_usuario} no existe"}
+      {:error, :contacto_ya_agendado} ->
+        {:error, "El usuario con ID #{id_usuario} ya pertenece a la agenda"}
       {:error, :contacto_no_existe} ->
         {:error, "El usuario '#{nombre_usuario}' no existe"}
       error ->
@@ -92,10 +94,17 @@ defmodule Tpg.Receptores.Usuario do
   end
 
   defp insertar_contacto(id_usuario, id_contacto) do
-    changeset = cast(%Tpg.Receptores.Agendado{}, %{}, [:usuario_id, :contacto_id])
-    |> put_change( :usuario_id, id_usuario)
-    |> put_change( :contacto_id, id_contacto)
-    |> validate_required([ :usuario_id, :contacto_id])
-    |> Repo.insert
+    case Repo.get_by(Tpg.Receptores.Agendado, usuario_id: id_usuario, contacto_id: id_contacto) do
+      nil ->
+        # No existe, proceder con insert
+        %Tpg.Receptores.Agendado{}
+        |> cast(%{usuario_id: id_usuario, contacto_id: id_contacto}, [:usuario_id, :contacto_id])
+        |> validate_required([:usuario_id, :contacto_id])
+        |> Repo.insert()
+
+      _existing ->
+        # Ya existe
+        {:error, :contacto_ya_agendado}
+    end
   end
 end
