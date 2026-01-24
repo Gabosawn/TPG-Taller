@@ -52,6 +52,9 @@ defmodule Tpg.WebSocketHandler do
   # Manejar mensajes entrantes del cliente
   def websocket_handle({:text, json}, state) do
     case Jason.decode(json) do
+      {:ok, %{"accion" => "agregar_contacto", "nombre_usuario" => nombre}} ->
+        manejar_agregar_usuario(state, nombre)
+
       {:ok, %{"accion" => "abrir_chat", "receptor_id" => id}} ->
         manejar_abrir_chat(id, state)
 
@@ -119,6 +122,26 @@ defmodule Tpg.WebSocketHandler do
       SessionService.desloggear(state.id)
     end
     :ok
+  end
+
+  defp manejar_agregar_usuario(state, nombre) do
+    Logger.debug("[ws handeler] agendando #{nombre} en #{state.usuario}...")
+    case SessionService.agendar(state.id, nombre) do
+      {:ok, id} ->
+        Logger.info("[ws handeler] #{nombre} agendado con #{state.usuario}")
+        respuesta = Jason.encode!(%{
+          tipo: "confirmacion",
+          mensaje: "Usuario #{nombre} agendado correctamente"
+        })
+        {:reply, {:text, respuesta}, state}
+      {:error, motivo} ->
+        Logger.warning("[ws handeler] #{nombre} no pudo ser agendado")
+        respuesta = Jason.encode!(%{
+          tipo: "error",
+          mensaje: "#{motivo}"
+        })
+        {:reply, {:text, respuesta}, state}
+    end
   end
 
   def manejar_abrir_chat(id_receptor, state) do

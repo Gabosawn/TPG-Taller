@@ -62,7 +62,7 @@ defmodule Tpg.Views.PageView do
         <div class="agregar-contacto" style="display:none;">
           <h3>Agregar Contacto</h3>
           <input type="text" id="nombre-usuario" placeholder="Nombre de Usuario" />
-          <button onclick="agregarUsuario()()">Agendar Contacto</button>
+          <button onclick="agregarUsuario()">Agendar Contacto</button>
       </div>
 
       <script>

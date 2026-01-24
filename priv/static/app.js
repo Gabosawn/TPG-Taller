@@ -286,6 +286,26 @@ function crearGrupo() {
 	checkboxes.forEach(cb => cb.checked = false);
 }
 
+function agregarUsuario() {
+  const nombreUsuario = document.getElementById('nombre-usuario').value.trim();
+  if (!nombreUsuario) {
+    alert('Por favor ingresa un nombre de usuario');
+    return;
+  }
+  const payload = JSON.stringify({
+    accion: "agregar_contacto",
+    nombre_usuario: nombreUsuario
+  });
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(payload);
+    // Limpiar el input y cerrar el modal
+    document.getElementById('nombre-usuario').value = '';
+    closeModal();
+  } else {
+    alert('No hay conexión con el servidor');
+  }
+}
+
 function agregarMensaje(tipo, texto) {
 	const div = document.createElement('div');
 	div.className = 'mensaje ' + tipo;

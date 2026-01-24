@@ -73,4 +73,8 @@ defmodule Tpg.Services.SessionService do
     GenServer.call(server_pid, {:registrar_websocket, ws_pid})
   end
 
+  def agendar(user_id, nombre_usuario) do
+    {:error, "no implementado"}
+  end
+
 end
