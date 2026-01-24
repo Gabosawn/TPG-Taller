@@ -74,11 +74,6 @@ defmodule Tpg.Services.SessionService do
     #[persona (id agenda) | grupo (id grupo)]
   end
 
-  def registrar_sesion(server_pid) do
-    ws_pid = self() # el metodo es llamado por un Websocket
-    GenServer.call(server_pid, {:registrar_websocket, ws_pid})
-  end
-
   def agendar(user_id, nombre_usuario) do
     case Tpg.Receptores.Usuario.agregar_contacto(user_id, nombre_usuario) do
       {:ok, res} ->
@@ -86,6 +81,26 @@ defmodule Tpg.Services.SessionService do
       {:error, motivo} ->
         {:error, motivo}
     end
+  end
+
+  def registrar_cliente(session_id, client_pid) do
+    case :global.whereis_name(session_id) do # TODO: crear funcion get_session_id(user_id)
+      :undefined ->
+        Logger.warning("[Session service] no hay sesion con que registrar el cliente")
+      pid ->
+        case GenServer.call(pid, {:registrar_websocket, client_pid}) do
+          :ok ->
+            {:ok, "[session service] cliente registrado"}
+          _ ->
+            {:error, "[session service] Error: no se pudo registrar el cliente"}
+        end
+    end
+  end
+
+  def oir_chat(group_id, ws_pid) do
+    Logger.info("[session service] agregando oyente...")
+    Tpg.Runtime.Room.agregar_oyente(group_id, ws_pid)
+    # Tpg.Services.ChatService.update_room_listeners(group_id, ws_pid)
   end
 
 end

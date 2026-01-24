@@ -1,6 +1,5 @@
 defmodule Tpg.Runtime.Session do
   use GenServer
-  alias Tpg.Services.Chat
   require Logger
 
   def start_link(usuario) do
@@ -8,14 +7,12 @@ defmodule Tpg.Runtime.Session do
   end
 
   def init(usuario) do
-    # chat = Chat.nuevo(usuario)
     {:ok, %{usuario: usuario, chat: nil, websocket_pids: []}}
   end
 
-  # Nuevo: Registrar un WebSocket para notificaciones
   def handle_call({:registrar_websocket, pid}, _from, state) do
     agregar_oyente(state, pid)
-    Logger.info("Websocket PID=#{inspect(pid)} asociado a Usuario=#{state.usuario}")
+    Logger.info("[session] Websocket PID=#{inspect(pid)} asociado a Usuario=#{state.usuario}")
     {:reply, :ok, state}
   end
 
@@ -36,12 +33,10 @@ defmodule Tpg.Runtime.Session do
       mensaje: mensaje,
       timestamp: DateTime.utc_now()
     }
-    Chat.agregar_mensaje(state, de, mensaje)
     Enum.each(state.websocket_pids, fn ws_pid ->
       Logger.info("Notificando a WS PID=#{inspect(ws_pid)} asociado a Usuario=#{state.usuario}, el mensaje=#{mensaje}")
-      send(ws_pid, {:nuevo_mensaje, de, mensaje, nuevo_mensaje.timestamp})
+      send(ws_pid, {:nuevo_mensaje_recibido, de, mensaje, nuevo_mensaje.timestamp})
     end)
-
     {:noreply, state}
   end
 
@@ -54,7 +49,6 @@ defmodule Tpg.Runtime.Session do
   end
 
   defp agregar_oyente(state, websocket_pid) do
-    Process.monitor(websocket_pid)
     %{state | websocket_pids: [websocket_pid | state.websocket_pids]}
   end
 end

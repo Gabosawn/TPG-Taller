@@ -1,11 +1,6 @@
 defmodule Tpg.Services.ChatService do
   require Logger
 
-  def agregar_oyente(chat, websocket_pid) do
-    Process.monitor(websocket_pid)
-    %{chat | listeners: [websocket_pid | chat.listeners]}
-  end
-
   def enviar(de, para, msg) do
     Logger.debug("Enviando mensaje de #{inspect(de)} a #{inspect(para)}: #{msg}")
     Tpg.Runtime.Room.agregar_mensaje(para, de, msg)

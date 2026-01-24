@@ -37,9 +37,4 @@ defmodule Tpg do
     usuarios
   end
 
-  def oir_chat(group_id, ws_pid) do
-    Logger.info("[tpg] agregando oyente...")
-    Tpg.Runtime.Room.agregar_oyente(group_id, ws_pid)
-  end
-
 end

@@ -22,6 +22,7 @@ defmodule Tpg.WebSocketHandler do
     # Intentar loggear al usuario
     case SessionService.loggear(operacion, %{nombre: usuario, contrasenia: contrasenia}) do
       {:ok, res} ->
+        SessionService.registrar_cliente(res.id, self())
         # Enviar mensaje de bienvenida
         mensaje_bienvenida = Jason.encode!(%{
           tipo: "sistema",
@@ -107,7 +108,10 @@ defmodule Tpg.WebSocketHandler do
     })
     {:reply, {:text, respuesta}, state}
   end
-
+  def websocket_info({:nuevo_mensaje_recibido, mensaje}, state) do
+    Logger.info("[ws] Recibiendo mensaje desde la sesion... Agregando a Bandeja de notificaciones")
+    {:no_reply, state}
+  end
   def websocket_info({:DOWN, _ref, :process, _pid, _reason}, state) do
     respuesta = Jason.encode!(%{
       tipo: "sistema",
@@ -150,7 +154,7 @@ defmodule Tpg.WebSocketHandler do
 
   def manejar_abrir_chat(id_receptor, state) do
     # Suscribirse a este proceso para recibir notificaciones
-    mensajes = Tpg.oir_chat(id_receptor, self())
+    mensajes = Tpg.Services.SessionService.oir_chat(id_receptor, self())
 
     respuesta = Jason.encode!(%{
       tipo: "chat_abierto",
