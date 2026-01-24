@@ -64,6 +64,9 @@ defmodule Tpg.WebSocketHandler do
       {:ok, %{"accion" => "listar_usuarios"}} ->
         manejar_listar_usuarios(state)
 
+      {:ok, %{"accion" => "listar_conversaciones"}} ->
+        manejar_listar_conversaciones(state)
+
       {:ok, %{"accion" => "listar_usuarios_db"}} ->
         manejar_listar_usuarios_db(state)
 
@@ -123,7 +126,15 @@ defmodule Tpg.WebSocketHandler do
 
   def manejar_abrir_chat(id_receptor, state) do
     # Suscribirse a este proceso para recibir notificaciones
-    Tpg.oir_chat(id_receptor, state.server_pid)
+    mensajes = Tpg.oir_chat(id_receptor, state.server_pid)
+
+    respuesta = Jason.encode!(%{
+      tipo: "chat_abierto",
+      receptor_id: state.id,
+      mensajes: mensajes
+    })
+
+    {:reply, {:text, respuesta}, state}
   end
 
   defp manejar_envio(destinatario, mensaje, state) do
@@ -183,9 +194,6 @@ defmodule Tpg.WebSocketHandler do
   end
 
   defp manejar_creacion_grupo(nombre_grupo, miembros, state) do
-    IO.inspect([state.id | miembros], label: "Miembros para el nuevo grupo")
-
-
     case Tpg.Receptores.Cuentas.crear_grupo(%{nombre: nombre_grupo}, [state.id | miembros]) do
       {:ok, resultado} ->
         respuesta = Jason.encode!(%{
@@ -202,6 +210,15 @@ defmodule Tpg.WebSocketHandler do
         {:reply, {:text, respuesta}, state}
 
     end
+  end
+
+  defp manejar_listar_conversaciones(state) do
+    conversaciones = Tpg.Receptores.UsuariosGrupo.get_grupo_ids_by_usuario(state.id)
+    respuesta = Jason.encode!(%{
+      tipo: "listar_conversaciones",
+      conversaciones: conversaciones
+    })
+    {:reply, {:text, respuesta}, state}
   end
 
 end

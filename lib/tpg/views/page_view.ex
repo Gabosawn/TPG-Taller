@@ -23,7 +23,7 @@ defmodule Tpg.Views.PageView do
       <div class="chat-container">
         <div class="sidebar">
           <h3>Conversaciones</h3>
-          <ul id="lista-usuarios"></ul>
+          <ul id="lista-conversaciones"></ul>
         </div>
 
         <div class="chat-area">

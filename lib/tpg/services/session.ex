@@ -10,7 +10,7 @@ defmodule Tpg.Services.SessionService do
         case Tpg.Receptores.Cuentas.crear_usuario(usuario) do
           {:ok, usuario_creado} ->
             Logger.info("Usuario #{usuario.nombre} creado en la base de datos")
-            crear_proceso(Integer.to_string(usuario_creado.receptor_id))
+            crear_proceso(usuario_creado.receptor_id)
 
           {:error, changeset} ->
             [first_error | _] = changeset.errors
@@ -66,6 +66,12 @@ defmodule Tpg.Services.SessionService do
     usuarios = :global.registered_names()
     Logger.debug("Usuarios activos: #{inspect(usuarios)}")
     usuarios
+  end
+
+  def obtener_chats(usuario) do
+    Tpg.obtener_chats_activos(usuario.id)
+
+    #[persona (id agenda) | grupo (id grupo)]
   end
 
   def registrar_sesion(server_pid) do

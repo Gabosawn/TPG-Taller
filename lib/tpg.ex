@@ -2,12 +2,11 @@ defmodule Tpg do
   require Logger
 
   def habilitar_canales(id_emisor) do
-    canales = Tpg.Receptores.UsuariosGrupo.get_grupo_ids_by_usuario(id_emisor)
-    IO.inspect(canales)
+    grupos = Tpg.Receptores.UsuariosGrupo.get_grupo_ids_by_usuario(id_emisor)
     Logger.info("[tpg] habilitando canales.. ")
-    Enum.each(canales, fn id_grupo ->
-      Logger.info("[tpg] habilitando grupo id #{id_grupo}")
-      crear_canal(id_grupo)
+    Enum.each(grupos, fn grupo ->
+      Logger.info("[tpg] habilitando grupo id #{grupo.id}")
+      crear_canal(grupo.id)
     end)
     {:ok, %{id: id_emisor}}
   end
@@ -29,6 +28,13 @@ defmodule Tpg do
         Logger.error("[tpg] Error al crear canal #{id_grupo}: #{inspect(reason)}")
         {:error, reason}
     end
+  end
+
+  def obtener_chats_activos(user_id) do
+
+    usuarios = :global.registered_names()
+    Logger.debug("Usuarios activos: #{inspect(usuarios)}")
+    usuarios
   end
 
   def oir_chat(group_id, ws_pid) do

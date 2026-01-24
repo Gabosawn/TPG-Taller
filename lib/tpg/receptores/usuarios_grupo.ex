@@ -24,9 +24,11 @@ defmodule Tpg.Receptores.UsuariosGrupo do
   end
 
   def get_grupo_ids_by_usuario(emisor_id) do
-    from(ug in __MODULE__,
-      where: ug.usuario_id == ^emisor_id,
-      select: ug.grupo_id
+    from(usuario in Tpg.Receptores.UsuariosGrupo,
+      join: grupo in Tpg.Receptores.Grupo,
+      on: usuario.grupo_id == grupo.receptor_id,
+      where: usuario.usuario_id == ^emisor_id,
+      select: %{nombre: grupo.nombre, id: grupo.receptor_id}
     )
     |> Tpg.Repo.all()
   end
