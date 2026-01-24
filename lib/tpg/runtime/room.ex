@@ -1,4 +1,5 @@
 defmodule Tpg.Runtime.Room do
+  alias ElixirSense.Log
   use GenServer
   require Logger
 
@@ -30,8 +31,7 @@ defmodule Tpg.Runtime.Room do
 
   @impl true
   def init(group_id) do
-    room = %__MODULE__{group_id: group_id}
-    room = cargar_mensajes(room)
+    room = cargar_mensajes(group_id)
     Logger.debug("[room] room inicializado: #{inspect(room)}")
     {:ok, room}
   end
@@ -40,7 +40,7 @@ defmodule Tpg.Runtime.Room do
   def handle_call({:agregar_oyente, websocket_pid}, _from, state) do
     Process.monitor(websocket_pid)
     new_state = %{state | listeners: [websocket_pid | state.listeners]}
-    {:reply, :ok, new_state}
+    {:reply, state.mensajes, new_state}
   end
 
   @impl true
@@ -76,9 +76,9 @@ defmodule Tpg.Runtime.Room do
 
   # Private Functions
 
-  defp cargar_mensajes(room) do
-    mensajes = Tpg.Mensajes.Recibido.get_mensajes(room.group_id)
-    %{room | mensajes: mensajes}
+  defp cargar_mensajes(group_id) do
+    mensajes = Tpg.Mensajes.Recibido.get_mensajes(group_id)
+    %__MODULE__{group_id: group_id, mensajes: mensajes}
   end
 
   defp notificar_oyentes(listeners, mensaje) do

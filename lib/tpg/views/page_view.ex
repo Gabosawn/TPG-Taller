@@ -23,7 +23,7 @@ defmodule Tpg.Views.PageView do
       <div class="chat-container">
         <div class="sidebar">
           <h3>Conversaciones</h3>
-          <ul id="lista-usuarios"></ul>
+          <ul id="lista-conversaciones"></ul>
         </div>
 
         <div class="chat-area">
@@ -55,6 +55,7 @@ defmodule Tpg.Views.PageView do
           <input type="text" id="nombre-grupo" placeholder="Nombre del grupo" />
           <div>
             <h4>Seleccionar miembros:</h4>
+            <ul id="lista-usuarios"></ul>
             <div id="usuarios-checkbox"></div>
           </div>
           <button onclick="crearGrupo()">Crear Grupo</button>

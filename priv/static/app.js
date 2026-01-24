@@ -65,6 +65,8 @@ function conectar() {
 		document.getElementById('status').style.color = 'green';
 		agregarMensaje('sistema', 'Conectado al servidor');
 		listarTodosLosUsuarios();
+		listarConversaciones();
+		obtenerContactos();
 	};
 	
 	ws.onmessage = (event) => {
@@ -121,6 +123,10 @@ function listarTodosLosUsuarios() {
 	ws.send(JSON.stringify({ accion: 'listar_usuarios_db' }));
 }
 
+function listarConversaciones() {
+	ws.send(JSON.stringify({ accion: 'listar_conversaciones' }));
+}
+
 function manejarMensaje(data) {
 	switch (data.tipo) {
 		case 'mensaje_nuevo':
@@ -139,14 +145,20 @@ function manejarMensaje(data) {
 			agregarMensaje('sistema', '✓ ' + data.mensaje);
 			break;
 
+		case 'listar_conversaciones':
+			listar_conversaciones_response(data.conversaciones);
+			break;
+
 		case 'grupo_creado':
 			agregarMensaje('sistema', `✅ Grupo "${data.grupo}" creado con éxito.`);
 			break;
 		case 'usuarios':
 			listar_todos_usuarios(data.usuarios);
 			break;
+		case 'listar_usuarios_db':
+			listar_usuarios_agrupables(data.usuarios)
 		case 'chat_abierto':
-			mostrarChat(data);
+			mostrarChat(data.receptor_id, data.mensajes);
 			break;
 		case 'error':
 			agregarMensaje('error', '❌ ' + data.mensaje);
@@ -156,7 +168,30 @@ function manejarMensaje(data) {
 	}
 }
 
-function listar_todos_usuarios(usuarios) {
+function listar_conversaciones_response(conversaciones) {
+	const lista = document.getElementById('lista-conversaciones');
+	lista.innerHTML = '';
+
+	if (conversaciones.length === 0) {
+		const li = document.createElement('li');
+		li.textContent = 'No hay conversaciones';
+		li.style.color = '#999';
+		lista.appendChild(li);
+		return;
+	}
+	
+
+	conversaciones.forEach(conversacion => {
+		const li = document.createElement('li');
+		li.id = conversacion.id;
+		li.textContent = conversacion.nombre;
+		li.className = 'chat-item';
+		li.onclick = () => abrirChat(conversacion.id, conversacion.nombre);
+		lista.appendChild(li);
+	});
+}
+
+function listar_usuarios_agrupables(usuarios) {
 	const lista = document.getElementById('lista-usuarios');
 	lista.innerHTML = '';
 	
@@ -172,13 +207,6 @@ function listar_todos_usuarios(usuarios) {
 	}
 	
 	usuarios.forEach(usuario => {
-		const li = document.createElement('li');
-		li.id = usuario.receptor_id;
-		li.textContent = usuario.nombre;
-		li.className = 'chat-item';
-		li.onclick = () => abrirChat(usuario.receptor_id, usuario.nombre);
-		lista.appendChild(li);
-		
 		// Crear checkbox para selección de grupo
 		const checkboxDiv = document.createElement('div');
 		checkboxDiv.className = 'checkbox-item';
@@ -221,13 +249,15 @@ function abrirChat(receptorId, nombreReceptor) {
 	ws.send(JSON.stringify(payload));
 }
 
-function mostrarChat(data) {
+function mostrarChat(receptorId, mensajes) {
+	console.log('Mostrando chat con receptor ID:', receptorId);
+	console.log('Mensajes recibidos:', mensajes);
 	const mensajesDiv = document.getElementById('mensajes');
 	mensajesDiv.innerHTML = '';
-	
-	if (data.mensajes && data.mensajes.length > 0) {
-		data.mensajes.forEach(m => {
-			agregarMensaje(m.es_mio ? 'enviado' : 'recibido', m.mensaje, m.timestamp);
+
+	if (mensajes && mensajes.length > 0) {
+		mensajes.forEach(m => {
+			agregarMensaje(m.emisor == receptorId ? 'enviado' : 'recibido', m.contenido, m.fecha);
 		});
 	} else {
 		agregarMensaje('sistema', 'No hay mensajes en esta conversación');
@@ -306,19 +336,20 @@ function agregarUsuario() {
   }
 }
 
-function agregarMensaje(tipo, texto) {
+function agregarMensaje(tipo, texto, fecha) {
 	const div = document.createElement('div');
 	div.className = 'mensaje ' + tipo;
-	div.textContent = `[${new Date().toLocaleTimeString()}] ${texto}`;
+	
+	const contenido = document.createElement('span');
+	contenido.textContent = texto;
+	
+	const timestamp = document.createElement('small');
+	timestamp.className = 'timestamp';
+	timestamp.textContent = fecha ? new Date(fecha).toLocaleTimeString() : new Date().toLocaleTimeString();
+	
+	div.appendChild(contenido);
+	div.appendChild(timestamp);
+	
 	document.getElementById('mensajes').appendChild(div);
 	div.scrollIntoView();
 }
-
-document.getElementById('displayCrearGrupo').addEventListener('click', function() {
-  var crearGrupoDiv = document.querySelector('.crear-grupo');
-  if (crearGrupoDiv.style.display === 'none') {
-    crearGrupoDiv.style.display = 'block';
-  } else {
-    crearGrupoDiv.style.display = 'none';
-  }
-});
