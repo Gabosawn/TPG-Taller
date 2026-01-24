@@ -34,5 +34,8 @@ defmodule Tpg.Services.ChatService do
       {:error, "Algunos miembros no existen"}
     end
   end
-
+  def obtener_conversaciones(id_usuario) do
+    chats_grupales = Tpg.Receptores.UsuariosGrupo.get_grupo_ids_by_usuario(id_usuario)
+    chats_grupales
+  end
 end

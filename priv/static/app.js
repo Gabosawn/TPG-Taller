@@ -66,7 +66,6 @@ function conectar() {
 		agregarMensaje('sistema', 'Conectado al servidor');
 		listarTodosLosUsuarios();
 		listarConversaciones();
-		obtenerContactos();
 	};
 	
 	ws.onmessage = (event) => {
@@ -111,6 +110,9 @@ function enviarMensaje() {
 	document.getElementById('mensaje').value = '';
 }
 
+function obtenerContactos() {
+}
+
 function verHistorial() {
 	ws.send(JSON.stringify({ accion: 'leer_historial' }));
 }
@@ -144,11 +146,9 @@ function manejarMensaje(data) {
 		case 'confirmacion':
 			agregarMensaje('sistema', '✓ ' + data.mensaje);
 			break;
-
 		case 'listar_conversaciones':
 			listar_conversaciones_response(data.conversaciones);
 			break;
-
 		case 'grupo_creado':
 			agregarMensaje('sistema', `✅ Grupo "${data.grupo}" creado con éxito.`);
 			break;

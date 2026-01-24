@@ -237,7 +237,7 @@ defmodule Tpg.WebSocketHandler do
   end
 
   defp manejar_listar_conversaciones(state) do
-    conversaciones = Tpg.Receptores.UsuariosGrupo.get_grupo_ids_by_usuario(state.id)
+    conversaciones = Tpg.Services.ChatService.obtener_conversaciones(state.id)
     respuesta = Jason.encode!(%{
       tipo: "listar_conversaciones",
       conversaciones: conversaciones
