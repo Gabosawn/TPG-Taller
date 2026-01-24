@@ -209,6 +209,7 @@ defmodule Tpg.WebSocketHandler do
 
   defp manejar_listar_usuarios_db(state) do
     usuarios = Tpg.Receptores.Usuario.changeset(:listar, %{})
+    |> Enum.filter(fn user -> user.receptor_id != state.id end)
     respuesta = Jason.encode!(%{
       tipo: "listar_usuarios_db",
       usuarios: usuarios

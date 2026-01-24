@@ -24,7 +24,7 @@ function registrar() {
 	ws.onopen = () => {
 		document.getElementById('status').textContent = 'Conectado';
 		document.getElementById('status').style.color = 'green';
-		listar_todos_usuarios();
+		listarTodosLosUsuarios();
 		agregarMensaje('sistema', 'Conectado al servidor');
 	};
 
