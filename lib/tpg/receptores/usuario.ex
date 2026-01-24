@@ -62,4 +62,32 @@ defmodule Tpg.Receptores.Usuario do
     |> check_constraint(:contrasenia, name: "contrasenia_numero", message: "La contraseña debe contener al menos un número")
   end
 
+  def agregar_contacto(id_usuario, nombre_usuario) do
+    with {:ok, usuario} <- validar_usuario_existe(id_usuario),
+        {:ok, contacto} <- validar_contacto_existe(nombre_usuario) do
+      # Aquí puedes agregar la lógica para insertar en la tabla de contactos
+      {:ok, %{usuario: usuario, contacto: contacto}}
+    else
+      {:error, :usuario_no_existe} ->
+        {:error, "El usuario con ID #{id_usuario} no existe"}
+      {:error, :contacto_no_existe} ->
+        {:error, "El usuario '#{nombre_usuario}' no existe"}
+      error ->
+        error
+    end
+  end
+
+  defp validar_usuario_existe(id_usuario) do
+    case Repo.get(Tpg.Receptores.Usuario, id_usuario) do
+      nil -> {:error, :usuario_no_existe}
+      usuario -> {:ok, usuario}
+    end
+  end
+
+  defp validar_contacto_existe(nombre_usuario) do
+    case Repo.get_by(Tpg.Receptores.Usuario, nombre: nombre_usuario) do
+      nil -> {:error, :contacto_no_existe}
+      contacto -> {:ok, contacto}
+    end
+  end
 end

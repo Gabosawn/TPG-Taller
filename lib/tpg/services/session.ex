@@ -74,7 +74,13 @@ defmodule Tpg.Services.SessionService do
   end
 
   def agendar(user_id, nombre_usuario) do
-    {:error, "no implementado"}
+    case Tpg.Receptores.Usuario.agregar_contacto(user_id, nombre_usuario) do
+      {:ok, res} ->
+        {:ok, res}
+      {:error, motivo} ->
+        Logger.error("[session service] Error agendando un contacto")
+        {:error, motivo}
+    end
   end
 
 end
