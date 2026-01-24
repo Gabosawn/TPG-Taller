@@ -64,8 +64,8 @@ defmodule Tpg.Receptores.Usuario do
 
   def agregar_contacto(id_usuario, nombre_usuario) do
     with {:ok, usuario} <- validar_usuario_existe(id_usuario),
-        {:ok, contacto} <- validar_contacto_existe(nombre_usuario) do
-      # Aquí puedes agregar la lógica para insertar en la tabla de contactos
+        {:ok, contacto} <- validar_contacto_existe(nombre_usuario),
+        {:ok, contacto} <- insertar_contacto(id_usuario, contacto.receptor_id) do
       {:ok, %{usuario: usuario, contacto: contacto}}
     else
       {:error, :usuario_no_existe} ->
@@ -89,5 +89,13 @@ defmodule Tpg.Receptores.Usuario do
       nil -> {:error, :contacto_no_existe}
       contacto -> {:ok, contacto}
     end
+  end
+
+  defp insertar_contacto(id_usuario, id_contacto) do
+    changeset = cast(%Tpg.Receptores.Agendado{}, %{}, [:usuario_id, :contacto_id])
+    |> put_change( :usuario_id, id_usuario)
+    |> put_change( :contacto_id, id_contacto)
+    |> validate_required([ :usuario_id, :contacto_id])
+    |> Repo.insert
   end
 end
