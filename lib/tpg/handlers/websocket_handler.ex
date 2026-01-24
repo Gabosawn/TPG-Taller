@@ -28,7 +28,9 @@ defmodule Tpg.WebSocketHandler do
           mensaje: "Conectado como #{usuario}",
           timestamp: DateTime.utc_now()
         })
-        {:reply, {:text, mensaje_bienvenida}, %{state | server_pid: res.pid} }
+        state = %{state | server_pid: res.pid}
+
+        {:reply, {:text, mensaje_bienvenida}, %{state | id: res.id} }
 
       {:error, {:already_started, pid}} ->
         # Usuario ya está logueado
@@ -114,7 +116,7 @@ defmodule Tpg.WebSocketHandler do
   # Cleanup cuando se cierra la conexión
   def terminate(_reason, _req, state) do
     if state.server_pid do
-      SessionService.desloggear(state.usuario)
+      SessionService.desloggear(state.id)
     end
     :ok
   end

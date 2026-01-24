@@ -27,7 +27,7 @@ defmodule Tpg.Services.SessionService do
           {:ok, usuario_encontrado} ->
             Logger.info("Usuario #{usuario.nombre} encontrado en la base de datos")
             Tpg.habilitar_canales(usuario_encontrado.receptor_id) # carga las conversaciones que el usuario puede usar
-            crear_proceso(usuario_encontrado.nombre) # crea una sesion como usuario
+            crear_proceso(usuario_encontrado.receptor_id) # crea una sesion como usuario
         end
       _ ->
         Logger.warning("Operación desconocida: #{inspect(typeOp)}")
