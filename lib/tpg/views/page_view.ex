@@ -44,17 +44,58 @@ defmodule Tpg.Views.PageView do
         <button onclick="verHistorial()">Ver Historial</button>
         <button onclick="listarUsuarios()">Usuarios Activos</button>
       </div>
-      <button id="displayCrearGrupo">Crear Grupo</button>
-
-      <div class="crear-grupo" style="display:none;">
-        <h3>Crear Grupo</h3>
-        <input type="text" id="nombre-grupo" placeholder="Nombre del grupo" />
-        <div>
-          <h4>Seleccionar miembros:</h4>
-          <div id="usuarios-checkbox"></div>
-        </div>
-        <button onclick="crearGrupo()">Crear Grupo</button>
+      <div>
+        <button onclick="openModal('grupo')">Crear Grupo</button>
+        <button onclick="openModal('contacto')">Agregar Contacto</button>
       </div>
+
+      <div class="show-modal" style="display:none;">
+        <div class="crear-grupo" style="display:none;">
+          <h3>Crear Grupo</h3>
+          <input type="text" id="nombre-grupo" placeholder="Nombre del grupo" />
+          <div>
+            <h4>Seleccionar miembros:</h4>
+            <div id="usuarios-checkbox"></div>
+          </div>
+          <button onclick="crearGrupo()">Crear Grupo</button>
+        </div>
+        <div class="agregar-contacto" style="display:none;">
+          <h3>Agregar Contacto</h3>
+          <input type="text" id="nombre-usuario" placeholder="Nombre de Usuario" />
+          <button onclick="agregarUsuario()()">Agendar Contacto</button>
+      </div>
+
+      <script>
+        function openModal(modalType) {
+          const showModal = document.querySelector('.show-modal');
+          const crearGrupo = document.querySelector('.crear-grupo');
+          const agregarContacto = document.querySelector('.agregar-contacto');
+
+          // Hide all modals first
+          crearGrupo.style.display = 'none';
+          agregarContacto.style.display = 'none';
+
+          // Show the requested modal
+          if (modalType === 'grupo') {
+            showModal.style.display = 'block';
+            crearGrupo.style.display = 'block';
+          } else if (modalType === 'contacto') {
+            showModal.style.display = 'block';
+            agregarContacto.style.display = 'block';
+          }
+        }
+
+        function closeModal() {
+          const showModal = document.querySelector('.show-modal');
+          const crearGrupo = document.querySelector('.crear-grupo');
+          const agregarContacto = document.querySelector('.agregar-contacto');
+
+          // Hide everything
+          showModal.style.display = 'none';
+          crearGrupo.style.display = 'none';
+          agregarContacto.style.display = 'none';
+        }
+      </script>
       <script src="/static/app.js"></script>
     </body>
     </html>
