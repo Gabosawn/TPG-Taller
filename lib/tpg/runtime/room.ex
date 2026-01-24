@@ -38,7 +38,6 @@ defmodule Tpg.Runtime.Room do
 
   @impl true
   def handle_call({:agregar_oyente, websocket_pid}, _from, state) do
-    Process.monitor(websocket_pid)
     new_state = %{state | listeners: [websocket_pid | state.listeners]}
     {:reply, state.mensajes, new_state}
   end

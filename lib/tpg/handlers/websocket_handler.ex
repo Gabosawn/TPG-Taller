@@ -97,12 +97,13 @@ defmodule Tpg.WebSocketHandler do
   end
 
   # Manejar mensajes internos de Elixir (notificaciones push)
-  def websocket_info({:nuevo_mensaje, de, mensaje, timestamp}, state) do
+  def websocket_info({:nuevo_mensaje, mensaje}, state) do
+    Logger.info("[ws] Recibiendo mensaje...")
     respuesta = Jason.encode!(%{
       tipo: "mensaje_nuevo",
-      de: de,
-      mensaje: mensaje,
-      timestamp: timestamp
+      de: mensaje.emisor,
+      mensaje: mensaje.contenido,
+      timestamp: mensaje.fecha
     })
     {:reply, {:text, respuesta}, state}
   end
@@ -149,7 +150,7 @@ defmodule Tpg.WebSocketHandler do
 
   def manejar_abrir_chat(id_receptor, state) do
     # Suscribirse a este proceso para recibir notificaciones
-    mensajes = Tpg.oir_chat(id_receptor, state.server_pid)
+    mensajes = Tpg.oir_chat(id_receptor, self())
 
     respuesta = Jason.encode!(%{
       tipo: "chat_abierto",
@@ -161,19 +162,18 @@ defmodule Tpg.WebSocketHandler do
   end
 
   defp manejar_envio(destinatario, mensaje, state) do
-    case :global.whereis_name(destinatario) do
-      :undefined ->
+    case ChatService.enviar(state.id, destinatario, mensaje) do
+      {:error, motivo} ->
         respuesta = Jason.encode!(%{
           tipo: "error",
-          mensaje: "Usuario #{destinatario} no encontrado"
+          mensaje: "#{motivo}"
         })
         {:reply, {:text, respuesta}, state}
 
-      pid ->
-        ChatService.enviar(state.id, pid, mensaje)
+      {:ok, mensaje} ->
         respuesta = Jason.encode!(%{
           tipo: "confirmacion",
-          mensaje: "Mensaje enviado a #{destinatario}"
+          mensaje: "Mensaje enviado}"
         })
         {:reply, {:text, respuesta}, state}
     end

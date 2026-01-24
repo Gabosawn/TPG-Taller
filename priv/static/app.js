@@ -299,8 +299,8 @@ function crearGrupo() {
 	const checkboxes = document.querySelectorAll('#usuarios-checkbox input[type="checkbox"]:checked');
 	const miembros = Array.from(checkboxes).map(cb => cb.value);
 
-	if (miembros.length < 3) {
-		alert('Selecciona al menos 3 miembros para el grupo');
+	if (miembros.length < 2) {
+		alert('Selecciona al menos 2 miembros para el grupo');
 		return;
 	}
 	
@@ -314,6 +314,7 @@ function crearGrupo() {
 	
 	document.getElementById('nombre-grupo').value = '';
 	checkboxes.forEach(cb => cb.checked = false);
+	listarConversaciones();
 }
 
 function agregarUsuario() {
