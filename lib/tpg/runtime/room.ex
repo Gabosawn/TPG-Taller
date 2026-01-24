@@ -46,18 +46,18 @@ defmodule Tpg.Runtime.Room do
   @impl true
   def handle_call({:agregar_mensaje, de, contenido}, _from, state) do
     nuevo_msg = %{emisor: de, contenido: contenido, estado: "ENVIADO", fecha: DateTime.utc_now()}
-    Logger.info("Guardando mensaje...: #{nuevo_msg.contenido}, de #{de}")
+    Logger.info("[room] Guardando mensaje...: #{nuevo_msg.contenido}, de #{de}")
 
     case Tpg.Mensajes.MultiInsert.enviar_mensaje(state.group_id, de, nuevo_msg) do
       {:ok, _mensaje} ->
-        Logger.info("Mensaje guardado: #{nuevo_msg.contenido}, de #{de}")
+        Logger.info("[room] Mensaje guardado: #{nuevo_msg.contenido}, de #{de}")
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
         # Notificar a todos los oyentes
         notificar_oyentes(new_state.listeners, nuevo_msg)
         {:reply, {:ok, nuevo_msg}, new_state}
 
       {:error, motivo} ->
-        Logger.alert("Mensaje perdido: #{nuevo_msg.contenido}, de #{de}. Motivo: #{inspect(motivo)}")
+        Logger.alert("[room] Mensaje perdido: #{nuevo_msg.contenido}, de #{de}. Motivo: #{inspect(motivo)}")
         {:reply, {:error, motivo}, state}
     end
   end
@@ -82,7 +82,9 @@ defmodule Tpg.Runtime.Room do
   end
 
   defp notificar_oyentes(listeners, mensaje) do
+    Logger.info("[room] Notificando usuarios...")
     Enum.each(listeners, fn pid ->
+      Logger.info("[room] Notificando usuario")
       send(pid, {:nuevo_mensaje, mensaje})
     end)
   end

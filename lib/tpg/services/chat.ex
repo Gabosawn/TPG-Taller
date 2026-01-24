@@ -8,7 +8,8 @@ defmodule Tpg.Services.ChatService do
 
   def enviar(de, para, msg) do
     Logger.debug("Enviando mensaje de #{inspect(de)} a #{inspect(para)}: #{msg}")
-    GenServer.cast(para, {:recibir, de, msg})
+    Tpg.Runtime.Room.agregar_mensaje(para, de, msg)
+    {:ok, "mensaje enviado"}
   end
 
   def leer_mensajes(usuario) do
