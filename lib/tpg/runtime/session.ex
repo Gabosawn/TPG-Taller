@@ -34,7 +34,9 @@ defmodule Tpg.Runtime.Session do
     mensajes_ordenados = Chat.obtener_historial(state)
     {:reply, mensajes_ordenados, state}
   end
-
+  def handle_call({:esta_escuchando_canal, chat_solicitado}, _from, state) do
+    {:reply, state.chat == chat_solicitado, state}
+  end
   def handle_cast({:recibir, de, mensaje}, state) do
     nuevo_mensaje = %{
       de: de,

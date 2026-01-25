@@ -3,7 +3,7 @@ defmodule Tpg.Runtime.Room do
   use GenServer
   require Logger
 
-  defstruct listeners: [], group_id: nil, mensajes: []
+  defstruct listeners: %{}, group_id: nil, mensajes: []
 
   # Client API
 
@@ -40,28 +40,36 @@ defmodule Tpg.Runtime.Room do
 
   @impl true
   def handle_call({:agregar_oyente, websocket_pid}, _from, state) do
-    new_listeners =
-      if websocket_pid in state.listeners do
+    {new_listeners, mensajes_respuesta} =
+      if Map.has_key?(state.listeners, websocket_pid) do
         Logger.debug("[room] Oyente #{inspect(websocket_pid)} ya existe en sala #{state.group_id}")
-        state.listeners
+        {state.listeners, state.mensajes}
       else
-        Process.monitor(websocket_pid)
-        [websocket_pid | state.listeners]
+        Logger.debug("[room] Oyente #{inspect(websocket_pid)} agregado a la sala #{state.group_id}")
+        monitor_ref = Process.monitor(websocket_pid)
+        {Map.put(state.listeners, websocket_pid, monitor_ref), state.mensajes}
       end
+
     new_state = %{state | listeners: new_listeners}
-    {:reply, state.mensajes, new_state}
+    {:reply, mensajes_respuesta, new_state}
   end
   @impl true
   def handle_call({:quitar_oyente, websocket_pid}, _from, state) do
-    # Remove ALL occurrences and filter out dead processes
+    # Demonitorear y eliminar el oyente
     new_listeners =
-      state.listeners
-      |> Enum.reject(&(&1 == websocket_pid))
-      |> Enum.filter(&Process.alive?/1)
+      case Map.pop(state.listeners, websocket_pid) do
+        {nil, listeners} ->
+          Logger.debug("[room] Oyente #{inspect(websocket_pid)} no estaba en sala #{state.group_id}")
+          listeners
 
+        {monitor_ref, listeners} ->
+          Process.demonitor(monitor_ref, [:flush])
+          Logger.debug("[room] Oyente #{inspect(websocket_pid)} eliminado de sala #{state.group_id}")
+          listeners
+      end
+
+    Logger.debug("[room] Cantidad oyentes: #{map_size(new_listeners)}, Sala: #{state.group_id}")
     new_state = %{state | listeners: new_listeners}
-
-    Logger.debug("[room] Cantidad oyentes: #{Enum.count(new_listeners)} , Sala: #{state.group_id}")
     {:reply, :ok, new_state}
   end
   @impl true
@@ -91,7 +99,7 @@ defmodule Tpg.Runtime.Room do
   @impl true
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
     Logger.debug("[room] Oyente #{inspect(pid)} desconectado de sala #{state.group_id}")
-    new_listeners = List.delete(state.listeners, pid)
+    new_listeners = Map.delete(state.listeners, pid)
     {:noreply, %{state | listeners: new_listeners}}
   end
 
@@ -104,7 +112,7 @@ defmodule Tpg.Runtime.Room do
 
   defp notificar_oyentes(listeners, mensaje) do
     Logger.info("[room] Notificando usuarios...")
-    Enum.each(listeners, fn pid ->
+    Enum.each(Map.keys(listeners), fn pid ->
       Logger.info("[room] Notificando usuario")
       send(pid, {:nuevo_mensaje, mensaje})
     end)

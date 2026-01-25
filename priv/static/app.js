@@ -163,6 +163,8 @@ function manejarMensaje(data) {
 		case 'error':
 			agregarMensaje('error', '❌ ' + data.mensaje);
 			break;
+		case 'do_nothing':
+			break;
 		default:
 			agregarMensaje('sistema', JSON.stringify(data));
 	}
