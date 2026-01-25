@@ -97,9 +97,16 @@ defmodule Tpg.Services.SessionService do
     end
   end
 
-  def oir_chat(group_id, ws_pid) do
+  def oir_chat(tipo, id_receptor, id_emisor, ws_pid) do
     Logger.info("[session service] agregando oyente...")
-    Tpg.Runtime.Room.agregar_oyente(group_id, ws_pid)
+    case tipo do
+      "grupo" ->
+        Logger.info("[session service] oyente para grupo #{id_receptor}")
+        Tpg.Runtime.Room.agregar_oyente(id_receptor, ws_pid)
+      "privado" ->
+        Logger.info("[session service] oyente para chat privado #{inspect(id_receptor)}")
+        Tpg.Runtime.PrivateRoom.agregar_oyente(id_receptor, id_emisor, ws_pid)
+    end
     # Tpg.Services.ChatService.update_room_listeners(group_id, ws_pid)
   end
 

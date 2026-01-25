@@ -2,16 +2,24 @@ defmodule Tpg do
   require Logger
 
   def habilitar_canales(id_emisor) do
-    grupos = Tpg.Receptores.UsuariosGrupo.get_grupo_ids_by_usuario(id_emisor)
     Logger.info("[tpg] habilitando canales.. ")
-    Enum.each(grupos, fn grupo ->
+    Tpg.Receptores.UsuariosGrupo.get_grupo_ids_by_usuario(id_emisor)
+    |> Enum.each(fn grupo ->
       Logger.info("[tpg] habilitando grupo id #{grupo.id}")
-      crear_canal(grupo.id)
+      crear_canal_grupal(grupo.id)
     end)
+
+    Tpg.Receptores.Agendado.obtener_contactos_agenda(id_emisor)
+    |> Enum.each(fn agenda ->
+      Logger.info("[tpg] habilitando contacto id #{agenda.nombre}")
+      Logger.warning("[AGENDA] #{inspect(agenda)}")
+      crear_canal_privado(agenda.id, id_emisor)
+    end)
+
     {:ok, %{id: id_emisor}}
   end
 
-  defp crear_canal(id_grupo) do
+  defp crear_canal_grupal(id_grupo) do
     case DynamicSupervisor.start_child(
       Tpg.DynamicSupervisor,
       {Tpg.Runtime.Room, id_grupo}
@@ -30,8 +38,26 @@ defmodule Tpg do
     end
   end
 
-  def obtener_chats_activos(user_id) do
+  defp crear_canal_privado(usuario_1, usuario_2) do
+    case DynamicSupervisor.start_child(
+      Tpg.DynamicSupervisor,
+      {Tpg.Runtime.PrivateRoom, {usuario_1, usuario_2}}
+    ) do
+      {:ok, pid} ->
+        Logger.info("[tpg] Canal #{inspect({usuario_1, usuario_2})} creado exitosamente")
+        {:ok, pid}
 
+      {:error, {:already_started, pid}} ->
+        Logger.info("[tpg] Canal #{inspect({usuario_1, usuario_2})} ya estaba activo")
+        {:ok, pid}
+
+      {:error, reason} ->
+        Logger.error("[tpg] Error al crear canal #{inspect({usuario_1, usuario_2})}: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  def obtener_chats_activos(user_id) do
     usuarios = :global.registered_names()
     Logger.debug("Usuarios activos: #{inspect(usuarios)}")
     usuarios

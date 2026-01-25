@@ -28,7 +28,7 @@ defmodule Tpg.Receptores.UsuariosGrupo do
       join: grupo in Tpg.Receptores.Grupo,
       on: usuario.grupo_id == grupo.receptor_id,
       where: usuario.usuario_id == ^emisor_id,
-      select: %{nombre: grupo.nombre, id: grupo.receptor_id}
+      select: %{nombre: grupo.nombre, id: grupo.receptor_id, tipo: "grupo"}
     )
     |> Tpg.Repo.all()
   end

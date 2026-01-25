@@ -56,11 +56,11 @@ defmodule Tpg.WebSocketHandler do
       {:ok, %{"accion" => "agregar_contacto", "nombre_usuario" => nombre}} ->
         manejar_agregar_usuario(state, nombre)
 
-      {:ok, %{"accion" => "abrir_chat", "receptor_id" => id}} ->
-        manejar_abrir_chat(id, state)
+      {:ok, %{"accion" => "abrir_chat", "tipo" => tipo, "receptor_id" => id}} ->
+        manejar_abrir_chat(tipo, id, state)
 
-      {:ok, %{"accion" => "enviar", "para" => destinatario, "mensaje" => mensaje}} ->
-        manejar_envio(destinatario, mensaje, state)
+      {:ok, %{"accion" => "enviar", "tipo" => tipo, "para" => destinatario, "mensaje" => mensaje}} ->
+        manejar_envio(tipo, destinatario, mensaje, state)
 
       {:ok, %{"accion" => "leer_historial"}} ->
         manejar_lectura_historial(state)
@@ -152,9 +152,9 @@ defmodule Tpg.WebSocketHandler do
     end
   end
 
-  def manejar_abrir_chat(id_receptor, state) do
+  def manejar_abrir_chat(tipo, id_receptor, state) do
     # Suscribirse a este proceso para recibir notificaciones
-    mensajes = Tpg.Services.SessionService.oir_chat(id_receptor, self())
+    mensajes = Tpg.Services.SessionService.oir_chat(tipo, id_receptor, state.id, self())
 
     respuesta = Jason.encode!(%{
       tipo: "chat_abierto",
@@ -165,8 +165,8 @@ defmodule Tpg.WebSocketHandler do
     {:reply, {:text, respuesta}, state}
   end
 
-  defp manejar_envio(destinatario, mensaje, state) do
-    case ChatService.enviar(state.id, destinatario, mensaje) do
+  defp manejar_envio(tipo, destinatario, mensaje, state) do
+    case ChatService.enviar(tipo, state.id, destinatario, mensaje) do
       {:error, motivo} ->
         respuesta = Jason.encode!(%{
           tipo: "error",

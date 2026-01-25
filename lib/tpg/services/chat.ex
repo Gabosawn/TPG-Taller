@@ -1,9 +1,14 @@
 defmodule Tpg.Services.ChatService do
   require Logger
 
-  def enviar(de, para, msg) do
+  def enviar(tipo, de, para, msg) do
     Logger.debug("Enviando mensaje de #{inspect(de)} a #{inspect(para)}: #{msg}")
-    Tpg.Runtime.Room.agregar_mensaje(para, de, msg)
+    case tipo do
+      "grupo" ->
+        Tpg.Runtime.Room.agregar_mensaje(para, de, msg)
+      "privado" ->
+        Tpg.Runtime.PrivateRoom.agregar_mensaje(de, para, de, msg)
+    end
     {:ok, "mensaje enviado"}
   end
 
@@ -31,7 +36,7 @@ defmodule Tpg.Services.ChatService do
     end
   end
   def obtener_conversaciones(id_usuario) do
-    chats_grupales = Tpg.Receptores.UsuariosGrupo.get_grupo_ids_by_usuario(id_usuario)
-    chats_grupales
+    Tpg.Receptores.Agendado.obtener_contactos_agenda(id_usuario)
+    ++ Tpg.Receptores.UsuariosGrupo.get_grupo_ids_by_usuario(id_usuario)
   end
 end

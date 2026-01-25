@@ -15,42 +15,38 @@ defmodule Tpg.Mensajes.Recibido do
   end
 
   def get_mensajes(grupo_id) do
-    query = from( r in Tpg.Mensajes.Recibido,
-      join: m in Tpg.Mensajes.Mensaje,
-      on: r.mensaje_id == m.id,
-      join: e in Tpg.Mensajes.Enviado,
-      on: m.id == e.mensaje_id,
-      where: r.receptor_id == ^grupo_id,
+    query = from( receptor in Tpg.Mensajes.Recibido,
+      join: mensaje in Tpg.Mensajes.Mensaje, on: receptor.mensaje_id == mensaje.id,
+      join: emisor in Tpg.Mensajes.Enviado, on: mensaje.id == emisor.mensaje_id,
+      where: receptor.receptor_id == ^grupo_id,
       select: %{
-        id: m.id,
-        emisor: e.usuario_id,
-        contenido: m.contenido,
-        estado: m.estado,
-        fecha: m.inserted_at
+        id: mensaje.id,
+        emisor: emisor.usuario_id,
+        contenido: mensaje.contenido,
+        estado: mensaje.estado,
+        fecha: mensaje.inserted_at
       },
-      order_by: [asc: m.inserted_at])
+      order_by: [desc: mensaje.inserted_at])
     |> Tpg.Repo.all()
   end
 
-  def get_mensajes_usuarios(user_1, user_2) do
-
-    from( r in Tpg.Mensajes.Recibido,
-      join: m in Tpg.Mensajes.Mensaje,
-      on: r.mensaje_id == m.id,
-      join: e in Tpg.Mensajes.Enviado,
-      on: m.id == e.mensaje_id,
-      where: ((r.receptor_id == ^user_1 and e.usuario_id == ^user_2) or
-              (r.receptor_id == ^user_2 and e.usuario_id == ^user_1)),
+  def obtener_mensajes_usuarios(user_1, user_2) do
+    mensajes_query = from(mensaje in Tpg.Mensajes.Mensaje,
+      join: receptor in Tpg.Mensajes.Recibido, on: mensaje.id == receptor.mensaje_id,
+      join: emisor in Tpg.Mensajes.Enviado, on: mensaje.id == emisor.mensaje_id,
+      where:
+        (receptor.receptor_id == ^user_1 and emisor.usuario_id == ^user_2) or
+        (receptor.receptor_id == ^user_2 and emisor.usuario_id == ^user_1),
       select: %{
-        id: m.id,
-        emisor: e.usuario_id,
-        receptor: r.receptor_id,
-        contenido: m.contenido,
-        estado: m.estado,
-        fecha: m.inserted_at
+        id: mensaje.id,
+        emisor: emisor.usuario_id,
+        contenido: mensaje.contenido,
+        estado: mensaje.estado,
+        fecha: mensaje.inserted_at
       },
-      order_by: [desc: m.inserted_at])
-    |> Tpg.Repo.all()
+      order_by: [desc: mensaje.inserted_at]
+    )
+    Tpg.Repo.all(mensajes_query)
+    |> IO.inspect(label: "AQQQQQQQQQQQQUUUUUUUUUUUUUUUUUUUIIIIIIIIIIII---------------------------------------")
   end
-
 end

@@ -39,13 +39,13 @@ defmodule Tpg.Runtime.Room do
   @impl true
   def handle_call({:agregar_oyente, websocket_pid}, _from, state) do
     new_state = %{state | listeners: [websocket_pid | state.listeners]}
+    Logger.warning("MENSAJES #{inspect(state.mensajes)}")
     {:reply, state.mensajes, new_state}
   end
 
   @impl true
   def handle_call({:agregar_mensaje, de, contenido}, _from, state) do
     nuevo_msg = %{emisor: de, contenido: contenido, estado: "ENVIADO", fecha: DateTime.utc_now()}
-    Logger.info("[room] Guardando mensaje...: #{nuevo_msg.contenido}, de #{de}")
 
     case Tpg.Mensajes.MultiInsert.enviar_mensaje(state.group_id, de, nuevo_msg) do
       {:ok, _mensaje} ->

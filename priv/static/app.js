@@ -183,10 +183,10 @@ function listar_conversaciones_response(conversaciones) {
 
 	conversaciones.forEach(conversacion => {
 		const li = document.createElement('li');
-		li.id = conversacion.id;
+		li.id = `${conversacion.tipo}-${conversacion.id}`;
 		li.textContent = conversacion.nombre;
 		li.className = 'chat-item';
-		li.onclick = () => abrirChat(conversacion.id, conversacion.nombre);
+		li.onclick = () => abrirChat(conversacion.tipo, conversacion.id, conversacion.nombre);
 		lista.appendChild(li);
 	});
 }
@@ -226,8 +226,8 @@ function listar_usuarios_agrupables(usuarios) {
 	});
 }
 
-function abrirChat(receptorId, nombreReceptor) {
-	chatActual = receptorId;
+function abrirChat(tipo, receptorId, nombreReceptor) {
+	chatActual = {tipo: tipo, id: receptorId};
 	
 	// Remover clase active de todos los chats
 	document.querySelectorAll('.chat-item').forEach(item => {
@@ -243,6 +243,7 @@ function abrirChat(receptorId, nombreReceptor) {
 	// Enviar solicitud para abrir el chat
 	const payload = {
 		accion: 'abrir_chat',
+		tipo: tipo,
 		receptor_id: receptorId
 	};
 	
@@ -256,7 +257,8 @@ function mostrarChat(receptorId, mensajes) {
 	mensajesDiv.innerHTML = '';
 
 	if (mensajes && mensajes.length > 0) {
-		mensajes.forEach(m => {
+		// Invertir el orden de los mensajes para mostrar el último primero
+		mensajes.reverse().forEach(m => {
 			agregarMensaje(m.emisor == receptorId ? 'enviado' : 'recibido', m.contenido, m.fecha);
 		});
 	} else {
@@ -279,7 +281,8 @@ function enviarMensaje() {
 
 	const payload = {
 		accion: 'enviar',
-		para: chatActual,
+		tipo: chatActual.tipo,
+		para: chatActual.id,
 		mensaje: mensaje
 	};
 
