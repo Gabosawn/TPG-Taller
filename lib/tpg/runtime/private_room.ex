@@ -102,4 +102,6 @@ defmodule Tpg.Runtime.PrivateRoom do
       send(pid, {:nuevo_mensaje, mensaje})
     end)
   end
+
+  #Quitar oyente
 end

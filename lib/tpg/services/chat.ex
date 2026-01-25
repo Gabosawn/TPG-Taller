@@ -39,4 +39,24 @@ defmodule Tpg.Services.ChatService do
     Tpg.Receptores.Agendado.obtener_contactos_agenda(id_usuario)
     ++ Tpg.Receptores.UsuariosGrupo.get_grupo_ids_by_usuario(id_usuario)
   end
+  def agregar_oyente(tipo, user_id, reciever_id, ws_pid) do
+    case tipo do
+      "grupo" ->
+        Logger.info("[session service] oyente para grupo #{reciever_id}")
+        Tpg.Runtime.Room.agregar_oyente(reciever_id, ws_pid)
+      "privado" ->
+        Logger.info("[session service] oyente para chat privado #{inspect(reciever_id)}")
+        Tpg.Runtime.PrivateRoom.agregar_oyente(user_id, reciever_id, ws_pid)
+    end
+  end
+  def quitar_oyente(tipo, user_id, reciever_id, ws_pid) do
+    case tipo do
+      "grupo" ->
+        Logger.info("[session service] oyente para grupo #{reciever_id}")
+        Tpg.Runtime.Room.quitar_oyente(reciever_id, ws_pid)
+      "privado" ->
+        Logger.info("[session service] oyente para chat privado #{inspect(reciever_id)}")
+        Tpg.Runtime.PrivateRoom.quitar_oyente(user_id, reciever_id, ws_pid)
+    end
+  end
 end

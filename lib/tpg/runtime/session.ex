@@ -11,22 +11,32 @@ defmodule Tpg.Runtime.Session do
   end
 
   def handle_call({:registrar_websocket, pid}, _from, state) do
-    agregar_oyente(state, pid)
+    Process.monitor(pid)
+    nuevo_state = agregar_oyente(state, pid)
     Logger.info("[session] Websocket PID=#{inspect(pid)} asociado a Usuario=#{state.usuario}")
-    {:reply, :ok, state}
+    {:reply, :ok, nuevo_state}
   end
 
-  def handle_cast({:abrir_chat, group_pid}, _from, state) do
+  def handle_call({:abrir_chat, chat_id}, _from, state) do
     Logger.info("[session] abriendo chat.. ")
-    state = %{state | chat: group_pid}
-    {:noreply, state}
+    if state.chat do
+      Logger.info("[session] quitando oyente.. ")
+      ws_pid = Enum.at(state.websocket_pids, 0)
+      if ws_pid && Process.alive?(ws_pid) do
+        Tpg.Services.ChatService.quitar_oyente(state.chat, ws_pid)
+      end
+    end
+    state = %{state | chat: chat_id}
+    {:reply, :ok, state}
   end
 
   def handle_call(:ver_historial, _from, state) do
     mensajes_ordenados = Chat.obtener_historial(state)
     {:reply, mensajes_ordenados, state}
   end
-
+  def handle_call({:esta_escuchando_canal, chat_solicitado}, _from, state) do
+    {:reply, state.chat == chat_solicitado, state}
+  end
   def handle_cast({:recibir, de, mensaje}, state) do
     nuevo_mensaje = %{
       de: de,
@@ -45,10 +55,13 @@ defmodule Tpg.Runtime.Session do
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
     Logger.info("WebSocket PID=#{inspect(pid)} desconectado de Usuario=#{state.usuario}")
     nuevos_ws = List.delete(state.websocket_pids, pid)
+    if state.chat do
+      Tpg.Services.ChatService.quitar_oyente(state.chat, pid)
+    end
     {:noreply, %{state | websocket_pids: nuevos_ws}}
   end
 
   defp agregar_oyente(state, websocket_pid) do
-    %{state | websocket_pids: [websocket_pid | state.websocket_pids]}
+    %{state | websocket_pids: [websocket_pid]} # actualmente solo se puede relacionar un websocket con una sola sesion
   end
 end

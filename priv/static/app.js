@@ -91,25 +91,6 @@ function desconectar() {
 	}
 }
 
-function enviarMensaje() {
-	const destinatario = document.getElementById('destinatario').value;
-	const mensaje = document.getElementById('mensaje').value;
-
-	if (!destinatario || !mensaje) {
-		alert('Completa destinatario y mensaje');
-		return;
-	}
-
-	const payload = {
-		accion: 'enviar',
-		para: destinatario,
-		mensaje: mensaje
-	};
-
-	ws.send(JSON.stringify(payload));
-	document.getElementById('mensaje').value = '';
-}
-
 function obtenerContactos() {
 }
 
@@ -162,6 +143,8 @@ function manejarMensaje(data) {
 			break;
 		case 'error':
 			agregarMensaje('error', '❌ ' + data.mensaje);
+			break;
+		case 'do_nothing':
 			break;
 		default:
 			agregarMensaje('sistema', JSON.stringify(data));
@@ -235,7 +218,7 @@ function abrirChat(tipo, receptorId, nombreReceptor) {
 	});
 	
 	// Agregar clase active al chat seleccionado
-	document.getElementById(receptorId).classList.add('active');
+	document.getElementById(`${tipo}-${receptorId}`).classList.add('active');
 	
 	// Actualizar el header del chat
 	document.getElementById('nombre-chat-actual').textContent = nombreReceptor;
