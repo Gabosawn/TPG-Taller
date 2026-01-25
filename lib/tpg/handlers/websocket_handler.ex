@@ -154,7 +154,7 @@ defmodule Tpg.WebSocketHandler do
 
   def manejar_abrir_chat(id_receptor, state) do
     # Suscribirse a este proceso para recibir notificaciones
-    mensajes = Tpg.Services.SessionService.oir_chat(id_receptor, self())
+    {:ok, mensajes} = Tpg.Services.SessionService.oir_chat(state.id, id_receptor, self())
 
     respuesta = Jason.encode!(%{
       tipo: "chat_abierto",

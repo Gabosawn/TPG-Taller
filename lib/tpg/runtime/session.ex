@@ -16,10 +16,10 @@ defmodule Tpg.Runtime.Session do
     {:reply, :ok, state}
   end
 
-  def handle_cast({:abrir_chat, group_pid}, _from, state) do
+  def handle_call({:abrir_chat, group_pid}, _from, state) do
     Logger.info("[session] abriendo chat.. ")
     state = %{state | chat: group_pid}
-    {:noreply, state}
+    {:reply, :ok, state}
   end
 
   def handle_call(:ver_historial, _from, state) do
@@ -49,6 +49,6 @@ defmodule Tpg.Runtime.Session do
   end
 
   defp agregar_oyente(state, websocket_pid) do
-    %{state | websocket_pids: [websocket_pid | state.websocket_pids]}
+    %{state | websocket_pids: [websocket_pid]} # actualmente solo se puede relacionar un websocket con una sola sesion
   end
 end

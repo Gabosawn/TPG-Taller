@@ -34,4 +34,7 @@ defmodule Tpg.Services.ChatService do
     chats_grupales = Tpg.Receptores.UsuariosGrupo.get_grupo_ids_by_usuario(id_usuario)
     chats_grupales
   end
+  def agregar_oyente(group_id, ws_pid) do
+    Tpg.Runtime.Room.agregar_oyente(group_id, ws_pid)
+  end
 end

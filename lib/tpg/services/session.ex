@@ -51,14 +51,14 @@ defmodule Tpg.Services.SessionService do
 
   def desloggear(usuario) do
     Logger.info("Intentando desloguear usuario: #{usuario}")
-    case :global.whereis_name(usuario) do
-      :undefined ->
+    with {:ok, pid} <- get_session_pid(usuario) do
+      DynamicSupervisor.terminate_child(Tpg.DynamicSupervisor, pid)
+      Logger.info("Usuario #{usuario} deslogueado exitosamente")
+      {:ok, pid}
+    else
+      _ ->
         Logger.warning("Usuario #{usuario} no encontrado para desloguear")
         {:error, :not_found}
-      pid ->
-        DynamicSupervisor.terminate_child(Tpg.DynamicSupervisor, pid)
-        Logger.info("Usuario #{usuario} deslogueado exitosamente")
-        {:ok, pid}
     end
   end
 
@@ -84,23 +84,40 @@ defmodule Tpg.Services.SessionService do
   end
 
   def registrar_cliente(session_id, client_pid) do
-    case :global.whereis_name(session_id) do # TODO: crear funcion get_session_id(user_id)
-      :undefined ->
+    with {:ok, pid} <- get_session_pid(session_id),
+         :ok <- GenServer.call(pid, {:registrar_websocket, client_pid}) do
+      {:ok, "[session service] cliente registrado"}
+    else
+      {:error, _} ->
         Logger.warning("[Session service] no hay sesion con que registrar el cliente")
-      pid ->
-        case GenServer.call(pid, {:registrar_websocket, client_pid}) do
-          :ok ->
-            {:ok, "[session service] cliente registrado"}
-          _ ->
-            {:error, "[session service] Error: no se pudo registrar el cliente"}
-        end
+        {:error, "[session service] no hay sesion con que registrar el cliente"}
+      _ ->
+        {:error, "[session service] Error: no se pudo registrar el cliente"}
     end
   end
 
-  def oir_chat(group_id, ws_pid) do
-    Logger.info("[session service] agregando oyente...")
-    Tpg.Runtime.Room.agregar_oyente(group_id, ws_pid)
+  def oir_chat(user_id, group_id, ws_pid) do
+    with {:ok, pid} <- get_session_pid(user_id),
+      :ok <- GenServer.call(pid, {:abrir_chat, group_id}) do
+        Logger.info("[session service] agregando oyente...")
+        mensajes = Tpg.Services.ChatService.agregar_oyente(group_id, ws_pid)
+        {:ok, mensajes}
+    else
+      {:error, message} ->
+        {:error, message}
+      _ ->
+        {:error, "[session service] error al oir chat"}
+    end
     # Tpg.Services.ChatService.update_room_listeners(group_id, ws_pid)
   end
 
+  defp get_session_pid(id_usuario) do
+    case :global.whereis_name(id_usuario) do
+      :undefined ->
+        Logger.warning("[Session service] sesion <#{id_usuario}> no encontrada")
+        {:error, :undefined}
+      pid ->
+        {:ok, pid}
+    end
+  end
 end
