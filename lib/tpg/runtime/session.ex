@@ -7,7 +7,7 @@ defmodule Tpg.Runtime.Session do
   end
 
   def init(usuario) do
-    {:ok, %{usuario: usuario, chat: nil, websocket_pids: []}}
+    {:ok, %{usuario: usuario, chat_pid: nil, websocket_pids: []}}
   end
 
   def handle_call({:registrar_websocket, pid}, _from, state) do
@@ -17,16 +17,18 @@ defmodule Tpg.Runtime.Session do
     {:reply, :ok, nuevo_state}
   end
 
-  def handle_call({:abrir_chat, chat_id}, _from, state) do
-    Logger.info("[session] abriendo chat.. ")
-    if state.chat do
-      Logger.info("[session] quitando oyente.. ")
+  def handle_call({:abrir_chat, chat_pid}, _from, state) do
+    Logger.info("[session] abriendo chat #{inspect(chat_pid)}")
+    if state.chat_pid do
+      Logger.info("[session] quitando oyente #{inspect(state.chat_pid)}")
       ws_pid = Enum.at(state.websocket_pids, 0)
       if ws_pid && Process.alive?(ws_pid) do
-        Tpg.Services.ChatService.quitar_oyente(state.chat, ws_pid)
+        Tpg.Services.ChatService.quitar_oyente(state.chat_pid, ws_pid)
+        Logger.info("[session] oyente quitado #{inspect(state.chat_pid)}")
       end
     end
-    state = %{state | chat: chat_id}
+    state = %{state | chat_pid: chat_pid}
+    Logger.info("[session] Chat abierto #{inspect(state.chat_pid)}")
     {:reply, :ok, state}
   end
 
@@ -35,7 +37,7 @@ defmodule Tpg.Runtime.Session do
     {:reply, mensajes_ordenados, state}
   end
   def handle_call({:esta_escuchando_canal, chat_solicitado}, _from, state) do
-    {:reply, state.chat == chat_solicitado, state}
+    {:reply, state.chat_pid == chat_solicitado, state}
   end
   def handle_cast({:recibir, de, mensaje}, state) do
     nuevo_mensaje = %{
@@ -55,8 +57,8 @@ defmodule Tpg.Runtime.Session do
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
     Logger.info("WebSocket PID=#{inspect(pid)} desconectado de Usuario=#{state.usuario}")
     nuevos_ws = List.delete(state.websocket_pids, pid)
-    if state.chat do
-      Tpg.Services.ChatService.quitar_oyente(state.chat, pid)
+    if state.chat_pid do
+      Tpg.Services.ChatService.quitar_oyente(state.chat_pid, pid)
     end
     {:noreply, %{state | websocket_pids: nuevos_ws}}
   end

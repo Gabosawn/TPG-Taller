@@ -27,6 +27,11 @@ defmodule Tpg.Runtime.PrivateRoom do
     GenServer.call(via_tuple(room_id), {:agregar_oyente, websocket_pid})
   end
 
+  def quitar_oyente(usuario_1, usuario_2, websocket_pid) do
+    room_id = normalize_room_id(usuario_1, usuario_2)
+    GenServer.call(via_tuple(room_id), {:quitar_oyente, websocket_pid})
+  end
+
   def agregar_mensaje(usuario_1, usuario_2, de, contenido) do
     room_id = normalize_room_id(usuario_1, usuario_2)
     GenServer.call(via_tuple(room_id), {:agregar_mensaje, de, contenido})
@@ -50,7 +55,15 @@ defmodule Tpg.Runtime.PrivateRoom do
   @impl true
   def handle_call({:agregar_oyente, websocket_pid}, _from, state) do
     new_state = %{state | listeners: [websocket_pid | state.listeners]}
-    {:reply, state.mensajes, new_state}
+    {:reply, {state.mensajes, self()}, new_state}
+  end
+
+  @impl true
+  def handle_call({:quitar_oyente, websocket_pid}, _from, state) do
+    new_listeners = Enum.reject(state.listeners, fn pid -> pid == websocket_pid end)
+
+    new_state = %{state | listeners: new_listeners}
+    {:reply, :ok, new_state}
   end
 
   @impl true
@@ -103,5 +116,5 @@ defmodule Tpg.Runtime.PrivateRoom do
     end)
   end
 
-  #Quitar oyente
+
 end

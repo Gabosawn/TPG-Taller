@@ -51,7 +51,7 @@ defmodule Tpg.Runtime.Room do
       end
 
     new_state = %{state | listeners: new_listeners}
-    {:reply, mensajes_respuesta, new_state}
+    {:reply, {mensajes_respuesta, self()}, new_state}
   end
   @impl true
   def handle_call({:quitar_oyente, websocket_pid}, _from, state) do

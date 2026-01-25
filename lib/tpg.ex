@@ -12,7 +12,6 @@ defmodule Tpg do
     Tpg.Receptores.Agendado.obtener_contactos_agenda(id_emisor)
     |> Enum.each(fn agenda ->
       Logger.info("[tpg] habilitando contacto id #{agenda.nombre}")
-      Logger.warning("[AGENDA] #{inspect(agenda)}")
       crear_canal_privado(agenda.id, id_emisor)
     end)
 
