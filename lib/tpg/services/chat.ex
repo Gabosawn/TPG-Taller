@@ -37,4 +37,7 @@ defmodule Tpg.Services.ChatService do
   def agregar_oyente(group_id, ws_pid) do
     Tpg.Runtime.Room.agregar_oyente(group_id, ws_pid)
   end
+  def quitar_oyente(group_id, ws_pid) do
+    Tpg.Runtime.Room.quitar_oyente(group_id, ws_pid)
+  end
 end

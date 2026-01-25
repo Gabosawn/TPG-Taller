@@ -18,7 +18,9 @@ defmodule Tpg.Runtime.Room do
   def agregar_oyente(group_id, websocket_pid) do
     GenServer.call(via_tuple(group_id), {:agregar_oyente, websocket_pid})
   end
-
+  def quitar_oyente(group_id, websocket_pid) do
+    GenServer.call(via_tuple(group_id), {:quitar_oyente, websocket_pid})
+  end
   def agregar_mensaje(group_id, de, contenido) do
     GenServer.call(via_tuple(group_id), {:agregar_mensaje, de, contenido})
   end
@@ -38,10 +40,30 @@ defmodule Tpg.Runtime.Room do
 
   @impl true
   def handle_call({:agregar_oyente, websocket_pid}, _from, state) do
-    new_state = %{state | listeners: [websocket_pid | state.listeners]}
+    new_listeners =
+      if websocket_pid in state.listeners do
+        Logger.debug("[room] Oyente #{inspect(websocket_pid)} ya existe en sala #{state.group_id}")
+        state.listeners
+      else
+        Process.monitor(websocket_pid)
+        [websocket_pid | state.listeners]
+      end
+    new_state = %{state | listeners: new_listeners}
     {:reply, state.mensajes, new_state}
   end
+  @impl true
+  def handle_call({:quitar_oyente, websocket_pid}, _from, state) do
+    # Remove ALL occurrences and filter out dead processes
+    new_listeners =
+      state.listeners
+      |> Enum.reject(&(&1 == websocket_pid))
+      |> Enum.filter(&Process.alive?/1)
 
+    new_state = %{state | listeners: new_listeners}
+
+    Logger.debug("[room] Cantidad oyentes: #{Enum.count(new_listeners)} , Sala: #{state.group_id}")
+    {:reply, :ok, new_state}
+  end
   @impl true
   def handle_call({:agregar_mensaje, de, contenido}, _from, state) do
     nuevo_msg = %{emisor: de, contenido: contenido, estado: "ENVIADO", fecha: DateTime.utc_now()}
@@ -68,9 +90,9 @@ defmodule Tpg.Runtime.Room do
 
   @impl true
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
-    Logger.debug("[room] Oyente desconectado: #{inspect(pid)}")
-    new_state = %{state | listeners: List.delete(state.listeners, pid)}
-    {:noreply, new_state}
+    Logger.debug("[room] Oyente #{inspect(pid)} desconectado de sala #{state.group_id}")
+    new_listeners = List.delete(state.listeners, pid)
+    {:noreply, %{state | listeners: new_listeners}}
   end
 
   # Private Functions
