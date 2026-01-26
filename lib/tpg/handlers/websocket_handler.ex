@@ -124,7 +124,7 @@ defmodule Tpg.WebSocketHandler do
     {:reply, {:text, respuesta}, state}
   end
 
-  def websocket_info({:nuevo_mensaje_recibido, mensaje}, state) do
+  def websocket_info({:nuevo_mensaje_recibido, _mensaje}, state) do
     Logger.info(
       "[ws] Recibiendo mensaje desde la sesion... Agregando a Bandeja de notificaciones"
     )
@@ -159,7 +159,7 @@ defmodule Tpg.WebSocketHandler do
     Logger.debug("[ws handeler] agendando #{nombre} en #{state.usuario}...")
 
     case SessionService.agendar(state.id, nombre) do
-      {:ok, id} ->
+      {:ok, _id} ->
         Logger.info("[ws handeler] #{nombre} agendado con #{state.usuario}")
 
         respuesta =
@@ -217,7 +217,7 @@ defmodule Tpg.WebSocketHandler do
 
         {:reply, {:text, respuesta}, state}
 
-      {:ok, mensaje} ->
+      {:ok, _mensaje} ->
         respuesta =
           Jason.encode!(%{
             tipo: "confirmacion",

@@ -1,7 +1,6 @@
 defmodule Tpg.Services.ChatService do
   require Logger
   alias Tpg.Dominio.Receptores
-  alias Tpg.Dominio.Receptores.Usuario
   alias Tpg
 
   def enviar(tipo, de, para, msg) do
@@ -26,7 +25,7 @@ defmodule Tpg.Services.ChatService do
   def crear_grupo(nombre_grupo, miembros) do
     with {:ok, miembros_validados} <- validate_miembros(miembros),
          {:ok, grupo} <- Receptores.crear_grupo(%{nombre: nombre_grupo}, miembros_validados) do
-      {:ok, pid} = Tpg.habilitar_canales(Enum.at(miembros, 0))
+      {:ok, _pid} = Tpg.habilitar_canales(Enum.at(miembros, 0))
       {:ok, grupo}
     else
       {:error, message} -> {:error, message}

@@ -1,6 +1,5 @@
 defmodule Tpg.Dominio.Receptores.Agendado do
   use Ecto.Schema
-  import Ecto.Query
 
   schema "agendas" do
     belongs_to :usuario, Tpg.Dominio.Receptores.Usuario,

@@ -1,7 +1,6 @@
 defmodule Tpg.Dominio.Receptores.UsuariosGrupo do
   use Ecto.Schema
   import Ecto.Changeset
-  import Ecto.Query
 
   @primary_key false
   schema "usuarios_grupo" do

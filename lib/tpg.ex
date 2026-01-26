@@ -60,10 +60,4 @@ defmodule Tpg do
         {:error, reason}
     end
   end
-
-  def obtener_chats_activos(user_id) do
-    usuarios = :global.registered_names()
-    Logger.debug("Usuarios activos: #{inspect(usuarios)}")
-    usuarios
-  end
 end

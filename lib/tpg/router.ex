@@ -1,4 +1,5 @@
 defmodule Tpg.Router do
+  @deprecated
   use Plug.Router
 
   plug(Plug.Parsers, parsers: [:json], json_decoder: Jason)

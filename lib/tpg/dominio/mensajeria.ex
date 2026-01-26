@@ -48,6 +48,7 @@ defmodule Tpg.Dominio.Mensajeria do
         order_by: [desc: mensaje.inserted_at]
       )
       |> Repo.all()
+    query
   end
 
   def obtener_mensajes_usuarios(user_1, user_2) do

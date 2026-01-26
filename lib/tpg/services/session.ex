@@ -85,12 +85,6 @@ defmodule Tpg.Services.SessionService do
     usuarios
   end
 
-  def obtener_chats(usuario) do
-    Tpg.obtener_chats_activos(usuario.id)
-
-    # [persona (id agenda) | grupo (id grupo)]
-  end
-
   def agendar(user_id, nombre_usuario) do
     case Usuario.agregar_contacto(user_id, nombre_usuario) do
       {:ok, res} ->

@@ -41,7 +41,6 @@ defmodule Tpg.Views.PageView do
       </div>
 
       <div>
-        <button onclick="verHistorial()">Ver Historial</button>
         <button onclick="listarUsuarios()">Usuarios Activos</button>
       </div>
       <div>

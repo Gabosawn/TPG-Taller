@@ -94,10 +94,6 @@ function desconectar() {
 function obtenerContactos() {
 }
 
-function verHistorial() {
-	ws.send(JSON.stringify({ accion: 'leer_historial' }));
-}
-
 function listarUsuarios() {
 	ws.send(JSON.stringify({ accion: 'listar_usuarios' }));
 }
@@ -114,12 +110,6 @@ function manejarMensaje(data) {
 	switch (data.tipo) {
 		case 'mensaje_nuevo':
 			agregarMensaje('nuevo', `💬 ${data.de}: ${data.mensaje}`);
-			break;
-		case 'historial':
-			agregarMensaje('sistema', '📋 Historial:');
-			data.mensajes.forEach(m => {
-				agregarMensaje('sistema', `  ${m.de}: ${m.mensaje}`);
-			});
 			break;
 		case 'usuarios_activos':
 			agregarMensaje('sistema', '👥 Usuarios: ' + data.usuarios.join(', '));

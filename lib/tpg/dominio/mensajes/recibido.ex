@@ -1,7 +1,6 @@
 defmodule Tpg.Dominio.Mensajes.Recibido do
   use Ecto.Schema
   import Ecto.Changeset
-  import Ecto.Query
 
   schema "recibidos" do
     belongs_to :receptor, Tpg.Dominio.Receptores.Receptor, foreign_key: :receptor_id
