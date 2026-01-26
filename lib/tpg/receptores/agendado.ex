@@ -17,7 +17,4 @@ defmodule Tpg.Receptores.Agendado do
     |> Tpg.Repo.all()
   end
 
-  def obtener_mensajes(usuario_1, usuario_2) do
-    Tpg.Mensajes.Recibido.obtener_mensajes_usuarios(usuario_1, usuario_2)
-  end
 end

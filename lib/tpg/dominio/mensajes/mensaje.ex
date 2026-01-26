@@ -1,4 +1,4 @@
-defmodule Tpg.Mensajes.Mensaje do
+defmodule Tpg.Dominio.Mensajes.Mensaje do
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -9,7 +9,7 @@ defmodule Tpg.Mensajes.Mensaje do
   end
 
   def changeset(attrs) do
-    cast(%Tpg.Mensajes.Mensaje{}, attrs, [:contenido, :estado])
+    cast(%Tpg.Dominio.Mensajes.Mensaje{}, attrs, [:contenido, :estado])
     |> validate_required([:contenido])
   end
 end

@@ -1,6 +1,7 @@
 defmodule Tpg.Runtime.PrivateRoom do
   use GenServer
   require Logger
+  alias Tpg.Dominio.Mensajeria
 
   defstruct listeners: [], usuarios: [], mensajes: []
 
@@ -72,7 +73,7 @@ defmodule Tpg.Runtime.PrivateRoom do
 
     para = Enum.find(state.usuarios, fn usuario -> usuario != de end)
 
-    case Tpg.Mensajes.MultiInsert.enviar_mensaje(para, de, nuevo_msg) do
+    case Mensajeria.enviar_mensaje(para, de, nuevo_msg) do
       {:ok, _mensaje} ->
         Logger.info("[ROOM-PRIVATE] Mensaje guardado: #{nuevo_msg.contenido}, de #{de}")
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
@@ -103,7 +104,7 @@ defmodule Tpg.Runtime.PrivateRoom do
   defp cargar_mensajes(usuarios) do
     usuario_1 = Enum.at(usuarios, 0)
     usuario_2 = Enum.at(usuarios, 1)
-    mensajes = Tpg.Receptores.Agendado.obtener_mensajes(usuario_1, usuario_2)
+    mensajes = Mensajeria.obtener_mensajes_usuarios(usuario_1, usuario_2)
     Logger.warning("[ROOM-#{inspect({usuario_1, usuario_2})}] Mensajes cargados: #{inspect(mensajes)}")
     %__MODULE__{usuarios: usuarios, mensajes: mensajes}
   end

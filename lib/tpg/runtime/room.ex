@@ -1,7 +1,7 @@
 defmodule Tpg.Runtime.Room do
-  alias ElixirSense.Log
   use GenServer
   require Logger
+  alias Tpg.Dominio.Mensajeria
 
   defstruct listeners: %{}, group_id: nil, mensajes: []
 
@@ -76,7 +76,7 @@ defmodule Tpg.Runtime.Room do
   def handle_call({:agregar_mensaje, de, contenido}, _from, state) do
     nuevo_msg = %{emisor: de, contenido: contenido, estado: "ENVIADO", fecha: DateTime.utc_now()}
 
-    case Tpg.Mensajes.MultiInsert.enviar_mensaje(state.group_id, de, nuevo_msg) do
+    case Mensajeria.enviar_mensaje(state.group_id, de, nuevo_msg) do
       {:ok, _mensaje} ->
         Logger.info("[room] Mensaje guardado: #{nuevo_msg.contenido}, de #{de}")
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
@@ -105,7 +105,7 @@ defmodule Tpg.Runtime.Room do
   # Private Functions
 
   defp cargar_mensajes(group_id) do
-    mensajes = Tpg.Mensajes.Recibido.get_mensajes(group_id)
+    mensajes = Mensajeria.get_mensajes(group_id)
     %__MODULE__{group_id: group_id, mensajes: mensajes}
   end
 
