@@ -1,4 +1,4 @@
-defmodule Tpg.Receptores.Receptor do
+defmodule Tpg.Dominio.Receptores.Receptor do
   use Ecto.Schema
 
   schema "receptores" do

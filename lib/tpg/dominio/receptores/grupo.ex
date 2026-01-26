@@ -1,16 +1,16 @@
-defmodule Tpg.Receptores.Grupo do
+defmodule Tpg.Dominio.Receptores.Grupo do
   use Ecto.Schema
   import Ecto.Changeset
 
   @primary_key false
   schema "grupos" do
-    belongs_to :receptores, Tpg.Receptores.Receptor, foreign_key: :receptor_id, primary_key: true
+    belongs_to :receptores, Tpg.Dominio.Receptores.Receptor, foreign_key: :receptor_id, primary_key: true
     field :nombre, :string
     field :descripcion, :string
   end
 
   def changeset(tipoOperacion, attrs) do
-    changeset = cast(%Tpg.Receptores.Grupo{}, attrs, [:receptor_id, :nombre, :descripcion])
+    changeset = cast(%Tpg.Dominio.Receptores.Grupo{}, attrs, [:receptor_id, :nombre, :descripcion])
     |> IO.inspect()
     case tipoOperacion do
       :crear -> crear_grupo(changeset)

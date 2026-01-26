@@ -1,4 +1,4 @@
-defmodule Tpg.Receptores.Usuario do
+defmodule Tpg.Dominio.Receptores.Usuario do
   use Ecto.Schema
   import Ecto.Changeset
   import Ecto.Query
@@ -6,14 +6,14 @@ defmodule Tpg.Receptores.Usuario do
 
   @primary_key false
   schema "usuarios" do
-    belongs_to :receptores, Tpg.Receptores.Receptor, foreign_key: :receptor_id, primary_key: true
+    belongs_to :receptores, Tpg.Dominio.Receptores.Receptor, foreign_key: :receptor_id, primary_key: true
     field :nombre, :string
     field :contrasenia, :string
     field :ultima_conexion, :utc_datetime
   end
 
   def changeset(tipoOperacion, attrs) do
-    changeset = cast(%Tpg.Receptores.Usuario{}, attrs, [:receptor_id, :nombre, :contrasenia])
+    changeset = cast(%Tpg.Dominio.Receptores.Usuario{}, attrs, [:receptor_id, :nombre, :contrasenia])
     |> IO.inspect()
     case tipoOperacion do
       :crear -> crear_usuario(changeset)
@@ -25,15 +25,15 @@ defmodule Tpg.Receptores.Usuario do
   end
 
   def existe?(id) do
-    Repo.get(Tpg.Receptores.Usuario, id) != nil
+    Repo.get(Tpg.Dominio.Receptores.Usuario, id) != nil
   end
 
   def listar_usuarios() do
-    Repo.all(from u in Tpg.Receptores.Usuario, select: %{nombre: u.nombre, receptor_id: u.receptor_id})
+    Repo.all(from u in Tpg.Dominio.Receptores.Usuario, select: %{nombre: u.nombre, receptor_id: u.receptor_id})
   end
 
   def obtener_usuario(attrs) do
-    Repo.get_by(Tpg.Receptores.Usuario, [nombre: attrs.nombre, contrasenia: attrs.contrasenia])
+    Repo.get_by(Tpg.Dominio.Receptores.Usuario, [nombre: attrs.nombre, contrasenia: attrs.contrasenia])
     |> cast(%{}, [])
     |> put_change(:ultima_conexion, DateTime.utc_now() |> DateTime.truncate(:second))
     |> Repo.update()
@@ -80,24 +80,24 @@ defmodule Tpg.Receptores.Usuario do
   end
 
   defp validar_usuario_existe(id_usuario) do
-    case Repo.get(Tpg.Receptores.Usuario, id_usuario) do
+    case Repo.get(Tpg.Dominio.Receptores.Usuario, id_usuario) do
       nil -> {:error, :usuario_no_existe}
       usuario -> {:ok, usuario}
     end
   end
 
   defp validar_contacto_existe(nombre_usuario) do
-    case Repo.get_by(Tpg.Receptores.Usuario, nombre: nombre_usuario) do
+    case Repo.get_by(Tpg.Dominio.Receptores.Usuario, nombre: nombre_usuario) do
       nil -> {:error, :contacto_no_existe}
       contacto -> {:ok, contacto}
     end
   end
 
   defp insertar_contacto(id_usuario, id_contacto) do
-    case Repo.get_by(Tpg.Receptores.Agendado, usuario_id: id_usuario, contacto_id: id_contacto) do
+    case Repo.get_by(Tpg.Dominio.Receptores.Agendado, usuario_id: id_usuario, contacto_id: id_contacto) do
       nil ->
         # No existe, proceder con insert
-        %Tpg.Receptores.Agendado{}
+        %Tpg.Dominio.Receptores.Agendado{}
         |> cast(%{usuario_id: id_usuario, contacto_id: id_contacto}, [:usuario_id, :contacto_id])
         |> validate_required([:usuario_id, :contacto_id])
         |> Repo.insert()

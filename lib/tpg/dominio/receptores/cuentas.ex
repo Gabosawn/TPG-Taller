@@ -1,4 +1,4 @@
-defmodule Tpg.Receptores.Cuentas do
+defmodule Tpg.Dominio.Receptores.Cuentas do
   @moduledoc """
   Contexto para gestionar usuarios y su receptor asociado.
   """
