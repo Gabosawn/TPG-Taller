@@ -124,7 +124,7 @@ defmodule Tpg.WebSocketHandler do
     {:reply, {:text, respuesta}, state}
   end
 
-  def websocket_info({:nuevo_mensaje_recibido, _mensaje}, state) do
+  def websocket_info({:notificar_mensaje_recibido, _mensaje}, state) do
     Logger.info(
       "[ws] Recibiendo mensaje desde la sesion... Agregando a Bandeja de notificaciones"
     )

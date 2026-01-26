@@ -2,6 +2,7 @@ defmodule Tpg.Runtime.PrivateRoom do
   use GenServer
   require Logger
   alias Tpg.Dominio.Mensajeria
+  alias Tpg.Services.NotificationService
 
   defstruct listeners: [], usuarios: [], mensajes: []
 
@@ -121,7 +122,7 @@ defmodule Tpg.Runtime.PrivateRoom do
 
     Enum.each(listeners, fn pid ->
       Logger.info("[ROOM-PRIVATE] Notificando usuario")
-      send(pid, {:nuevo_mensaje, mensaje})
+      NotificationService.notificar_mensaje(pid, mensaje)
     end)
   end
 end
