@@ -4,8 +4,8 @@ defmodule Tpg.Dominio.Mensajes.Recibido do
   import Ecto.Query
 
   schema "recibidos" do
-    belongs_to :receptor, Tpg.Receptores.Receptor, foreign_key: :receptor_id
-    belongs_to :mensaje, Tpg.Mensajes.Mensaje, foreign_key: :mensaje_id
+    belongs_to :receptor, Tpg.Dominio.Receptores.Receptor, foreign_key: :receptor_id
+    belongs_to :mensaje, Tpg.Dominio.Mensajes.Mensaje, foreign_key: :mensaje_id
   end
 
   def changeset(attrs) do
