@@ -4,6 +4,7 @@ defmodule Tpg do
 
   def habilitar_canales(id_emisor) do
     Logger.info("[tpg] habilitando canales.. ")
+
     Receptores.get_grupo_ids_by_usuario(id_emisor)
     |> Enum.each(fn grupo ->
       Logger.info("[tpg] habilitando grupo id #{grupo.id}")
@@ -21,9 +22,9 @@ defmodule Tpg do
 
   defp crear_canal_grupal(id_grupo) do
     case DynamicSupervisor.start_child(
-      Tpg.DynamicSupervisor,
-      {Tpg.Runtime.Room, id_grupo}
-    ) do
+           Tpg.DynamicSupervisor,
+           {Tpg.Runtime.Room, id_grupo}
+         ) do
       {:ok, pid} ->
         Logger.info("[tpg] Canal #{id_grupo} creado exitosamente")
         {:ok, pid}
@@ -40,9 +41,9 @@ defmodule Tpg do
 
   defp crear_canal_privado(usuario_1, usuario_2) do
     case DynamicSupervisor.start_child(
-      Tpg.DynamicSupervisor,
-      {Tpg.Runtime.PrivateRoom, {usuario_1, usuario_2}}
-    ) do
+           Tpg.DynamicSupervisor,
+           {Tpg.Runtime.PrivateRoom, {usuario_1, usuario_2}}
+         ) do
       {:ok, pid} ->
         Logger.info("[tpg] Canal #{inspect({usuario_1, usuario_2})} creado exitosamente")
         {:ok, pid}
@@ -52,7 +53,10 @@ defmodule Tpg do
         {:ok, pid}
 
       {:error, reason} ->
-        Logger.error("[tpg] Error al crear canal #{inspect({usuario_1, usuario_2})}: #{inspect(reason)}")
+        Logger.error(
+          "[tpg] Error al crear canal #{inspect({usuario_1, usuario_2})}: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
@@ -62,5 +66,4 @@ defmodule Tpg do
     Logger.debug("Usuarios activos: #{inspect(usuarios)}")
     usuarios
   end
-
 end

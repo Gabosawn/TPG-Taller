@@ -12,7 +12,8 @@ defmodule Tpg.WebSocketHandler do
     contrasenia = :proplists.get_value("contrasenia", qs)
     operacion = :proplists.get_value("operacion", qs)
 
-    {:cowboy_websocket, req, %{usuario: usuario, contrasenia: contrasenia, operacion: operacion, id: nil, server_pid: nil}}
+    {:cowboy_websocket, req,
+     %{usuario: usuario, contrasenia: contrasenia, operacion: operacion, id: nil, server_pid: nil}}
   end
 
   def websocket_init(state) do
@@ -25,28 +26,34 @@ defmodule Tpg.WebSocketHandler do
       {:ok, res} ->
         SessionService.registrar_cliente(res.id, self())
         # Enviar mensaje de bienvenida
-        mensaje_bienvenida = Jason.encode!(%{
-          tipo: "sistema",
-          mensaje: "Conectado como #{usuario}",
-          timestamp: DateTime.utc_now()
-        })
+        mensaje_bienvenida =
+          Jason.encode!(%{
+            tipo: "sistema",
+            mensaje: "Conectado como #{usuario}",
+            timestamp: DateTime.utc_now()
+          })
+
         state = %{state | server_pid: res.pid}
 
-        {:reply, {:text, mensaje_bienvenida}, %{state | id: res.id} }
+        {:reply, {:text, mensaje_bienvenida}, %{state | id: res.id}}
 
       {:error, {:already_started, pid}} ->
         # Usuario ya está logueado
-        mensaje_error = Jason.encode!(%{
-          tipo: "error",
-          mensaje: "Usuario #{usuario} ya está conectado"
-        })
+        mensaje_error =
+          Jason.encode!(%{
+            tipo: "error",
+            mensaje: "Usuario #{usuario} ya está conectado"
+          })
+
         {:reply, {:text, mensaje_error}, %{state | server_pid: pid}}
 
       {:error, reason} ->
-        mensaje_error = Jason.encode!(%{
-          tipo: "error",
-          mensaje: "Error al conectar: #{inspect(reason)}"
-        })
+        mensaje_error =
+          Jason.encode!(%{
+            tipo: "error",
+            mensaje: "Error al conectar: #{inspect(reason)}"
+          })
+
         {:reply, {:text, mensaje_error}, state}
     end
   end
@@ -79,17 +86,21 @@ defmodule Tpg.WebSocketHandler do
         manejar_creacion_grupo(nombre_grupo, miembros, state)
 
       {:ok, payload} ->
-        respuesta = Jason.encode!(%{
-          tipo: "error",
-          mensaje: "Acción desconocida: #{inspect(payload)}"
-        })
+        respuesta =
+          Jason.encode!(%{
+            tipo: "error",
+            mensaje: "Acción desconocida: #{inspect(payload)}"
+          })
+
         {:reply, {:text, respuesta}, state}
 
       {:error, _} ->
-        respuesta = Jason.encode!(%{
-          tipo: "error",
-          mensaje: "JSON inválido"
-        })
+        respuesta =
+          Jason.encode!(%{
+            tipo: "error",
+            mensaje: "JSON inválido"
+          })
+
         {:reply, {:text, respuesta}, state}
     end
   end
@@ -101,23 +112,33 @@ defmodule Tpg.WebSocketHandler do
   # Manejar mensajes internos de Elixir (notificaciones push)
   def websocket_info({:nuevo_mensaje, mensaje}, state) do
     Logger.info("[ws] Recibiendo mensaje...")
-    respuesta = Jason.encode!(%{
-      tipo: "mensaje_nuevo",
-      de: mensaje.emisor,
-      mensaje: mensaje.contenido,
-      timestamp: mensaje.fecha
-    })
+
+    respuesta =
+      Jason.encode!(%{
+        tipo: "mensaje_nuevo",
+        de: mensaje.emisor,
+        mensaje: mensaje.contenido,
+        timestamp: mensaje.fecha
+      })
+
     {:reply, {:text, respuesta}, state}
   end
+
   def websocket_info({:nuevo_mensaje_recibido, mensaje}, state) do
-    Logger.info("[ws] Recibiendo mensaje desde la sesion... Agregando a Bandeja de notificaciones")
+    Logger.info(
+      "[ws] Recibiendo mensaje desde la sesion... Agregando a Bandeja de notificaciones"
+    )
+
     {:no_reply, state}
   end
+
   def websocket_info({:DOWN, _ref, :process, _pid, _reason}, state) do
-    respuesta = Jason.encode!(%{
-      tipo: "sistema",
-      mensaje: "Servidor de usuario caído, reconectando..."
-    })
+    respuesta =
+      Jason.encode!(%{
+        tipo: "sistema",
+        mensaje: "Servidor de usuario caído, reconectando..."
+      })
+
     {:reply, {:text, respuesta}, state}
   end
 
@@ -130,63 +151,79 @@ defmodule Tpg.WebSocketHandler do
     if state.server_pid do
       SessionService.desloggear(state.id)
     end
+
     :ok
   end
 
   defp manejar_agregar_usuario(state, nombre) do
     Logger.debug("[ws handeler] agendando #{nombre} en #{state.usuario}...")
+
     case SessionService.agendar(state.id, nombre) do
       {:ok, id} ->
         Logger.info("[ws handeler] #{nombre} agendado con #{state.usuario}")
-        respuesta = Jason.encode!(%{
-          tipo: "confirmacion",
-          mensaje: "Usuario #{nombre} agendado correctamente"
-        })
+
+        respuesta =
+          Jason.encode!(%{
+            tipo: "confirmacion",
+            mensaje: "Usuario #{nombre} agendado correctamente"
+          })
+
         {:reply, {:text, respuesta}, state}
+
       {:error, motivo} ->
         Logger.warning("[ws handeler] #{nombre} no pudo ser agendado")
-        respuesta = Jason.encode!(%{
-          tipo: "error",
-          mensaje: "#{motivo}"
-        })
+
+        respuesta =
+          Jason.encode!(%{
+            tipo: "error",
+            mensaje: "#{motivo}"
+          })
+
         {:reply, {:text, respuesta}, state}
     end
   end
 
-def manejar_abrir_chat(tipo, id_receptor, state) do
-  {return_call, mensajes} =
-    case SessionService.oir_chat(tipo, state.id, id_receptor, self()) do
-    {:ok, mensajes} ->
-      {"chat_abierto", mensajes}
-    {:ya_esta_escuchando, mensajes} ->
-      {"do_nothing", mensajes}
-    _ ->
-      {"mostrar_error", "Error abriendo chat"}
+  def manejar_abrir_chat(tipo, id_receptor, state) do
+    {return_call, mensajes} =
+      case SessionService.oir_chat(tipo, state.id, id_receptor, self()) do
+        {:ok, mensajes} ->
+          {"chat_abierto", mensajes}
+
+        {:ya_esta_escuchando, mensajes} ->
+          {"do_nothing", mensajes}
+
+        _ ->
+          {"mostrar_error", "Error abriendo chat"}
+      end
+
+    respuesta =
+      Jason.encode!(%{
+        tipo: return_call,
+        receptor_id: state.id,
+        mensajes: mensajes
+      })
+
+    {:reply, {:text, respuesta}, state}
   end
-
-  respuesta = Jason.encode!(%{
-    tipo: return_call,
-    receptor_id: state.id,
-    mensajes: mensajes
-  })
-
-  {:reply, {:text, respuesta}, state}
-end
 
   defp manejar_envio(tipo, destinatario, mensaje, state) do
     case ChatService.enviar(tipo, state.id, destinatario, mensaje) do
       {:error, motivo} ->
-        respuesta = Jason.encode!(%{
-          tipo: "error",
-          mensaje: "#{motivo}"
-        })
+        respuesta =
+          Jason.encode!(%{
+            tipo: "error",
+            mensaje: "#{motivo}"
+          })
+
         {:reply, {:text, respuesta}, state}
 
       {:ok, mensaje} ->
-        respuesta = Jason.encode!(%{
-          tipo: "confirmacion",
-          mensaje: "Mensaje enviado}"
-        })
+        respuesta =
+          Jason.encode!(%{
+            tipo: "confirmacion",
+            mensaje: "Mensaje enviado}"
+          })
+
         {:reply, {:text, respuesta}, state}
     end
   end
@@ -194,67 +231,84 @@ end
   defp manejar_lectura_historial(state) do
     case state.server_pid do
       nil ->
-        respuesta = Jason.encode!(%{
-          tipo: "error",
-          mensaje: "No hay sesión activa"
-        })
+        respuesta =
+          Jason.encode!(%{
+            tipo: "error",
+            mensaje: "No hay sesión activa"
+          })
+
         {:reply, {:text, respuesta}, state}
 
       pid ->
         mensajes = ChatService.leer_mensajes(pid)
-        respuesta = Jason.encode!(%{
-          tipo: "historial",
-          mensajes: mensajes
-        })
+
+        respuesta =
+          Jason.encode!(%{
+            tipo: "historial",
+            mensajes: mensajes
+          })
+
         {:reply, {:text, respuesta}, state}
     end
   end
 
   defp manejar_listar_usuarios(state) do
     usuarios = SessionService.obtener_usuarios_activos()
-    respuesta = Jason.encode!(%{
-      tipo: "usuarios_activos",
-      usuarios: usuarios
-    })
+
+    respuesta =
+      Jason.encode!(%{
+        tipo: "usuarios_activos",
+        usuarios: usuarios
+      })
+
     {:reply, {:text, respuesta}, state}
   end
 
   defp manejar_listar_usuarios_db(state) do
-    usuarios = Receptores.obtener_usuarios()
-    |> Enum.filter(fn user -> user.receptor_id != state.id end)
-    respuesta = Jason.encode!(%{
-      tipo: "listar_usuarios_db",
-      usuarios: usuarios
-    })
+    usuarios =
+      Receptores.obtener_usuarios()
+      |> Enum.filter(fn user -> user.receptor_id != state.id end)
+
+    respuesta =
+      Jason.encode!(%{
+        tipo: "listar_usuarios_db",
+        usuarios: usuarios
+      })
+
     {:reply, {:text, respuesta}, state}
   end
 
   defp manejar_creacion_grupo(nombre_grupo, miembros, state) do
-    case ChatService.crear_grupo( nombre_grupo, [state.id | miembros]) do
+    case ChatService.crear_grupo(nombre_grupo, [state.id | miembros]) do
       {:ok, resultado} ->
-        respuesta = Jason.encode!(%{
-          tipo: "grupo_creado",
-          grupo: resultado.nombre,
-        })
+        respuesta =
+          Jason.encode!(%{
+            tipo: "grupo_creado",
+            grupo: resultado.nombre
+          })
+
         {:reply, {:text, respuesta}, state}
 
       {:error, motivo} ->
-        respuesta = Jason.encode!(%{
-          tipo: "error",
-          mensaje: "No se creo ningun grupo. #{motivo}"
-        })
-        {:reply, {:text, respuesta}, state}
+        respuesta =
+          Jason.encode!(%{
+            tipo: "error",
+            mensaje: "No se creo ningun grupo. #{motivo}"
+          })
 
+        {:reply, {:text, respuesta}, state}
     end
   end
 
   defp manejar_listar_conversaciones(state) do
     conversaciones = ChatService.obtener_conversaciones(state.id)
-    respuesta = Jason.encode!(%{
-      tipo: "listar_conversaciones",
-      conversaciones: conversaciones
-    })
+
+    respuesta =
+      Jason.encode!(%{
+        tipo: "listar_conversaciones",
+        conversaciones: conversaciones
+      })
+
     {:reply, {:text, respuesta}, state}
   end
-
 end

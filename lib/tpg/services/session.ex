@@ -2,13 +2,16 @@ defmodule Tpg.Services.SessionService do
   """
   Session Services module
   """
+
   require Logger
   alias Tpg.Dominio.Receptores
   alias Tpg.Services.ChatService
-  alias Tpg.Dominio.Receptores.Usuario # TODO: centralizar comportamientos en un context
+  # TODO: centralizar comportamientos en un context
+  alias Tpg.Dominio.Receptores.Usuario
 
   def loggear(typeOp, usuario) do
     Logger.info("Intentando loguear usuario: #{usuario.nombre}")
+
     case typeOp do
       :crear ->
         case Receptores.crear_usuario(usuario) do
@@ -19,9 +22,14 @@ defmodule Tpg.Services.SessionService do
           {:error, changeset} ->
             [first_error | _] = changeset.errors
             {field, {message, _opts}} = first_error
-            Logger.warning("La creación del usuario #{usuario.nombre} falló: {#{field}: #{message}}")
+
+            Logger.warning(
+              "La creación del usuario #{usuario.nombre} falló: {#{field}: #{message}}"
+            )
+
             {:error, {field, message}}
         end
+
       :conectar ->
         case Usuario.changeset(:conectar, usuario) do
           nil ->
@@ -30,9 +38,12 @@ defmodule Tpg.Services.SessionService do
 
           {:ok, usuario_encontrado} ->
             Logger.info("Usuario #{usuario.nombre} encontrado en la base de datos")
-            Tpg.habilitar_canales(usuario_encontrado.receptor_id) # carga las conversaciones que el usuario puede usar
-            crear_proceso(usuario_encontrado.receptor_id) # crea una sesion como usuario
+            # carga las conversaciones que el usuario puede usar
+            Tpg.habilitar_canales(usuario_encontrado.receptor_id)
+            # crea una sesion como usuario
+            crear_proceso(usuario_encontrado.receptor_id)
         end
+
       _ ->
         Logger.warning("Operación desconocida: #{inspect(typeOp)}")
         {:ok, usuario.nombre}
@@ -41,12 +52,13 @@ defmodule Tpg.Services.SessionService do
 
   defp crear_proceso(usuario) do
     case DynamicSupervisor.start_child(
-      Tpg.DynamicSupervisor,
-      {Tpg.Runtime.Session, usuario}
-    ) do
+           Tpg.DynamicSupervisor,
+           {Tpg.Runtime.Session, usuario}
+         ) do
       {:ok, pid} ->
         Logger.info("Usuario #{usuario} logueado exitosamente en ", usuario: usuario)
         {:ok, %{pid: pid, id: usuario}}
+
       {:error, {:already_started, pid}} ->
         Logger.warning("Usuario #{usuario} ya estaba logueado", usuario: usuario)
         {:error, {:already_started, pid}}
@@ -55,6 +67,7 @@ defmodule Tpg.Services.SessionService do
 
   def desloggear(usuario) do
     Logger.info("Intentando desloguear usuario: #{usuario}")
+
     with {:ok, pid} <- get_session_pid(usuario) do
       DynamicSupervisor.terminate_child(Tpg.DynamicSupervisor, pid)
       Logger.info("Usuario #{usuario} deslogueado exitosamente")
@@ -75,13 +88,14 @@ defmodule Tpg.Services.SessionService do
   def obtener_chats(usuario) do
     Tpg.obtener_chats_activos(usuario.id)
 
-    #[persona (id agenda) | grupo (id grupo)]
+    # [persona (id agenda) | grupo (id grupo)]
   end
 
   def agendar(user_id, nombre_usuario) do
     case Usuario.agregar_contacto(user_id, nombre_usuario) do
       {:ok, res} ->
         {:ok, res}
+
       {:error, motivo} ->
         {:error, motivo}
     end
@@ -95,6 +109,7 @@ defmodule Tpg.Services.SessionService do
       {:error, _} ->
         Logger.warning("[Session service] no hay sesion con que registrar el cliente")
         {:error, "[session service] no hay sesion con que registrar el cliente"}
+
       _ ->
         {:error, "[session service] Error: no se pudo registrar el cliente"}
     end
@@ -102,16 +117,18 @@ defmodule Tpg.Services.SessionService do
 
   def oir_chat(tipo, user_id, group_id, ws_pid) do
     with {:ok, pid} <- get_session_pid(user_id),
-      false <- GenServer.call(pid, {:esta_escuchando_canal, group_id}),
-      {:ok, mensajes, chat_pid} <- ChatService.agregar_oyente(tipo, user_id, group_id, ws_pid) do
-        Logger.info("[session service] agregando oyente...")
-        GenServer.call(pid, {:abrir_chat, chat_pid})
-        {:ok, mensajes}
+         false <- GenServer.call(pid, {:esta_escuchando_canal, group_id}),
+         {:ok, mensajes, chat_pid} <- ChatService.agregar_oyente(tipo, user_id, group_id, ws_pid) do
+      Logger.info("[session service] agregando oyente...")
+      GenServer.call(pid, {:abrir_chat, chat_pid})
+      {:ok, mensajes}
     else
       {:error, message} ->
         {:error, message}
+
       true ->
         {:ya_esta_escuchando, "La sesion ya esta escuchando este canal"}
+
       _ ->
         {:error, "[session service] error al oir chat"}
     end
@@ -122,6 +139,7 @@ defmodule Tpg.Services.SessionService do
       :undefined ->
         Logger.warning("[Session service] sesion <#{id_usuario}> no encontrada")
         {:error, :undefined}
+
       pid ->
         {:ok, pid}
     end

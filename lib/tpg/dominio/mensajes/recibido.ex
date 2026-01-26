@@ -11,7 +11,5 @@ defmodule Tpg.Dominio.Mensajes.Recibido do
   def changeset(attrs) do
     cast(%Tpg.Dominio.Mensajes.Recibido{}, attrs, [:receptor_id, :mensaje_id])
     |> validate_required([:receptor_id, :mensaje_id])
-
   end
-
 end

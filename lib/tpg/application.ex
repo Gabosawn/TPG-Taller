@@ -7,14 +7,13 @@ defmodule Tpg.Application do
       Tpg.Repo,
       {Registry, keys: :unique, name: Tpg.RoomRegistry},
       # Cowboy HTTP con dispatch personalizado
-        {Plug.Cowboy,
-        scheme: :http,
-        plug: Tpg.Router,
-        options: [
-          port: 4000,
-          dispatch: cowboy_dispatch()
-        ]
-      },
+      {Plug.Cowboy,
+       scheme: :http,
+       plug: Tpg.Router,
+       options: [
+         port: 4000,
+         dispatch: cowboy_dispatch()
+       ]},
       {DynamicSupervisor, name: Tpg.DynamicSupervisor, strategy: :one_for_one}
     ]
 
@@ -24,10 +23,11 @@ defmodule Tpg.Application do
 
   defp cowboy_dispatch do
     [
-      {:_, [
-        {"/ws", Tpg.WebSocketHandler, []},
-        {:_, Plug.Cowboy.Handler, {Tpg.Router, []}}
-      ]}
+      {:_,
+       [
+         {"/ws", Tpg.WebSocketHandler, []},
+         {:_, Plug.Cowboy.Handler, {Tpg.Router, []}}
+       ]}
     ]
   end
 end

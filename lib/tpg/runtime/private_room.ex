@@ -82,7 +82,10 @@ defmodule Tpg.Runtime.PrivateRoom do
         {:reply, {:ok, nuevo_msg}, new_state}
 
       {:error, motivo} ->
-        Logger.alert("[ROOM-PRIVATE] Mensaje perdido: #{nuevo_msg.contenido}, de #{de}. Motivo: #{inspect(motivo)}")
+        Logger.alert(
+          "[ROOM-PRIVATE] Mensaje perdido: #{nuevo_msg.contenido}, de #{de}. Motivo: #{inspect(motivo)}"
+        )
+
         {:reply, {:error, motivo}, state}
     end
   end
@@ -105,17 +108,20 @@ defmodule Tpg.Runtime.PrivateRoom do
     usuario_1 = Enum.at(usuarios, 0)
     usuario_2 = Enum.at(usuarios, 1)
     mensajes = Mensajeria.obtener_mensajes_usuarios(usuario_1, usuario_2)
-    Logger.warning("[ROOM-#{inspect({usuario_1, usuario_2})}] Mensajes cargados: #{inspect(mensajes)}")
+
+    Logger.warning(
+      "[ROOM-#{inspect({usuario_1, usuario_2})}] Mensajes cargados: #{inspect(mensajes)}"
+    )
+
     %__MODULE__{usuarios: usuarios, mensajes: mensajes}
   end
 
   defp notificar_oyentes(listeners, mensaje) do
     Logger.info("[ROOM-PRIVATE] Notificando usuario_1, usuario_2...")
+
     Enum.each(listeners, fn pid ->
       Logger.info("[ROOM-PRIVATE] Notificando usuario")
       send(pid, {:nuevo_mensaje, mensaje})
     end)
   end
-
-
 end

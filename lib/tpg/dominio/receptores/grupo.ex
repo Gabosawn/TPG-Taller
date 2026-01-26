@@ -4,14 +4,19 @@ defmodule Tpg.Dominio.Receptores.Grupo do
 
   @primary_key false
   schema "grupos" do
-    belongs_to :receptores, Tpg.Dominio.Receptores.Receptor, foreign_key: :receptor_id, primary_key: true
+    belongs_to :receptores, Tpg.Dominio.Receptores.Receptor,
+      foreign_key: :receptor_id,
+      primary_key: true
+
     field :nombre, :string
     field :descripcion, :string
   end
 
   def changeset(tipoOperacion, attrs) do
-    changeset = cast(%Tpg.Dominio.Receptores.Grupo{}, attrs, [:receptor_id, :nombre, :descripcion])
-    |> IO.inspect()
+    changeset =
+      cast(%Tpg.Dominio.Receptores.Grupo{}, attrs, [:receptor_id, :nombre, :descripcion])
+      |> IO.inspect()
+
     case tipoOperacion do
       :crear -> crear_grupo(changeset)
       _ -> {:error, "Operación no soportada"}
@@ -22,7 +27,10 @@ defmodule Tpg.Dominio.Receptores.Grupo do
     changeset
     |> validate_required([:receptor_id, :nombre])
     |> validate_length(:nombre, min: 8, max: 50)
-    |> check_constraint(:nombre, name: "tamanio_nombre", message: "El nombre debe tener entre 8 y 50 caracteres")
+    |> check_constraint(:nombre,
+      name: "tamanio_nombre",
+      message: "El nombre debe tener entre 8 y 50 caracteres"
+    )
     |> validate_length(:descripcion, max: 100)
   end
 end

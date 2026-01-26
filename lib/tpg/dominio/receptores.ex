@@ -3,6 +3,7 @@ defmodule Tpg.Dominio.Receptores do
   alias Tpg.Repo
   alias Ecto.Multi
   import Ecto.Query
+
   @moduledoc """
   Contexto para gestionar usuarios y su receptor asociado.
   """
@@ -31,26 +32,30 @@ defmodule Tpg.Dominio.Receptores do
   end
 
   def crear_grupo(attrs_grupo, miembros) do
-    multi = Multi.new()
-    |> Multi.insert(:receptores, %Receptor{tipo: "Grupo"})
-    |> Multi.insert(:grupos, fn %{receptores: receptor} ->
-      Grupo.changeset(:crear, Map.put(attrs_grupo, :receptor_id, receptor.id))
-    end)
+    multi =
+      Multi.new()
+      |> Multi.insert(:receptores, %Receptor{tipo: "Grupo"})
+      |> Multi.insert(:grupos, fn %{receptores: receptor} ->
+        Grupo.changeset(:crear, Map.put(attrs_grupo, :receptor_id, receptor.id))
+      end)
 
     # Agregar cada miembro uno por uno usando Enum.reduce
-    multi_con_miembros = Enum.reduce(miembros, multi, fn miembro_id, acc ->
-      Multi.insert(acc, {:usuario_grupo, miembro_id}, fn %{grupos: grupo} ->
-        UsuariosGrupo.changeset(:crear, %{
-          usuario_id: miembro_id,
-          grupo_id: grupo.receptor_id
-        })
+    multi_con_miembros =
+      Enum.reduce(miembros, multi, fn miembro_id, acc ->
+        Multi.insert(acc, {:usuario_grupo, miembro_id}, fn %{grupos: grupo} ->
+          UsuariosGrupo.changeset(:crear, %{
+            usuario_id: miembro_id,
+            grupo_id: grupo.receptor_id
+          })
+        end)
       end)
-    end)
 
     multi_con_miembros
     |> Repo.transaction()
     |> case do
-      {:ok, %{grupos: grupo}} -> {:ok, grupo}
+      {:ok, %{grupos: grupo}} ->
+        {:ok, grupo}
+
       {:error, _operation, changeset, _changes} ->
         message = format_changeset_message("Crear grupo", changeset)
         {:error, message}
@@ -76,11 +81,12 @@ defmodule Tpg.Dominio.Receptores do
   end
 
   defp format_changeset_message(operacion, %Ecto.Changeset{} = changeset) do
-    errores = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-      Enum.reduce(opts, msg, fn {key, value}, acc ->
-        String.replace(acc, "%{#{key}}", to_string(value))
+    errores =
+      Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+        Enum.reduce(opts, msg, fn {key, value}, acc ->
+          String.replace(acc, "%{#{key}}", to_string(value))
+        end)
       end)
-    end)
 
     errores_formateados =
       errores
@@ -91,5 +97,4 @@ defmodule Tpg.Dominio.Receptores do
 
     "Error en operación #{inspect(operacion)}: #{errores_formateados}"
   end
-
 end
