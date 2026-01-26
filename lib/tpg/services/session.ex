@@ -99,9 +99,9 @@ defmodule Tpg.Services.SessionService do
   def oir_chat(tipo, user_id, group_id, ws_pid) do
     with {:ok, pid} <- get_session_pid(user_id),
       false <- GenServer.call(pid, {:esta_escuchando_canal, group_id}),
-      :ok <- GenServer.call(pid, {:abrir_chat, group_id}) do
+      {:ok, mensajes, chat_pid} <- Tpg.Services.ChatService.agregar_oyente(tipo, user_id, group_id, ws_pid) do
         Logger.info("[session service] agregando oyente...")
-        mensajes = Tpg.Services.ChatService.agregar_oyente(tipo, user_id, group_id, ws_pid)
+        GenServer.call(pid, {:abrir_chat, chat_pid})
         {:ok, mensajes}
     else
       {:error, message} ->
