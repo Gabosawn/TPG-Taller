@@ -1,5 +1,8 @@
 defmodule Tpg.Services.ChatService do
   require Logger
+  alias Tpg.Dominio.Receptores
+  alias Tpg.Dominio.Receptores.Usuario
+  alias Tpg
 
   def enviar(tipo, de, para, msg) do
     Logger.debug("Enviando mensaje de #{inspect(de)} a #{inspect(para)}: #{msg}")
@@ -19,15 +22,16 @@ defmodule Tpg.Services.ChatService do
 
   def crear_grupo(nombre_grupo, miembros) do
     with {:ok, miembros_validados} <- validate_miembros(miembros),
-         {:ok, grupo} <- Tpg.Receptores.Cuentas.crear_grupo(%{nombre: nombre_grupo, }, miembros_validados) do
-      {:ok, grupo}
+         {:ok, grupo} <- Receptores.crear_grupo(%{nombre: nombre_grupo, }, miembros_validados) do
+          {:ok, pid} = Tpg.habilitar_canales(Enum.at(miembros, 0))
+          {:ok, grupo}
     else
       {:error, message} -> {:error, message}
     end
   end
   def validate_miembros(miembros) do
     unique_miembros = Enum.uniq(miembros)
-    users_exist = Enum.all?(unique_miembros, fn usuario -> Tpg.Receptores.Usuario.existe?(usuario) end)
+    users_exist = Enum.all?(unique_miembros, fn usuario -> Receptores.existe_usuario?(usuario) end)
 
     if users_exist do
       {:ok, unique_miembros}
@@ -36,8 +40,8 @@ defmodule Tpg.Services.ChatService do
     end
   end
   def obtener_conversaciones(id_usuario) do
-    Tpg.Receptores.Agendado.obtener_contactos_agenda(id_usuario)
-    ++ Tpg.Receptores.UsuariosGrupo.get_grupo_ids_by_usuario(id_usuario)
+    Receptores.obtener_contactos_agenda(id_usuario)
+    ++ Receptores.get_grupo_ids_by_usuario(id_usuario)
   end
   def agregar_oyente(tipo, user_id, reciever_id, ws_pid) do
     case tipo do

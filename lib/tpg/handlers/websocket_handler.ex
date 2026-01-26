@@ -3,6 +3,7 @@ defmodule Tpg.WebSocketHandler do
   require Logger
   alias Tpg.Services.ChatService
   alias Tpg.Services.SessionService
+  alias Tpg.Dominio.Receptores
 
   def init(req, _state) do
     # Extraer parámetros de la query string
@@ -154,7 +155,7 @@ defmodule Tpg.WebSocketHandler do
 
 def manejar_abrir_chat(tipo, id_receptor, state) do
   {return_call, mensajes} =
-    case Tpg.Services.SessionService.oir_chat(tipo, state.id, id_receptor, self()) do
+    case SessionService.oir_chat(tipo, state.id, id_receptor, self()) do
     {:ok, mensajes} ->
       {"chat_abierto", mensajes}
     {:ya_esta_escuchando, mensajes} ->
@@ -219,7 +220,7 @@ end
   end
 
   defp manejar_listar_usuarios_db(state) do
-    usuarios = Tpg.Receptores.Usuario.changeset(:listar, %{})
+    usuarios = Receptores.obtener_usuarios()
     |> Enum.filter(fn user -> user.receptor_id != state.id end)
     respuesta = Jason.encode!(%{
       tipo: "listar_usuarios_db",
@@ -229,7 +230,7 @@ end
   end
 
   defp manejar_creacion_grupo(nombre_grupo, miembros, state) do
-    case Tpg.Services.ChatService.crear_grupo( nombre_grupo, [state.id | miembros]) do
+    case ChatService.crear_grupo( nombre_grupo, [state.id | miembros]) do
       {:ok, resultado} ->
         respuesta = Jason.encode!(%{
           tipo: "grupo_creado",
@@ -248,7 +249,7 @@ end
   end
 
   defp manejar_listar_conversaciones(state) do
-    conversaciones = Tpg.Services.ChatService.obtener_conversaciones(state.id)
+    conversaciones = ChatService.obtener_conversaciones(state.id)
     respuesta = Jason.encode!(%{
       tipo: "listar_conversaciones",
       conversaciones: conversaciones

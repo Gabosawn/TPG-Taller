@@ -23,13 +23,4 @@ defmodule Tpg.Dominio.Receptores.UsuariosGrupo do
     |> validate_required([:usuario_id, :grupo_id], message: "El campo es obligatorio")
   end
 
-  def get_grupo_ids_by_usuario(emisor_id) do
-    from(usuario in Tpg.Dominio.Receptores.UsuariosGrupo,
-      join: grupo in Tpg.Dominio.Receptores.Grupo,
-      on: usuario.grupo_id == grupo.receptor_id,
-      where: usuario.usuario_id == ^emisor_id,
-      select: %{nombre: grupo.nombre, id: grupo.receptor_id, tipo: "grupo"}
-    )
-    |> Tpg.Repo.all()
-  end
 end

@@ -3,11 +3,15 @@ defmodule Tpg.Services.SessionService do
   Session Services module
   """
   require Logger
+  alias Tpg.Dominio.Receptores
+  alias Tpg.Services.ChatService
+  alias Tpg.Dominio.Receptores.Usuario # TODO: centralizar comportamientos en un context
+
   def loggear(typeOp, usuario) do
     Logger.info("Intentando loguear usuario: #{usuario.nombre}")
     case typeOp do
       :crear ->
-        case Tpg.Receptores.Cuentas.crear_usuario(usuario) do
+        case Receptores.crear_usuario(usuario) do
           {:ok, usuario_creado} ->
             Logger.info("Usuario #{usuario.nombre} creado en la base de datos")
             crear_proceso(usuario_creado.receptor_id)
@@ -19,7 +23,7 @@ defmodule Tpg.Services.SessionService do
             {:error, {field, message}}
         end
       :conectar ->
-        case Tpg.Receptores.Usuario.changeset(:conectar, usuario) do
+        case Usuario.changeset(:conectar, usuario) do
           nil ->
             Logger.warning("Usuario #{usuario.nombre} no encontrado o credenciales inválidas")
             {:error, :invalid_credentials}
@@ -75,7 +79,7 @@ defmodule Tpg.Services.SessionService do
   end
 
   def agendar(user_id, nombre_usuario) do
-    case Tpg.Receptores.Usuario.agregar_contacto(user_id, nombre_usuario) do
+    case Usuario.agregar_contacto(user_id, nombre_usuario) do
       {:ok, res} ->
         {:ok, res}
       {:error, motivo} ->
@@ -99,7 +103,7 @@ defmodule Tpg.Services.SessionService do
   def oir_chat(tipo, user_id, group_id, ws_pid) do
     with {:ok, pid} <- get_session_pid(user_id),
       false <- GenServer.call(pid, {:esta_escuchando_canal, group_id}),
-      {:ok, mensajes, chat_pid} <- Tpg.Services.ChatService.agregar_oyente(tipo, user_id, group_id, ws_pid) do
+      {:ok, mensajes, chat_pid} <- ChatService.agregar_oyente(tipo, user_id, group_id, ws_pid) do
         Logger.info("[session service] agregando oyente...")
         GenServer.call(pid, {:abrir_chat, chat_pid})
         {:ok, mensajes}

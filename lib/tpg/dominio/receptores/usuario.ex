@@ -24,10 +24,6 @@ defmodule Tpg.Dominio.Receptores.Usuario do
 
   end
 
-  def existe?(id) do
-    Repo.get(Tpg.Dominio.Receptores.Usuario, id) != nil
-  end
-
   def listar_usuarios() do
     Repo.all(from u in Tpg.Dominio.Receptores.Usuario, select: %{nombre: u.nombre, receptor_id: u.receptor_id})
   end
