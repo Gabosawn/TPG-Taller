@@ -97,4 +97,15 @@ defmodule Tpg.Dominio.Receptores do
 
     "Error en operación #{inspect(operacion)}: #{errores_formateados}"
   end
+
+  @spec obtener_miembros(group_id:: integer()) :: [integer()]
+  def obtener_miembros(group_id) do
+  query =
+    from(ug in UsuariosGrupo,
+      join: u in Usuario, on: ug.usuario_id == u.receptor_id,
+      where: ug.grupo_id == ^group_id,
+      select: u.receptor_id
+    )
+  |> Tpg.Repo.all()
+  end
 end

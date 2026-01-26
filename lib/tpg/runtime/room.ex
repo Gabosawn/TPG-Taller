@@ -1,9 +1,11 @@
 defmodule Tpg.Runtime.Room do
   use GenServer
   require Logger
+  alias Tpg.Services.NotificationService
   alias Tpg.Dominio.Mensajeria
+  alias Tpg.Dominio.Receptores
 
-  defstruct listeners: %{}, group_id: nil, mensajes: []
+  defstruct listeners: %{}, group_id: nil, mensajes: [], miembros: []
 
   # Client API
 
@@ -36,6 +38,7 @@ defmodule Tpg.Runtime.Room do
   @impl true
   def init(group_id) do
     room = cargar_mensajes(group_id)
+    |> cargar_miembros()
     Logger.debug("[room] room inicializado: #{inspect(room)}")
     {:ok, room}
   end
@@ -93,7 +96,7 @@ defmodule Tpg.Runtime.Room do
   def handle_call({:agregar_mensaje, de, contenido}, _from, state) do
     nuevo_msg = %{emisor: de, contenido: contenido, estado: "ENVIADO", fecha: DateTime.utc_now()}
 
-    case Mensajeria.enviar_mensaje(state.group_id, de, nuevo_msg) do
+    case Mensajeria.enviar_a_grupo(state.group_id, de, nuevo_msg, state.miembros) do
       {:ok, _mensaje} ->
         Logger.info("[room] Mensaje guardado: #{nuevo_msg.contenido}, de #{de}")
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
@@ -129,12 +132,15 @@ defmodule Tpg.Runtime.Room do
     %__MODULE__{group_id: group_id, mensajes: mensajes}
   end
 
+  defp cargar_miembros(state) do
+    %{state | miembros: Receptores.obtener_miembros(state.group_id)}
+  end
+
   defp notificar_oyentes(listeners, mensaje) do
     Logger.info("[room] Notificando usuarios...")
-
     Enum.each(Map.keys(listeners), fn pid ->
       Logger.info("[room] Notificando usuario")
-      send(pid, {:nuevo_mensaje, mensaje})
+      NotificationService.notificar_mensaje(pid, mensaje)
     end)
   end
 end

@@ -6,6 +6,7 @@ defmodule Tpg.Dominio.Mensajes.Mensaje do
     field :contenido, :string
     field :estado, :string
     timestamps()
+    has_many :recibido, Tpg.Dominio.Mensajes.Recibido
   end
 
   def changeset(attrs) do
