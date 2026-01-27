@@ -128,7 +128,7 @@ defmodule Tpg.Services.SessionService do
     end
   end
 
-  defp get_session_pid(id_usuario) do
+  def get_session_pid(id_usuario) do
     case :global.whereis_name(id_usuario) do
       :undefined ->
         Logger.warning("[Session service] sesion <#{id_usuario}> no encontrada")

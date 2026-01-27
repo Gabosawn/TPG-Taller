@@ -39,19 +39,14 @@ defmodule Tpg.Runtime.Session do
     {:reply, state.chat_pid == chat_solicitado, state}
   end
 
-  def handle_cast({:recibir, de, mensaje}, state) do
+  def handle_cast({:mensaje_leido, mensaje_id}, state) do
     nuevo_mensaje = %{
-      de: de,
-      mensaje: mensaje,
+      mensaje: mensaje_id,
       timestamp: DateTime.utc_now()
     }
-
     Enum.each(state.websocket_pids, fn ws_pid ->
-      Logger.info(
-        "Notificando a WS PID=#{inspect(ws_pid)} asociado a Usuario=#{state.usuario}, el mensaje=#{mensaje}"
-      )
-
-      send(ws_pid, {:nuevo_mensaje_recibido, de, mensaje, nuevo_mensaje.timestamp})
+      Logger.info("Notificando a WS PID=#{inspect(ws_pid)} asociado a Usuario=#{state.usuario}, el mensaje=#{nuevo_mensaje.mensaje}")
+      send(ws_pid, {:mensaje_leido, nuevo_mensaje})
     end)
 
     {:noreply, state}

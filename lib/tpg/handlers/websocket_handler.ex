@@ -3,6 +3,7 @@ defmodule Tpg.WebSocketHandler do
   require Logger
   alias Tpg.Services.ChatService
   alias Tpg.Services.SessionService
+  alias Tpg.Services.NotificationService
   alias Tpg.Dominio.Receptores
 
   def init(req, _state) do
@@ -111,16 +112,15 @@ defmodule Tpg.WebSocketHandler do
 
   # Manejar mensajes internos de Elixir (notificaciones push)
   def websocket_info({:nuevo_mensaje, mensaje}, state) do
-    Logger.info("[ws] Recibiendo mensaje...")
-
+    Logger.info("[ws] marcando mensaje como leido")
+    {:ok, _} = NotificationService.marcar_leido(state.id, mensaje.mensaje_id)
     respuesta =
       Jason.encode!(%{
         tipo: "mensaje_nuevo",
-        de: mensaje.emisor,
-        mensaje: mensaje.contenido,
-        timestamp: mensaje.fecha
+        de: mensaje.usuario.receptor_id,
+        mensaje: mensaje.mensaje.contenido,
       })
-
+    Logger.info("[ws] enviando mensaje al cliente ya marcado como leido")
     {:reply, {:text, respuesta}, state}
   end
 
@@ -131,7 +131,11 @@ defmodule Tpg.WebSocketHandler do
 
     {:no_reply, state}
   end
-
+  def websocket_info({:mensaje_leido, mensaje}, state) do
+    Logger.info("[ws] Un mensaje de los enviados fué leido")
+    IO.inspect(mensaje)
+    {:ok, state}
+  end
   def websocket_info({:DOWN, _ref, :process, _pid, _reason}, state) do
     respuesta =
       Jason.encode!(%{

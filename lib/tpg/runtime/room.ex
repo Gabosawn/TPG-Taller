@@ -97,11 +97,11 @@ defmodule Tpg.Runtime.Room do
     nuevo_msg = %{emisor: de, contenido: contenido, estado: "ENVIADO", fecha: DateTime.utc_now()}
 
     case Mensajeria.enviar_a_grupo(state.group_id, de, nuevo_msg, state.miembros) do
-      {:ok, _mensaje} ->
+      {:ok, mensaje} ->
         Logger.info("[room] Mensaje guardado: #{nuevo_msg.contenido}, de #{de}")
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
         # Notificar a todos los oyentes
-        notificar_oyentes(new_state.listeners, nuevo_msg)
+        notificar_oyentes(new_state.listeners, mensaje)
         {:reply, {:ok, nuevo_msg}, new_state}
 
       {:error, motivo} ->

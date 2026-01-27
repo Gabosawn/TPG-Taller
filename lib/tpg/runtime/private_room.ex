@@ -4,7 +4,7 @@ defmodule Tpg.Runtime.PrivateRoom do
   alias Tpg.Dominio.Mensajeria
   alias Tpg.Services.NotificationService
 
-  defstruct listeners: [], usuarios: [], mensajes: []
+  defstruct listeners: %{}, usuarios: [], mensajes: []
 
   # Client API
   defp normalize_room_id(usuario_1, usuario_2) when usuario_1 < usuario_2 do
@@ -56,14 +56,28 @@ defmodule Tpg.Runtime.PrivateRoom do
 
   @impl true
   def handle_call({:agregar_oyente, websocket_pid}, _from, state) do
-    new_state = %{state | listeners: [websocket_pid | state.listeners]}
-    {:reply, {state.mensajes, self()}, new_state}
+    {new_listeners, mensajes_respuesta} =
+      if Map.has_key?(state.listeners, websocket_pid) do
+        {state.listeners, state.mensajes}
+      else
+        monitor_ref = Process.monitor(websocket_pid)
+        {Map.put(state.listeners, websocket_pid, monitor_ref), state.mensajes}
+      end
+    new_state = %{state | listeners: new_listeners}
+    {:reply, {mensajes_respuesta, self()}, new_state}
   end
 
   @impl true
   def handle_call({:quitar_oyente, websocket_pid}, _from, state) do
-    new_listeners = Enum.reject(state.listeners, fn pid -> pid == websocket_pid end)
-
+    # Demonitorear y eliminar el oyente
+    new_listeners =
+      case Map.pop(state.listeners, websocket_pid) do
+        {nil, listeners} ->
+          listeners
+        {monitor_ref, listeners} ->
+          Process.demonitor(monitor_ref, [:flush])
+          listeners
+      end
     new_state = %{state | listeners: new_listeners}
     {:reply, :ok, new_state}
   end
@@ -75,11 +89,11 @@ defmodule Tpg.Runtime.PrivateRoom do
     para = Enum.find(state.usuarios, fn usuario -> usuario != de end)
 
     case Mensajeria.enviar_mensaje(para, de, nuevo_msg) do
-      {:ok, _mensaje} ->
+      {:ok, mensaje} ->
         Logger.info("[ROOM-PRIVATE] Mensaje guardado: #{nuevo_msg.contenido}, de #{de}")
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
         # Notificar a todos los oyentes
-        notificar_oyentes(new_state.listeners, nuevo_msg)
+        notificar_oyentes(new_state.listeners, mensaje)
         {:reply, {:ok, nuevo_msg}, new_state}
 
       {:error, motivo} ->
@@ -120,7 +134,7 @@ defmodule Tpg.Runtime.PrivateRoom do
   defp notificar_oyentes(listeners, mensaje) do
     Logger.info("[ROOM-PRIVATE] Notificando usuario_1, usuario_2...")
 
-    Enum.each(listeners, fn pid ->
+    Enum.each(Map.keys(listeners), fn pid ->
       Logger.info("[ROOM-PRIVATE] Notificando usuario")
       NotificationService.notificar_mensaje(pid, mensaje)
     end)
