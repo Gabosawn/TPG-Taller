@@ -6,7 +6,7 @@ defmodule Tpg.Services.SessionService do
   require Logger
   alias Tpg.Dominio.Receptores
   alias Tpg.Services.ChatService
-  # TODO: centralizar comportamientos en un context
+  alias Tpg.Runtime.Session
   alias Tpg.Dominio.Receptores.Usuario
 
   def loggear(typeOp, usuario) do
@@ -53,7 +53,7 @@ defmodule Tpg.Services.SessionService do
   defp crear_proceso(usuario) do
     case DynamicSupervisor.start_child(
            Tpg.DynamicSupervisor,
-           {Tpg.Runtime.Session, usuario}
+           {Session, usuario}
          ) do
       {:ok, pid} ->
         Logger.info("Usuario #{usuario} logueado exitosamente en ", usuario: usuario)

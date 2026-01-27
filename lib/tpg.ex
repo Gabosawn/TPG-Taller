@@ -1,6 +1,7 @@
 defmodule Tpg do
   require Logger
   alias Tpg.Dominio.Receptores
+  alias Tpg.Runtime.{Room, PrivateRoom}
 
   def habilitar_canales(id_emisor) do
     Logger.info("[tpg] habilitando canales.. ")
@@ -23,7 +24,7 @@ defmodule Tpg do
   defp crear_canal_grupal(id_grupo) do
     case DynamicSupervisor.start_child(
            Tpg.DynamicSupervisor,
-           {Tpg.Runtime.Room, id_grupo}
+           {Room, id_grupo}
          ) do
       {:ok, pid} ->
         Logger.info("[tpg] Canal #{id_grupo} creado exitosamente")
@@ -42,7 +43,7 @@ defmodule Tpg do
   defp crear_canal_privado(usuario_1, usuario_2) do
     case DynamicSupervisor.start_child(
            Tpg.DynamicSupervisor,
-           {Tpg.Runtime.PrivateRoom, {usuario_1, usuario_2}}
+           {PrivateRoom, {usuario_1, usuario_2}}
          ) do
       {:ok, pid} ->
         Logger.info("[tpg] Canal #{inspect({usuario_1, usuario_2})} creado exitosamente")

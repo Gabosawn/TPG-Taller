@@ -1,17 +1,17 @@
 defmodule Tpg.Services.ChatService do
   require Logger
   alias Tpg.Dominio.Receptores
-  alias Tpg
+  alias Tpg.Runtime.{Room, PrivateRoom}
 
   def enviar(tipo, de, para, msg) do
     Logger.debug("Enviando mensaje de #{inspect(de)} a #{inspect(para)}: #{msg}")
 
     case tipo do
       "grupo" ->
-        Tpg.Runtime.Room.agregar_mensaje(para, de, msg)
+        Room.agregar_mensaje(para, de, msg)
 
       "privado" ->
-        Tpg.Runtime.PrivateRoom.agregar_mensaje(de, para, de, msg)
+        PrivateRoom.agregar_mensaje(de, para, de, msg)
     end
 
     {:ok, "mensaje enviado"}
@@ -54,13 +54,13 @@ defmodule Tpg.Services.ChatService do
     case tipo do
       "grupo" ->
         Logger.info("[session service] oyente para grupo #{reciever_id}")
-        Tuple.insert_at(Tpg.Runtime.Room.agregar_oyente(reciever_id, ws_pid), 0, :ok)
+        Tuple.insert_at(Room.agregar_oyente(reciever_id, ws_pid), 0, :ok)
 
       "privado" ->
         Logger.info("[session service] oyente para chat privado #{inspect(reciever_id)}")
 
         Tuple.insert_at(
-          Tpg.Runtime.PrivateRoom.agregar_oyente(user_id, reciever_id, ws_pid),
+          PrivateRoom.agregar_oyente(user_id, reciever_id, ws_pid),
           0,
           :ok
         )

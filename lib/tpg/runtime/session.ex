@@ -1,6 +1,7 @@
 defmodule Tpg.Runtime.Session do
   use GenServer
   require Logger
+  alias Tpg.Services.ChatService
 
   def start_link(usuario) do
     GenServer.start_link(__MODULE__, usuario, name: {:global, usuario})
@@ -25,7 +26,7 @@ defmodule Tpg.Runtime.Session do
       ws_pid = Enum.at(state.websocket_pids, 0)
 
       if ws_pid && Process.alive?(ws_pid) do
-        Tpg.Services.ChatService.quitar_oyente(state.chat_pid, ws_pid)
+        ChatService.quitar_oyente(state.chat_pid, ws_pid)
         Logger.info("[session] oyente quitado #{inspect(state.chat_pid)}")
       end
     end
@@ -58,7 +59,7 @@ defmodule Tpg.Runtime.Session do
     nuevos_ws = List.delete(state.websocket_pids, pid)
 
     if state.chat_pid do
-      Tpg.Services.ChatService.quitar_oyente(state.chat_pid, pid)
+      ChatService.quitar_oyente(state.chat_pid, pid)
     end
 
     {:noreply, %{state | websocket_pids: nuevos_ws}}
