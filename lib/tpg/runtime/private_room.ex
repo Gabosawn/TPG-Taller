@@ -113,7 +113,7 @@ defmodule Tpg.Runtime.PrivateRoom do
   @impl true
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
     Logger.debug("[ROOM-PRIVATE] Oyente desconectado: #{inspect(pid)}")
-    new_state = %{state | listeners: List.delete(state.listeners, pid)}
+    new_state = %{state | listeners: Map.delete(state.listeners, pid)}
     {:noreply, new_state}
   end
 
