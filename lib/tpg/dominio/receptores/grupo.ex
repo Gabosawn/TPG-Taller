@@ -12,19 +12,8 @@ defmodule Tpg.Dominio.Receptores.Grupo do
     field :descripcion, :string
   end
 
-  def changeset(tipoOperacion, attrs) do
-    changeset =
-      cast(%Tpg.Dominio.Receptores.Grupo{}, attrs, [:receptor_id, :nombre, :descripcion])
-      |> IO.inspect()
-
-    case tipoOperacion do
-      :crear -> crear_grupo(changeset)
-      _ -> {:error, "Operación no soportada"}
-    end
-  end
-
-  def crear_grupo(changeset) do
-    changeset
+  def changeset(attrs) do
+    cast(%Tpg.Dominio.Receptores.Grupo{}, attrs, [:receptor_id, :nombre, :descripcion])
     |> validate_required([:receptor_id, :nombre])
     |> validate_length(:nombre, min: 8, max: 50)
     |> check_constraint(:nombre,

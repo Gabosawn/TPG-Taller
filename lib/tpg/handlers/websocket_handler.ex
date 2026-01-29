@@ -25,6 +25,8 @@ defmodule Tpg.WebSocketHandler do
     # Intentar loggear al usuario
     case SessionService.loggear(operacion, %{nombre: usuario, contrasenia: contrasenia}) do
       {:ok, res} ->
+
+        Logger.info("[WS] cliente registrado con la sesion #{inspect(self())}")
         SessionService.registrar_cliente(res.id, self())
         # Enviar mensaje de bienvenida
         mensaje_bienvenida =
@@ -77,9 +79,6 @@ defmodule Tpg.WebSocketHandler do
       {:ok, %{"accion" => "listar_usuarios"}} ->
         manejar_listar_usuarios(state)
 
-      {:ok, %{"accion" => "listar_conversaciones"}} ->
-        manejar_listar_conversaciones(state)
-
       {:ok, %{"accion" => "listar_usuarios_db"}} ->
         manejar_listar_usuarios_db(state)
 
@@ -106,11 +105,28 @@ defmodule Tpg.WebSocketHandler do
     end
   end
 
+
   def websocket_handle(_frame, state) do
     {:ok, state}
   end
 
   # Manejar mensajes internos de Elixir (notificaciones push)
+
+  def websocket_info({:listar_contactos, user_id}, state) do
+    Logger.info("[WS] Listando contactos para el usuario TUPLA #{state.id}")
+    Logger.info("[WS] Listando contactos para el usuario STATE #{state.id}")
+
+    conversaciones = ChatService.obtener_conversaciones(user_id)
+
+    respuesta =
+      Jason.encode!(%{
+        tipo: "listar_conversaciones",
+        conversaciones: conversaciones
+      })
+
+    {:reply, {:text, respuesta}, state}
+  end
+
   def websocket_info({:nuevo_mensaje, mensaje}, state) do
     Logger.info("[ws] marcando mensaje como leido")
     {:ok, _} = NotificationService.marcar_leido(state.id, mensaje.mensaje_id)
@@ -131,11 +147,25 @@ defmodule Tpg.WebSocketHandler do
 
     {:no_reply, state}
   end
+
+  def websocket_info({:mostrar_notificaciones, mensajes, emisor_id, tipoChat}, state) do
+    Logger.info("[WS] Se estan cargando notificaciones para el usuario #{state.id}:\n #{inspect(mensajes)}")
+    respuesta = Jason.encode!(%{
+      tipo: "notificaciones",
+      emisor_id: emisor_id,
+      tipo_chat: tipoChat,
+      mensajes: mensajes
+    })
+
+    {:reply, {:text, respuesta}, state}
+  end
+
   def websocket_info({:mensaje_leido, mensaje}, state) do
     Logger.info("[ws] Un mensaje de los enviados fué leido")
     IO.inspect(mensaje)
     {:ok, state}
   end
+
   def websocket_info({:DOWN, _ref, :process, _pid, _reason}, state) do
     respuesta =
       Jason.encode!(%{
@@ -304,15 +334,4 @@ defmodule Tpg.WebSocketHandler do
     end
   end
 
-  defp manejar_listar_conversaciones(state) do
-    conversaciones = ChatService.obtener_conversaciones(state.id)
-
-    respuesta =
-      Jason.encode!(%{
-        tipo: "listar_conversaciones",
-        conversaciones: conversaciones
-      })
-
-    {:reply, {:text, respuesta}, state}
-  end
 end

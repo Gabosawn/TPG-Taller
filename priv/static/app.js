@@ -4,6 +4,28 @@ let chatActual = null
 document.getElementById('lista-usuarios')
 
 
+function setSidebarView(view) {
+	const chats = document.getElementById('chats-usuario');
+	const notificaciones = document.getElementById('notificaciones-usuario');
+	const btnConversaciones = document.getElementById('btn-tab-conversaciones');
+	const btnNotificaciones = document.getElementById('btn-tab-notificaciones');
+
+	if (!chats || !notificaciones || !btnConversaciones || !btnNotificaciones) {
+		return;
+	}
+
+	if (view === 'notificaciones') {
+		chats.hidden = true;
+		notificaciones.hidden = false;
+		btnConversaciones.classList.remove('active');
+		btnNotificaciones.classList.add('active');
+	} else {
+		chats.hidden = false;
+		notificaciones.hidden = true;
+		btnNotificaciones.classList.remove('active');
+		btnConversaciones.classList.add('active');
+	}
+}
 
 function registrar() {
 	const usuario = document.getElementById('usuario').value;
@@ -65,7 +87,6 @@ function conectar() {
 		document.getElementById('status').style.color = 'green';
 		agregarMensaje('sistema', 'Conectado al servidor');
 		listarTodosLosUsuarios();
-		listarConversaciones();
 	};
 	
 	ws.onmessage = (event) => {
@@ -102,12 +123,11 @@ function listarTodosLosUsuarios() {
 	ws.send(JSON.stringify({ accion: 'listar_usuarios_db' }));
 }
 
-function listarConversaciones() {
-	ws.send(JSON.stringify({ accion: 'listar_conversaciones' }));
-}
-
 function manejarMensaje(data) {
 	switch (data.tipo) {
+		case 'notificaciones':
+			listar_notificaciones(data.tipo_chat, data.emisor_id ,data.mensajes);
+			break;
 		case 'mensaje_nuevo':
 			agregarMensaje('nuevo', `💬 ${data.de}: ${data.mensaje}`);
 			break;
@@ -329,4 +349,68 @@ function agregarMensaje(tipo, texto, fecha) {
 	
 	document.getElementById('mensajes').appendChild(div);
 	div.scrollIntoView();
+}
+
+function listar_notificaciones(tipo_chat, emisor_id, mensajes) {
+	const lista = document.getElementById('lista-notificaciones');
+	lista.innerHTML = '';
+
+	const tipoChat = tipo_chat ?? 'Usuario';
+	const emisorIdPayload = emisor_id ?? null;
+	const nombrePayload = null;
+
+	if (!mensajes || mensajes.length === 0) {
+		const li = document.createElement('li');
+		li.textContent = 'No hay notificaciones';
+		li.style.color = '#999';
+		lista.appendChild(li);
+		return;
+	}
+
+	const chatItemId = `${tipoChat}-${emisorIdPayload ?? ''}`.trim();
+	if (chatItemId) {
+		const chatItem = document.getElementById(chatItemId);
+		if (chatItem) chatItem.classList.add('has-notif');
+	}
+
+	const agrupadas = mensajes.reduce((acc, notificacion) => {
+		const key = notificacion.emisor ?? 'desconocido';
+		if (!acc[key]) acc[key] = [];
+		acc[key].push(notificacion);
+		return acc;
+	}, {});
+
+	Object.entries(agrupadas).forEach(([emisor, msgs]) => {
+		const card = document.createElement('li');
+		card.className = 'notif-card';
+
+		const header = document.createElement('div');
+		header.className = 'notif-header';
+		console.log('Tipo contacto aaaaaaaa:', tipoChat);
+		console.log('ID contacto aaaaaaa:', emisorIdPayload);
+		const nombre_contacto = document.getElementById(`${tipoChat}-${emisorIdPayload}`).outerText;
+		const nombre = nombrePayload ?? (tipoChat === 'Grupo' ? `Grupo ${emisor}` : `Usuario ${emisor}`);
+		header.innerHTML = `<span>${nombre_contacto}</span><span>${msgs.length}</span>`;
+		card.appendChild(header);
+
+		card.onclick = () => abrirChat(tipoChat, emisorIdPayload, nombre);
+
+		msgs.forEach(m => {
+			const row = document.createElement('div');
+			row.className = 'notif-msg';
+
+			const texto = document.createElement('span');
+			texto.textContent = m.contenido ?? '';
+
+			const fecha = document.createElement('span');
+			fecha.className = 'notif-time';
+			fecha.textContent = m.fecha ? new Date(m.fecha).toLocaleString() : '';
+
+			row.appendChild(texto);
+			row.appendChild(fecha);
+			card.appendChild(row);
+		});
+
+		lista.appendChild(card);
+	});
 }

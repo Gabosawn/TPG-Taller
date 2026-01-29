@@ -9,7 +9,7 @@ defmodule Tpg do
     Receptores.get_grupo_ids_by_usuario(id_emisor)
     |> Enum.each(fn grupo ->
       Logger.info("[tpg] habilitando grupo id #{grupo.id}")
-      crear_canal_grupal(grupo.id)
+      crear_canal_grupal(grupo.id, id_emisor)
     end)
 
     Receptores.obtener_contactos_agenda(id_emisor)
@@ -21,17 +21,19 @@ defmodule Tpg do
     {:ok, %{id: id_emisor}}
   end
 
-  defp crear_canal_grupal(id_grupo) do
+  defp crear_canal_grupal(id_grupo, emisor) do
     case DynamicSupervisor.start_child(
            Tpg.DynamicSupervisor,
            {Room, id_grupo}
          ) do
       {:ok, pid} ->
         Logger.info("[tpg] Canal #{id_grupo} creado exitosamente")
+        GenServer.call(pid, {:enviar_notificaciones, emisor})
         {:ok, pid}
 
       {:error, {:already_started, pid}} ->
         Logger.info("[tpg] Canal #{id_grupo} ya estaba activo")
+        GenServer.call(pid, {:enviar_notificaciones, emisor})
         {:ok, pid}
 
       {:error, reason} ->
@@ -40,22 +42,24 @@ defmodule Tpg do
     end
   end
 
-  defp crear_canal_privado(usuario_1, usuario_2) do
+  defp crear_canal_privado(contacto, emisor) do
     case DynamicSupervisor.start_child(
            Tpg.DynamicSupervisor,
-           {PrivateRoom, {usuario_1, usuario_2}}
+           {PrivateRoom, {contacto, emisor}}
          ) do
       {:ok, pid} ->
-        Logger.info("[tpg] Canal #{inspect({usuario_1, usuario_2})} creado exitosamente")
+        Logger.info("[tpg] Canal #{inspect({contacto, emisor})} creado exitosamente")
+        GenServer.call(pid, {:enviar_notificaciones, emisor})
         {:ok, pid}
 
       {:error, {:already_started, pid}} ->
-        Logger.info("[tpg] Canal #{inspect({usuario_1, usuario_2})} ya estaba activo")
+        Logger.info("[tpg] Canal #{inspect({contacto, emisor})} ya estaba activo")
+        GenServer.call(pid, {:enviar_notificaciones, emisor})
         {:ok, pid}
 
       {:error, reason} ->
         Logger.error(
-          "[tpg] Error al crear canal #{inspect({usuario_1, usuario_2})}: #{inspect(reason)}"
+          "[tpg] Error al crear canal #{inspect({contacto, emisor})}: #{inspect(reason)}"
         )
 
         {:error, reason}
