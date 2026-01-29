@@ -117,6 +117,12 @@ function manejarMensaje(data) {
 		case 'confirmacion':
 			agregarMensaje('sistema', '✓ ' + data.mensaje);
 			break;
+		case 'contacto_agregado':
+			agregarConversacion("privado", data.contacto.receptorId, data.contacto.nombre);
+			break;
+		case 'mensaje_bandeja':
+			agregarNotificacion(data.notificacion);
+			break;
 		case 'listar_conversaciones':
 			listar_conversaciones_response(data.conversaciones);
 			break;
@@ -140,7 +146,64 @@ function manejarMensaje(data) {
 			agregarMensaje('sistema', JSON.stringify(data));
 	}
 }
+function agregarNotificacion(notificacion) {
+	const lista = document.getElementById('bandeja-notificaciones');
+	const li = document.createElement('li');
+	
+}
+function agregarNotificacion(notificacion) {
+  const bandeja = document.getElementById('bandeja-notificaciones');
+  const contador = document.getElementById('contador-notificaciones');
+  
+  const li = document.createElement('li');
+  li.innerHTML = `
+    <div class="notificacion-contenido">
+      <strong>${notificacion.nombre}</strong>: ${notificacion.mensaje}
+      <button onclick="eliminarNotificacion(this)">✕</button>
+    </div>
+  `;
+  
+  // Agregar datos adicionales como atributos
+  if (notificacion.receptor_id) li.dataset.receptorId = notificacion.receptor_id;
+  if (notificacion.conversacion_id) li.dataset.conversacionId = notificacion.conversacion_id;
+  
+  bandeja.prepend(li);
+  
+  // Actualizar contador
+  const count = bandeja.children.length;
+  contador.textContent = count;
+  contador.style.display = count > 0 ? 'inline' : 'none';
+}
 
+function eliminarNotificacion(btn) {
+  const li = btn.closest('li');
+  li.remove();
+  
+  // Actualizar contador
+  const bandeja = document.getElementById('bandeja-notificaciones');
+  const contador = document.getElementById('contador-notificaciones');
+  const count = bandeja.children.length;
+  contador.textContent = count;
+  contador.style.display = count > 0 ? 'inline' : 'none';
+}
+
+function limpiarNotificaciones() {
+  const bandeja = document.getElementById('bandeja-notificaciones');
+  const contador = document.getElementById('contador-notificaciones');
+  bandeja.innerHTML = '';
+  contador.textContent = '0';
+  contador.style.display = 'none';
+}
+
+function agregarConversacion(tipo, id, nombre) {
+	const lista = document.getElementById('lista-conversaciones');
+	const li = document.createElement('li');
+	li.id = `${tipo}-${id}`;
+	li.textContent = nombre;
+	li.className = 'chat-item';
+	li.onclick = () => abrirChat(tipo, id, nombre);
+	lista.appendChild(li);
+}
 function listar_conversaciones_response(conversaciones) {
 	const lista = document.getElementById('lista-conversaciones');
 	lista.innerHTML = '';
@@ -155,12 +218,7 @@ function listar_conversaciones_response(conversaciones) {
 	
 
 	conversaciones.forEach(conversacion => {
-		const li = document.createElement('li');
-		li.id = `${conversacion.tipo}-${conversacion.id}`;
-		li.textContent = conversacion.nombre;
-		li.className = 'chat-item';
-		li.onclick = () => abrirChat(conversacion.tipo, conversacion.id, conversacion.nombre);
-		lista.appendChild(li);
+		agregarConversacion(conversacion.tipo, conversacion.id, conversacion.nombre);
 	});
 }
 
