@@ -55,6 +55,15 @@ defmodule Tpg.Runtime.PrivateRoom do
   end
 
   @impl true
+  def handle_call({:enviar_notificaciones, emisor}, _from, state) do
+    state.mensajes
+    |> Enum.filter(fn msg -> msg.emisor != emisor and msg.estado == "ENVIADO" end)
+    |> Tpg.Services.SessionService.mostrar_notificaciones(emisor, Enum.find(state.usuarios, fn u -> u != emisor end), "privado")
+    Logger.debug("[ROOM-PRIVATE] Notificaciones enviadas a #{emisor}")
+    {:reply, :ok, state}
+  end
+
+  @impl true
   def handle_call({:agregar_oyente, websocket_pid}, _from, state) do
     {new_listeners, mensajes_respuesta} =
       if Map.has_key?(state.listeners, websocket_pid) do

@@ -58,7 +58,7 @@ Tu sistema actualmente tiene:
     Logger.warning("[WS] Usando formato antiguo de mensaje - migrar a NotificationService")
     {:ok, state}
 
-#### Paso 1.3: Migrar Runtime.PrivateRoom
+#### Paso 1.3: Migrar Runtime.PrivateRoom --------------
 
   @impl true
   def handle_call({:agregar_mensaje, de, contenido}, _from, state) do

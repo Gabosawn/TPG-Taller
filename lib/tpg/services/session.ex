@@ -7,7 +7,6 @@ defmodule Tpg.Services.SessionService do
   alias Tpg.Dominio.Receptores
   alias Tpg.Services.ChatService
   alias Tpg.Runtime.Session
-  alias Tpg.Dominio.Receptores.Usuario
 
   def loggear(typeOp, usuario) do
     Logger.info("Intentando loguear usuario: #{usuario.nombre}")
@@ -31,16 +30,13 @@ defmodule Tpg.Services.SessionService do
         end
 
       :conectar ->
-        case Usuario.changeset(:conectar, usuario) do
+        case Receptores.obtener_usuario(usuario) do
           nil ->
             Logger.warning("Usuario #{usuario.nombre} no encontrado o credenciales inválidas")
             {:error, :invalid_credentials}
 
           {:ok, usuario_encontrado} ->
             Logger.info("Usuario #{usuario.nombre} encontrado en la base de datos")
-            # carga las conversaciones que el usuario puede usar
-            Tpg.habilitar_canales(usuario_encontrado.receptor_id)
-            # crea una sesion como usuario
             crear_proceso(usuario_encontrado.receptor_id)
         end
 
@@ -85,9 +81,9 @@ defmodule Tpg.Services.SessionService do
     usuarios
   end
 
-  @spec agendar(user_id::integer(), nombre_usuario :: String.t()) :: {:ok, %Usuario{}} | {:error, any()}
+  @spec agendar(user_id::integer(), nombre_usuario :: String.t()) :: {:ok, any()} | {:error, any()}
   def agendar(user_id, nombre_usuario) do
-    case Usuario.agregar_contacto(user_id, nombre_usuario) do
+    case Receptores.agregar_contacto(user_id, nombre_usuario) do
       {:ok, res} ->
         Logger.info("[session] usuario #{nombre_usuario} agendado correctamente por #{user_id}")
         {:ok, res}
@@ -100,6 +96,10 @@ defmodule Tpg.Services.SessionService do
   def registrar_cliente(session_id, client_pid) do
     with {:ok, pid} <- get_session_pid(session_id),
          :ok <- GenServer.call(pid, {:registrar_websocket, client_pid}) do
+
+      Logger.info("[SESSION SERVICE] cliente registrado con la sesion #{inspect(client_pid)}")
+      send(client_pid, {:listar_contactos, session_id})
+      Tpg.habilitar_canales(session_id)
       {:ok, "[session service] cliente registrado"}
     else
       {:error, _} ->
@@ -108,6 +108,21 @@ defmodule Tpg.Services.SessionService do
 
       _ ->
         {:error, "[session service] Error: no se pudo registrar el cliente"}
+    end
+  end
+
+  def mostrar_notificaciones(mensajes, session_id, emisor_id, tipoChat) do
+    Logger.debug("[SESSION SERVICE] Mensajes a notificar #{inspect(mensajes)}")
+    with {:ok, pid} <- get_session_pid(session_id),
+         :ok <- GenServer.cast(pid, {:mostrar_notificaciones, mensajes, emisor_id, tipoChat}) do
+      {:ok, "[session service] notificaciones mostradas"}
+    else
+      {:error, _} ->
+        Logger.warning("[Session service] no hay sesion con que mostrar notificaciones")
+        {:error, "[session service] no hay sesion con que mostrar notificaciones"}
+
+      _ ->
+        {:error, "[session service] Error: no se pudieron mostrar notificaciones"}
     end
   end
 

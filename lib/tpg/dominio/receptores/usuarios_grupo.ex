@@ -15,19 +15,9 @@ defmodule Tpg.Dominio.Receptores.UsuariosGrupo do
       primary_key: true
   end
 
-  def changeset(tipoOperacion, attrs) do
-    changeset =
-      cast(%Tpg.Dominio.Receptores.UsuariosGrupo{}, attrs, [:usuario_id, :grupo_id])
-      |> IO.inspect()
-
-    case tipoOperacion do
-      :crear -> crear_grupo(changeset)
-      _ -> {:error, "Operación no soportada"}
-    end
-  end
-
-  def crear_grupo(changeset) do
-    changeset
+  def changeset(attrs) do
+    cast(%Tpg.Dominio.Receptores.UsuariosGrupo{}, attrs, [:usuario_id, :grupo_id])
     |> validate_required([:usuario_id, :grupo_id], message: "El campo es obligatorio")
   end
+
 end

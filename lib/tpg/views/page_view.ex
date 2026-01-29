@@ -30,8 +30,16 @@ defmodule Tpg.Views.PageView do
 
       <div class="chat-container">
         <div class="sidebar">
-          <h3>Conversaciones</h3>
-          <ul id="lista-conversaciones"></ul>
+          <div class="sidebar-tabs">
+            <button id="btn-tab-conversaciones" class="sidebar-tab active" onclick="setSidebarView('conversaciones')">Conversaciones</button>
+            <button id="btn-tab-notificaciones" class="sidebar-tab" onclick="setSidebarView('notificaciones')">Notificaciones</button>
+          </div>
+          <div id="chats-usuario">
+            <ul id="lista-conversaciones"></ul>
+          </div>
+          <div id="notificaciones-usuario" hidden>
+            <ul id="lista-notificaciones"></ul>
+          </div>
         </div>
 
         <div class="chat-area">
