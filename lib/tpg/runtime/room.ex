@@ -105,7 +105,7 @@ defmodule Tpg.Runtime.Room do
   def handle_call({:agregar_mensaje, de, contenido}, _from, state) do
     nuevo_msg = %{emisor: de, contenido: contenido, estado: "ENVIADO", fecha: DateTime.utc_now()}
 
-    case Mensajeria.enviar_a_grupo(state.group_id, de, nuevo_msg, state.miembros) do
+    case Mensajeria.enviar_mensaje(state.group_id, de, nuevo_msg) do
       {:ok, mensaje} ->
         Logger.info("[room] Mensaje guardado: #{nuevo_msg.contenido}, de #{de}")
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
