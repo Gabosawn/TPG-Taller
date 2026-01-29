@@ -19,15 +19,6 @@ defmodule Tpg.Views.PageView do
         <button onclick="desconectar()">Desconectar</button>
       </div>
 
-      <!-- Bandeja de Notificaciones -->
-      <div class="notificaciones-container">
-        <button onclick="toggleNotificaciones()" class="btn-notificaciones">
-          🔔 Notificaciones <span id="contador-notificaciones" class="badge">0</span>
-        </button>
-        <ul id="bandeja-notificaciones" class="bandeja-notificaciones" style="display:none;">
-        </ul>
-      </div>
-
       <div class="chat-container">
         <div class="sidebar">
           <div class="sidebar-tabs">
@@ -83,11 +74,6 @@ defmodule Tpg.Views.PageView do
       </div>
 
       <script>
-        function toggleNotificaciones() {
-          const bandeja = document.getElementById('bandeja-notificaciones');
-          bandeja.style.display = bandeja.style.display === 'none' ? 'block' : 'none';
-        }
-
         function openModal(modalType) {
           const showModal = document.querySelector('.show-modal');
           const crearGrupo = document.querySelector('.crear-grupo');

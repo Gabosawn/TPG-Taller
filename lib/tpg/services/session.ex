@@ -98,7 +98,6 @@ defmodule Tpg.Services.SessionService do
          :ok <- GenServer.call(pid, {:registrar_websocket, client_pid}) do
 
       Logger.info("[SESSION SERVICE] cliente registrado con la sesion #{inspect(client_pid)}")
-      send(client_pid, {:listar_contactos, session_id})
       Tpg.habilitar_canales(session_id)
       {:ok, "[session service] cliente registrado"}
     else

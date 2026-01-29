@@ -166,11 +166,7 @@ function manejarMensaje(data) {
 			agregarMensaje('sistema', JSON.stringify(data));
 	}
 }
-function agregarNotificacion(notificacion) {
-	const lista = document.getElementById('bandeja-notificaciones');
-	const li = document.createElement('li');
-	
-}
+
 function agregarNotificacion(notificacion) {
   const bandeja = document.getElementById('bandeja-notificaciones');
   const contador = document.getElementById('contador-notificaciones');

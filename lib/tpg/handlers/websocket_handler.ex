@@ -29,6 +29,8 @@ defmodule Tpg.WebSocketHandler do
 
         Logger.info("[WS] cliente registrado con la sesion #{inspect(self())}")
         SessionService.registrar_cliente(res.id, self())
+        state = %{state | id: res.id}
+        listar_contactos(state)
         # Enviar mensaje de bienvenida
         mensaje_bienvenida =
           Jason.encode!(%{
@@ -39,7 +41,7 @@ defmodule Tpg.WebSocketHandler do
 
         state = %{state | server_pid: res.pid}
 
-        {:reply, {:text, mensaje_bienvenida}, %{state | id: res.id}}
+        {:reply, {:text, mensaje_bienvenida}, state}
 
       {:error, {:already_started, pid}} ->
         # Usuario ya está logueado
@@ -111,9 +113,11 @@ defmodule Tpg.WebSocketHandler do
     {:ok, state}
   end
 
-  # Manejar mensajes internos de Elixir (notificaciones push)
+  defp listar_contactos(state) do
+    send(self(), {:listar_conversaciones, state.id})
+  end
 
-  def websocket_info({:listar_contactos, user_id}, state) do
+  def websocket_info({:listar_conversaciones, user_id}, state) do
     Logger.info("[WS] Listando contactos para el usuario TUPLA #{state.id}")
     Logger.info("[WS] Listando contactos para el usuario STATE #{state.id}")
 
