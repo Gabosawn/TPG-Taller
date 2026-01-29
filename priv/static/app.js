@@ -40,14 +40,13 @@ function registrar() {
 		alert('Ingresa tu contraseña');
 		return;
 	}
-
+	if (ws) {
+		return;
+	}
 	ws = new WebSocket(`ws://localhost:4000/ws?operacion=crear&usuario=${usuario}&contrasenia=${contrasenia}`);
 
 	ws.onopen = () => {
-		document.getElementById('status').textContent = 'Conectado';
-		document.getElementById('status').style.color = 'green';
 		listarTodosLosUsuarios();
-		agregarMensaje('sistema', 'Conectado al servidor');
 	};
 
 	ws.onmessage = (event) => {
@@ -79,13 +78,12 @@ function conectar() {
 		alert('Ingresa tu contraseña');
 		return;
 	}
-
+	if (ws) {
+		return;
+	}
 	ws = new WebSocket(`ws://localhost:4000/ws?operacion=conectar&usuario=${usuario}&contrasenia=${contrasenia}`);
-
+	
 	ws.onopen = () => {
-		document.getElementById('status').textContent = 'Conectado';
-		document.getElementById('status').style.color = 'green';
-		agregarMensaje('sistema', 'Conectado al servidor');
 		listarTodosLosUsuarios();
 	};
 	
@@ -99,9 +97,7 @@ function conectar() {
 	};
 
 	ws.onclose = () => {
-		document.getElementById('status').textContent = 'Desconectado';
-		document.getElementById('status').style.color = 'red';
-		agregarMensaje('sistema', 'Desconectado del servidor');
+		desconectar()
 	};
 }
 
@@ -109,6 +105,9 @@ function desconectar() {
 	if (ws) {
 		ws.close();
 		ws = null;
+		document.getElementById('status').textContent = 'Desconectado';
+		document.getElementById('status').style.color = 'red';
+		agregarMensaje('sistema', 'Desconectado del servidor');
 	}
 }
 
@@ -125,6 +124,8 @@ function listarTodosLosUsuarios() {
 
 function manejarMensaje(data) {
 	switch (data.tipo) {
+		case 'bienvenida':
+			autorizar_usuario(data)
 		case 'notificaciones':
 			listar_notificaciones(data.tipo_chat, data.emisor_id ,data.mensajes);
 			break;
@@ -160,11 +161,19 @@ function manejarMensaje(data) {
 		case 'error':
 			agregarMensaje('error', '❌ ' + data.mensaje);
 			break;
+		case 'sistema':
+			agregarMensaje('Notificacion:', data.mensaje);
+			break;
 		case 'do_nothing':
 			break;
 		default:
 			agregarMensaje('sistema', JSON.stringify(data));
 	}
+}
+function autorizar_usuario(payload) {
+	document.getElementById('status').textContent = 'Conectado';
+	document.getElementById('status').style.color = 'green';
+	agregarMensaje('sistema', payload.mensaje, payload.timestamp);
 }
 
 function agregarNotificacion(notificacion) {

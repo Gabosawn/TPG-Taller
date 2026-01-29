@@ -54,4 +54,31 @@ defmodule Tpg.Handlers.NotificationHandler do
     Logger.warning("[NotificationHandler] Notificación no manejada: #{inspect(tipo)}")
     {:no_reply, state}
   end
+
+  def notificar(:error, mensaje, state) do
+    mensaje_error =
+      Jason.encode!(%{
+        tipo: "error",
+        mensaje: "#{mensaje}"
+      })
+    {:reply, {:text, mensaje_error}, state}
+  end
+  def notificar(:bienvenida, usuario, state) do
+    mensaje_bienvenida =
+      Jason.encode!(%{
+        tipo: "bienvenida",
+        mensaje: "Conectado como #{usuario}",
+        timestamp: DateTime.utc_now()
+      })
+    {:reply, {:text, mensaje_bienvenida}, state}
+  end
+  def notificar(:sistema, mensaje, state) do
+    mensaje_retorno =
+      Jason.encode!(%{
+        tipo: "sistema",
+        mensaje: "#{mensaje}",
+        timestamp: DateTime.utc_now()
+      })
+    {:reply, {:text, mensaje_retorno}, state}
+  end
 end

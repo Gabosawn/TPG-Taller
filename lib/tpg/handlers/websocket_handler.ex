@@ -22,48 +22,34 @@ defmodule Tpg.WebSocketHandler do
     usuario = state.usuario
     contrasenia = state.contrasenia
     operacion = String.to_atom(state.operacion)
-
-    # Intentar loggear al usuario
-    case SessionService.loggear(operacion, %{nombre: usuario, contrasenia: contrasenia}) do
-      {:ok, res} ->
-
-        Logger.info("[WS] cliente registrado con la sesion #{inspect(self())}")
-        SessionService.registrar_cliente(res.id, self())
-        state = %{state | id: res.id}
-        listar_contactos(state)
-        # Enviar mensaje de bienvenida
-        mensaje_bienvenida =
-          Jason.encode!(%{
-            tipo: "sistema",
-            mensaje: "Conectado como #{usuario}",
-            timestamp: DateTime.utc_now()
-          })
-
-        state = %{state | server_pid: res.pid}
-
-        {:reply, {:text, mensaje_bienvenida}, state}
-
-      {:error, {:already_started, pid}} ->
-        # Usuario ya está logueado
-        mensaje_error =
-          Jason.encode!(%{
-            tipo: "error",
-            mensaje: "Usuario #{usuario} ya está conectado"
-          })
-
-        {:reply, {:text, mensaje_error}, %{state | server_pid: pid}}
-
-      {:error, reason} ->
-        mensaje_error =
-          Jason.encode!(%{
-            tipo: "error",
-            mensaje: "Error al conectar: #{inspect(reason)}"
-          })
-
-        {:reply, {:text, mensaje_error}, state}
-    end
+    load_user(operacion, usuario, contrasenia, state)
   end
 
+  defp load_user(operacion, nombre, contrasenia, state) do
+    with {:ok, res} <- SessionService.loggear(operacion, %{nombre: nombre, contrasenia: contrasenia}),
+      {:ok, _} <- SessionService.registrar_cliente( res.id, self()) do
+        state = %{state | id: res.id}
+        state = %{state | server_pid: res.pid}
+        listar_contactos(state)
+        Logger.info("[WS] cliente registrado con la sesion #{inspect(self())}")
+        {tipo, frame, new_state} = NotificationHandler.notificar(:bienvenida, nombre, state)
+        {tipo, frame, new_state}
+      else
+        {:error, {:already_started, pid}} ->
+          {_tipo, frame, new_state} = NotificationHandler.notificar(:error, "Usuario #{nombre} ya está conectado", state)
+          send(self(), :cerrar_conexion)
+          {:reply, frame, new_state}
+
+        {:error, reason} ->
+          {_tipo, frame, new_state} = NotificationHandler.notificar(:error, "Error al conectar: #{inspect(reason)}", state)
+          send(self(), :cerrar_conexion)
+          {:reply, frame, new_state}
+        end
+  end
+  def websocket_info(:cerrar_conexion, state) do
+    Logger.info("[WS] Cerrando conexión por error de autenticación")
+    {:stop, state}
+  end
   # Manejar mensajes entrantes del cliente
   def websocket_handle({:text, json}, state) do
     case Jason.decode(json) do
@@ -217,12 +203,7 @@ defmodule Tpg.WebSocketHandler do
   else
       {:error, motivo} ->
         Logger.warning("[ws handeler] #{nombre} no pudo ser agendado")
-        respuesta =
-          Jason.encode!(%{
-            tipo: "error",
-            mensaje: "#{motivo}"
-          })
-        {:reply, {:text, respuesta}, state}
+        NotificationHandler.notificar(:error, motivo, state)
     end
   end
 
@@ -252,36 +233,17 @@ defmodule Tpg.WebSocketHandler do
   defp manejar_envio(tipo, destinatario, mensaje, state) do
     case ChatService.enviar(tipo, state.id, destinatario, mensaje) do
       {:error, motivo} ->
-        respuesta =
-          Jason.encode!(%{
-            tipo: "error",
-            mensaje: "#{motivo}"
-          })
-
-        {:reply, {:text, respuesta}, state}
+        NotificationHandler.notificar(:error, motivo, state)
 
       {:ok, _mensaje} ->
-        respuesta =
-          Jason.encode!(%{
-            tipo: "confirmacion",
-            mensaje: "Mensaje enviado}"
-          })
-
-        {:reply, {:text, respuesta}, state}
+        NotificationHandler.notificar(:sistema, "Mensaje enviado correctamente", state)
     end
   end
 
   defp manejar_lectura_historial(state) do
     case state.server_pid do
       nil ->
-        respuesta =
-          Jason.encode!(%{
-            tipo: "error",
-            mensaje: "No hay sesión activa"
-          })
-
-        {:reply, {:text, respuesta}, state}
-
+        NotificationHandler.notificar(:error, "No hay sesión activa", state)
       pid ->
         mensajes = ChatService.leer_mensajes(pid)
 
@@ -333,13 +295,7 @@ defmodule Tpg.WebSocketHandler do
         {:reply, {:text, respuesta}, state}
       else
         {:error, motivo} ->
-          respuesta =
-            Jason.encode!(%{
-              tipo: "error",
-              mensaje: "No se creo ningun grupo. #{motivo}"
-            })
-
-          {:reply, {:text, respuesta}, state}
+          NotificationHandler.notificar(:error, "No se creo ningun grupo. #{motivo}", state)
       end
   end
 
