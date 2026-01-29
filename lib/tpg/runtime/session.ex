@@ -69,4 +69,17 @@ defmodule Tpg.Runtime.Session do
     # actualmente solo se puede relacionar un websocket con una sola sesion
     %{state | websocket_pids: [websocket_pid]}
   end
+
+  @spec handle_call({:notificar, tipo :: atom(), mensaje::Map}, any, state :: map()) :: {:noreply, map()}
+  def handle_call({:notificar, tipo, mensaje}, _, state) do
+    Logger.info("[session] recibiendo llamado de notificacion...")
+    ws_pid = List.first(state.websocket_pids)
+
+    if ws_pid && Process.alive?(ws_pid) do
+      send(ws_pid, {:notificacion, tipo, mensaje})
+      {:reply, {:ok, "[session] notificacion enviada"}, state}
+    else
+      {:reply, {:error, "[session] WebSocket no disponible"}, state}
+    end
+  end
 end

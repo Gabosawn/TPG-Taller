@@ -2,6 +2,7 @@ defmodule Tpg.Services.NotificationService do
   require Logger
   alias Tpg.Repo
   alias Tpg.Dominio.Mensajes.{Recibido, Enviado, Mensaje}
+  alias Tpg.Dominio.Receptores.Usuario
   alias Tpg.Services.SessionService
   import Ecto.Query
   @doc """
@@ -67,4 +68,22 @@ defmodule Tpg.Services.NotificationService do
         Logger.info("[notification] notificacion de lectura enviada a su emisor")
     end
   end
+
+  @doc """
+  Notifica a un usuario objetivo que fué agendado por otro usuario remitente como contacto
+  contacto: Usuario emisor
+  usuario_id: Usuario objetivo de la notificacion
+  """
+  @spec notificar( :contacto_agregado, usuario_id:: integer(), contacto:: %{}) :: {:ok, %Usuario{}} | {:error, any()}
+  def notificar(:contacto_agregado, usuario_id, contacto) do
+    mensaje = %{contacto: contacto, por: usuario_id}
+    with {:ok, session_pid} <- SessionService.get_session_pid(usuario_id),
+      {:ok, mensaje} <- GenServer.call(session_pid, {:notificar, :agregado_como_contacto, mensaje}) do
+        Logger.info("[notification service] notificacion enviada")
+        {:ok, mensaje}
+    else
+      {:error, mensaje} ->
+        {:error, mensaje}
+      end
+    end
 end

@@ -85,12 +85,14 @@ defmodule Tpg.Services.SessionService do
     usuarios
   end
 
+  @spec agendar(user_id::integer(), nombre_usuario :: String.t()) :: {:ok, %Usuario{}} | {:error, any()}
   def agendar(user_id, nombre_usuario) do
     case Usuario.agregar_contacto(user_id, nombre_usuario) do
       {:ok, res} ->
+        Logger.info("[session] usuario #{nombre_usuario} agendado correctamente por #{user_id}")
         {:ok, res}
-
       {:error, motivo} ->
+        Logger.warning("[session] #{nombre_usuario} no pudo ser agendado")
         {:error, motivo}
     end
   end

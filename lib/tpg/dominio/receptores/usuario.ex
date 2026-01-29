@@ -109,6 +109,7 @@ defmodule Tpg.Dominio.Receptores.Usuario do
     )
   end
 
+  @spec agregar_contacto(id_usuario :: integer(), nombre_usuario :: String.t()) :: {:ok, %__MODULE__{}} | {:error, String.t()}
   def agregar_contacto(id_usuario, nombre_usuario) do
     with {:ok, usuario} <- validar_usuario_existe(id_usuario),
          {:ok, contacto} <- validar_contacto_existe(nombre_usuario),

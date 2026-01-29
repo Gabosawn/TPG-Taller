@@ -5,6 +5,7 @@ defmodule Tpg.WebSocketHandler do
   alias Tpg.Services.SessionService
   alias Tpg.Services.NotificationService
   alias Tpg.Dominio.Receptores
+  alias Tpg.Handlers.NotificationHandler
 
   def init(req, _state) do
     # Extraer parámetros de la query string
@@ -146,6 +147,15 @@ defmodule Tpg.WebSocketHandler do
     {:reply, {:text, respuesta}, state}
   end
 
+  @doc """
+  Cuando se recibe una notificación desde algun punto del sistema, se delega al handler la respuesta que se debe devolver
+  """
+  def websocket_info({:notificacion, tipo, notificacion}, state) do
+    Logger.info("[ws] Recibiendo notificacion...")
+    IO.inspect({tipo, notificacion})
+    NotificationHandler.handle_notification(tipo, notificacion, state)
+  end
+
   def websocket_info(_info, state) do
     {:ok, state}
   end
@@ -161,28 +171,23 @@ defmodule Tpg.WebSocketHandler do
 
   defp manejar_agregar_usuario(state, nombre) do
     Logger.debug("[ws handeler] agendando #{nombre} en #{state.usuario}...")
-
-    case SessionService.agendar(state.id, nombre) do
-      {:ok, _id} ->
-        Logger.info("[ws handeler] #{nombre} agendado con #{state.usuario}")
-
-        respuesta =
-          Jason.encode!(%{
-            tipo: "confirmacion",
-            mensaje: "Usuario #{nombre} agendado correctamente"
-          })
-
-        {:reply, {:text, respuesta}, state}
-
+    with {:ok, res} <- SessionService.agendar(state.id, nombre),
+        {:ok, _} = NotificationService.notificar(:contacto_agregado, res.contacto.contacto_id, %{receptor_id: state.id, nombre: state.usuario}) do
+          Logger.info("[ws handeler] #{nombre} agendado con #{state.usuario}")
+          respuesta =
+            Jason.encode!(%{
+              tipo: "confirmacion",
+              mensaje: "Usuario #{nombre} agendado correctamente"
+            })
+          {:reply, {:text, respuesta}, state}
+  else
       {:error, motivo} ->
         Logger.warning("[ws handeler] #{nombre} no pudo ser agendado")
-
         respuesta =
           Jason.encode!(%{
             tipo: "error",
             mensaje: "#{motivo}"
           })
-
         {:reply, {:text, respuesta}, state}
     end
   end

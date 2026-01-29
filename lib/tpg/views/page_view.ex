@@ -1,4 +1,3 @@
-# lib/tpg/views/page_view.ex
 defmodule Tpg.Views.PageView do
   def render_index do
     """
@@ -18,6 +17,15 @@ defmodule Tpg.Views.PageView do
         <button onclick="registrar()">Registrar</button>
         <button onclick="conectar()">Conectar</button>
         <button onclick="desconectar()">Desconectar</button>
+      </div>
+
+      <!-- Bandeja de Notificaciones -->
+      <div class="notificaciones-container">
+        <button onclick="toggleNotificaciones()" class="btn-notificaciones">
+          🔔 Notificaciones <span id="contador-notificaciones" class="badge">0</span>
+        </button>
+        <ul id="bandeja-notificaciones" class="bandeja-notificaciones" style="display:none;">
+        </ul>
       </div>
 
       <div class="chat-container">
@@ -63,19 +71,23 @@ defmodule Tpg.Views.PageView do
           <h3>Agregar Contacto</h3>
           <input type="text" id="nombre-usuario" placeholder="Nombre de Usuario" />
           <button onclick="agregarUsuario()">Agendar Contacto</button>
+        </div>
       </div>
 
       <script>
+        function toggleNotificaciones() {
+          const bandeja = document.getElementById('bandeja-notificaciones');
+          bandeja.style.display = bandeja.style.display === 'none' ? 'block' : 'none';
+        }
+
         function openModal(modalType) {
           const showModal = document.querySelector('.show-modal');
           const crearGrupo = document.querySelector('.crear-grupo');
           const agregarContacto = document.querySelector('.agregar-contacto');
 
-          // Hide all modals first
           crearGrupo.style.display = 'none';
           agregarContacto.style.display = 'none';
 
-          // Show the requested modal
           if (modalType === 'grupo') {
             showModal.style.display = 'block';
             crearGrupo.style.display = 'block';
@@ -90,7 +102,6 @@ defmodule Tpg.Views.PageView do
           const crearGrupo = document.querySelector('.crear-grupo');
           const agregarContacto = document.querySelector('.agregar-contacto');
 
-          // Hide everything
           showModal.style.display = 'none';
           crearGrupo.style.display = 'none';
           agregarContacto.style.display = 'none';
