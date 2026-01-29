@@ -138,8 +138,8 @@ function manejarMensaje(data) {
 		case 'confirmacion':
 			agregarMensaje('sistema', '✓ ' + data.mensaje);
 			break;
-		case 'contacto_agregado':
-			agregarConversacion("privado", data.contacto.receptorId, data.contacto.nombre);
+		case 'contacto_nuevo':
+			agregarConversacion(data.tipo_contacto, data.contacto.receptorId, data.contacto.nombre);
 			break;
 		case 'mensaje_bandeja':
 			agregarNotificacion(data.notificacion);

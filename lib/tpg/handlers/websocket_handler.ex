@@ -191,15 +191,12 @@ defmodule Tpg.WebSocketHandler do
 
   defp manejar_agregar_usuario(state, nombre) do
     Logger.debug("[ws handeler] agendando #{nombre} en #{state.usuario}...")
-    with {:ok, res} <- SessionService.agendar(state.id, nombre),
-        {:ok, _} = NotificationService.notificar(:contacto_agregado, res.contacto.contacto_id, %{receptor_id: state.id, nombre: state.usuario}) do
+    with {:ok, agendado} <- SessionService.agendar(state.id, nombre),
+        {:ok, _} = NotificationService.notificar(:contacto_agregado, agendado.contacto.contacto_id, %{receptor_id: state.id, nombre: state.usuario}) do
           Logger.info("[ws handeler] #{nombre} agendado con #{state.usuario}")
-          respuesta =
-            Jason.encode!(%{
-              tipo: "confirmacion",
-              mensaje: "Usuario #{nombre} agendado correctamente"
-            })
-          {:reply, {:text, respuesta}, state}
+          {_tipo, frame1, state1} = NotificationHandler.notificar(:sistema, "Usuario #{nombre} agendado correctamente", state)
+          {_tipo, frame2, state2} = NotificationHandler.handle_notification(:contacto_nuevo, %{tipo: "privado", receptor_id: agendado.contacto.contacto_id, nombre: nombre}, state1)
+          {:reply, [frame1, frame2], state2}
   else
       {:error, motivo} ->
         Logger.warning("[ws handeler] #{nombre} no pudo ser agendado")

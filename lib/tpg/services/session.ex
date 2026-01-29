@@ -5,6 +5,7 @@ defmodule Tpg.Services.SessionService do
 
   require Logger
   alias Tpg.Dominio.Receptores
+  alias Tpg.Dominio.Receptores.Agendado
   alias Tpg.Services.ChatService
   alias Tpg.Runtime.Session
 
@@ -81,7 +82,7 @@ defmodule Tpg.Services.SessionService do
     usuarios
   end
 
-  @spec agendar(user_id::integer(), nombre_usuario :: String.t()) :: {:ok, any()} | {:error, any()}
+  @spec agendar(user_id::integer(), nombre_usuario :: String.t()) :: {:ok, %Agendado{}} | {:error, any()}
   def agendar(user_id, nombre_usuario) do
     case Receptores.agregar_contacto(user_id, nombre_usuario) do
       {:ok, res} ->

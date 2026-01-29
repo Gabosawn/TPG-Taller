@@ -9,18 +9,19 @@ defmodule Tpg.Handlers.NotificationHandler do
   Procesa una notificación y genera la respuesta apropiada para el cliente
   """
 
-  # def handle_notification(:contacto_agregado, %{contacto: contacto, por: remitente_id}, state) do
-  #
-  #   respuesta = %{
-  #     tipo: "contacto_agregado",
-  #     contacto: %{
-  #       receptor_id: contacto.receptor_id,
-  #       nombre: contacto.nombre
-  #     },
-  #   }
+  def handle_notification(:contacto_nuevo, %{tipo: tipo, receptor_id: receptor_id, nombre: nombre}, state) do
 
-  #   {:reply, Jason.encode!(respuesta), state}
-  # end
+    respuesta = %{
+      tipo: "contacto_nuevo",
+      contacto: %{
+        tipo_contacto: tipo,
+        receptor_id: receptor_id,
+        nombre: nombre
+      },
+    }
+
+    {:reply, {:text, Jason.encode!(respuesta)}, state}
+  end
 
   def handle_notification(:agregado_como_contacto, %{contacto: contacto, por: remitente_id}, state) do
     Logger.info("[notification handler] notificacion recibida")
