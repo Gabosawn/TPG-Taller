@@ -288,25 +288,25 @@ defmodule Tpg.WebSocketHandler do
   end
 
   defp manejar_creacion_grupo(nombre_grupo, miembros, state) do
-    case ChatService.crear_grupo(nombre_grupo, [state.id | miembros]) do
-      {:ok, resultado} ->
+    with {:ok, grupo} = ChatService.crear_grupo(nombre_grupo, [state.id | miembros]),
+      {:ok, _} = NotificationService.notificar(:grupo_creado, miembros, %{grupo: grupo, creador: %{nombre: state.usuario, id: state.id}}) do
         respuesta =
           Jason.encode!(%{
             tipo: "grupo_creado",
-            grupo: resultado.nombre
+            grupo: grupo.nombre
           })
 
         {:reply, {:text, respuesta}, state}
+      else
+        {:error, motivo} ->
+          respuesta =
+            Jason.encode!(%{
+              tipo: "error",
+              mensaje: "No se creo ningun grupo. #{motivo}"
+            })
 
-      {:error, motivo} ->
-        respuesta =
-          Jason.encode!(%{
-            tipo: "error",
-            mensaje: "No se creo ningun grupo. #{motivo}"
-          })
-
-        {:reply, {:text, respuesta}, state}
-    end
+          {:reply, {:text, respuesta}, state}
+      end
   end
 
   defp manejar_listar_conversaciones(state) do

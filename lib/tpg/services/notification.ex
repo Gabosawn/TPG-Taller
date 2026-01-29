@@ -70,20 +70,49 @@ defmodule Tpg.Services.NotificationService do
   end
 
   @doc """
+  Envia a un id una notificacion con un mensaje. Si no encuentra a ese id en linea, no hace nada.
+  """
+  @spec enviar_notificacion(usuario_id::integer(), mensaje:: atom(), notificacion:: map()) ::  {:ok, any()} | {:pass | :error, any()}
+  defp enviar_notificacion(usuario_id, mensaje, notificacion) do
+    with {:ok, session_pid} <- SessionService.get_session_pid(usuario_id),
+      {:ok, mensaje} <- GenServer.call(session_pid, {:notificar, mensaje, notificacion}) do
+        Logger.info("[notification service] notificacion enviada")
+        {:ok, mensaje}
+    else
+      {:error, :undefined} ->
+        {:pass, "Usuario fuera de linea"}
+      {:error, mensaje} ->
+        {:error, mensaje}
+    end
+  end
+  @doc """
   Notifica a un usuario objetivo que fué agendado por otro usuario remitente como contacto
   contacto: Usuario emisor
   usuario_id: Usuario objetivo de la notificacion
   """
-  @spec notificar( :contacto_agregado, usuario_id:: integer(), contacto:: %{}) :: {:ok, %Usuario{}} | {:error, any()}
+  @spec notificar( :contacto_agregado, usuario_id:: integer(), contacto:: %{}) :: {:ok, any()} | {:error, any()}
   def notificar(:contacto_agregado, usuario_id, contacto) do
     mensaje = %{contacto: contacto, por: usuario_id}
-    with {:ok, session_pid} <- SessionService.get_session_pid(usuario_id),
-      {:ok, mensaje} <- GenServer.call(session_pid, {:notificar, :agregado_como_contacto, mensaje}) do
-        Logger.info("[notification service] notificacion enviada")
+    case enviar_notificacion(usuario_id, :agregado_como_contacto, mensaje) do
+      {:ok, mensaje} ->
         {:ok, mensaje}
-    else
       {:error, mensaje} ->
         {:error, mensaje}
-      end
+      {:pass, mensaje} ->
+        {:ok, mensaje}
     end
+  end
+
+  @doc """
+  Notifica a un grupo de usuarios que fueron agregados a un grupo
+  miembros: Lista de id's Usuarios objetivo de la notificacion
+  usuario_id: Usuario objetivo de la notificacion
+  """
+  @spec notificar( :grupo_creado, miembros :: [integer()], contexto:: %{}) :: {:ok, any()} | {:error, String.t()}
+  def notificar(:grupo_creado, miembros, contexto) do
+    mensaje = %{grupo: contexto.grupo, por: contexto.creador}
+    Enum.each(miembros, fn usuario_id ->
+      notificar(:grupo_creado, usuario_id, mensaje)
+    end)
+  end
 end
