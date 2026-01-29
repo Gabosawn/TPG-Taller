@@ -244,8 +244,6 @@ function abrirChat(tipo, receptorId, nombreReceptor) {
 }
 
 function mostrarChat(receptorId, mensajes) {
-	console.log('Mostrando chat con receptor ID:', receptorId);
-	console.log('Mensajes recibidos:', mensajes);
 	const mensajesDiv = document.getElementById('mensajes');
 	mensajesDiv.innerHTML = '';
 
@@ -353,11 +351,13 @@ function agregarMensaje(tipo, texto, fecha) {
 
 function listar_notificaciones(tipo_chat, emisor_id, mensajes) {
 	const lista = document.getElementById('lista-notificaciones');
-	lista.innerHTML = '';
+	
+	console.log('Tipo recibidas:', tipo_chat);
+	console.log('Emisor recibidas:', emisor_id);
+	console.log('Notificaciones recibidas:', mensajes);
 
 	const tipoChat = tipo_chat ?? 'Usuario';
 	const emisorIdPayload = emisor_id ?? null;
-	const nombrePayload = null;
 
 	if (!mensajes || mensajes.length === 0) {
 		const li = document.createElement('li');
@@ -386,14 +386,11 @@ function listar_notificaciones(tipo_chat, emisor_id, mensajes) {
 
 		const header = document.createElement('div');
 		header.className = 'notif-header';
-		console.log('Tipo contacto aaaaaaaa:', tipoChat);
-		console.log('ID contacto aaaaaaa:', emisorIdPayload);
 		const nombre_contacto = document.getElementById(`${tipoChat}-${emisorIdPayload}`).outerText;
-		const nombre = nombrePayload ?? (tipoChat === 'Grupo' ? `Grupo ${emisor}` : `Usuario ${emisor}`);
 		header.innerHTML = `<span>${nombre_contacto}</span><span>${msgs.length}</span>`;
 		card.appendChild(header);
 
-		card.onclick = () => abrirChat(tipoChat, emisorIdPayload, nombre);
+		card.onclick = () => abrirChat(tipoChat, emisorIdPayload, nombre_contacto);
 
 		msgs.forEach(m => {
 			const row = document.createElement('div');
