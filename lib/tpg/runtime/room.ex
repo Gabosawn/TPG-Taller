@@ -151,5 +151,9 @@ defmodule Tpg.Runtime.Room do
       Logger.info("[room] Notificando usuario")
       NotificationService.notificar_mensaje(pid, mensaje)
     end)
+    # Enum.each(Map.keys(listeners), fn pid ->
+    #   Logger.info("[room] Notificando usuario")
+    #   NotificationService.notificar_mensaje(pid, mensaje)
+    # end)
   end
 end
