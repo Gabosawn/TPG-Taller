@@ -6,11 +6,9 @@ defmodule Tpg.Handlers.NotificationHandler do
   require Logger
 
   @doc """
-  Procesa una notificación y genera la respuesta apropiada para el cliente
+  Notifica al cliente que tiene un contacto nuevo con el que puede comunicarse
   """
-
   def handle_notification(:contacto_nuevo, %{tipo: tipo, receptor_id: receptor_id, nombre: nombre}, state) do
-
     respuesta = %{
       tipo: "contacto_nuevo",
       contacto: %{
@@ -19,36 +17,39 @@ defmodule Tpg.Handlers.NotificationHandler do
         nombre: nombre
       },
     }
-
+    IO.inspect(respuesta)
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
 
+  @doc """
+  Notifica al cliente que fué agregado como contacto por alguien
+  """
   def handle_notification(:agregado_como_contacto, %{contacto: contacto, por: remitente_id}, state) do
     Logger.info("[notification handler] notificacion recibida")
     respuesta = %{
-      tipo: "mensaje_bandeja",
+      tipo: "notificacion_bandeja",
       notificacion: %{
         receptor_id: contacto.receptor_id,
         nombre: contacto.nombre,
-        mensaje: "#{contacto.nombre} te agregó como contacto"
+        mensaje: "#{contacto.nombre} te agregó como contacto",
+        conversacion_id: "privado-#{contacto.receptor_id}"
       },
     }
     respuesta
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
 
-  def handle_notification(:grupo_creado, %{grupo: grupo, creador: creador_id}, state) do
+  def handle_notification(:grupo_creado, %{grupo: grupo, creador: creador}, state) do
     respuesta = %{
-      tipo: "grupo_creado",
-      grupo: %{
-        id: grupo.id,
-        nombre: grupo.nombre,
-        miembros: grupo.miembros
-      },
-      creado_por: creador_id
+      tipo: "notificacion_bandeja",
+      notificacion: %{
+        receptor_id: grupo.id,
+        nombre: creador.nombre,
+        mensaje: "#{creador.nombre} te agregó a un nuevo grupo",
+        conversacion_id: "grupo-#{grupo.id}"
+      }
     }
-
-    {:reply, Jason.encode!(respuesta), state}
+    {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
   # Catch-all para notificaciones desconocidas
   def handle_notification(tipo, payload, state) do

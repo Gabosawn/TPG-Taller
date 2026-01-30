@@ -139,9 +139,9 @@ function manejarMensaje(data) {
 			agregarMensaje('sistema', '✓ ' + data.mensaje);
 			break;
 		case 'contacto_nuevo':
-			agregarConversacion(data.tipo_contacto, data.contacto.receptorId, data.contacto.nombre);
+			agregarConversacion(data.contacto.tipo_contacto, data.contacto.receptor_id, data.contacto.nombre);
 			break;
-		case 'mensaje_bandeja':
+		case 'notificacion_bandeja':
 			agregarNotificacion(data.notificacion);
 			break;
 		case 'listar_conversaciones':
@@ -176,50 +176,6 @@ function autorizar_usuario(payload) {
 	agregarMensaje('sistema', payload.mensaje, payload.timestamp);
 }
 
-function agregarNotificacion(notificacion) {
-  const bandeja = document.getElementById('bandeja-notificaciones');
-  const contador = document.getElementById('contador-notificaciones');
-  
-  const li = document.createElement('li');
-  li.innerHTML = `
-    <div class="notificacion-contenido">
-      <strong>${notificacion.nombre}</strong>: ${notificacion.mensaje}
-      <button onclick="eliminarNotificacion(this)">✕</button>
-    </div>
-  `;
-  
-  // Agregar datos adicionales como atributos
-  if (notificacion.receptor_id) li.dataset.receptorId = notificacion.receptor_id;
-  if (notificacion.conversacion_id) li.dataset.conversacionId = notificacion.conversacion_id;
-  
-  bandeja.prepend(li);
-  
-  // Actualizar contador
-  const count = bandeja.children.length;
-  contador.textContent = count;
-  contador.style.display = count > 0 ? 'inline' : 'none';
-}
-
-function eliminarNotificacion(btn) {
-  const li = btn.closest('li');
-  li.remove();
-  
-  // Actualizar contador
-  const bandeja = document.getElementById('bandeja-notificaciones');
-  const contador = document.getElementById('contador-notificaciones');
-  const count = bandeja.children.length;
-  contador.textContent = count;
-  contador.style.display = count > 0 ? 'inline' : 'none';
-}
-
-function limpiarNotificaciones() {
-  const bandeja = document.getElementById('bandeja-notificaciones');
-  const contador = document.getElementById('contador-notificaciones');
-  bandeja.innerHTML = '';
-  contador.textContent = '0';
-  contador.style.display = 'none';
-}
-
 function agregarConversacion(tipo, id, nombre) {
 	const lista = document.getElementById('lista-conversaciones');
 	const li = document.createElement('li');
@@ -240,7 +196,6 @@ function listar_conversaciones_response(conversaciones) {
 		lista.appendChild(li);
 		return;
 	}
-	
 
 	conversaciones.forEach(conversacion => {
 		agregarConversacion(conversacion.tipo, conversacion.id, conversacion.nombre);
@@ -373,7 +328,6 @@ function crearGrupo() {
 	
 	document.getElementById('nombre-grupo').value = '';
 	checkboxes.forEach(cb => cb.checked = false);
-	listarConversaciones();
 }
 
 function agregarUsuario() {
@@ -416,20 +370,11 @@ function agregarMensaje(tipo, texto, fecha) {
 
 function listar_notificaciones(tipo_chat, emisor_id, mensajes) {
 	const lista = document.getElementById('lista-notificaciones');
-	lista.innerHTML = '';
 
 	const tipoChat = tipo_chat ?? 'Usuario';
 	const emisorIdPayload = emisor_id ?? null;
 	const nombrePayload = null;
-
-	if (!mensajes || mensajes.length === 0) {
-		const li = document.createElement('li');
-		li.textContent = 'No hay notificaciones';
-		li.style.color = '#999';
-		lista.appendChild(li);
-		return;
-	}
-
+	if(mensajes.length === 0) {return;}
 	const chatItemId = `${tipoChat}-${emisorIdPayload ?? ''}`.trim();
 	if (chatItemId) {
 		const chatItem = document.getElementById(chatItemId);
@@ -449,19 +394,16 @@ function listar_notificaciones(tipo_chat, emisor_id, mensajes) {
 
 		const header = document.createElement('div');
 		header.className = 'notif-header';
-		console.log('Tipo contacto aaaaaaaa:', tipoChat);
-		console.log('ID contacto aaaaaaa:', emisorIdPayload);
 		const nombre_contacto = document.getElementById(`${tipoChat}-${emisorIdPayload}`).outerText;
 		const nombre = nombrePayload ?? (tipoChat === 'Grupo' ? `Grupo ${emisor}` : `Usuario ${emisor}`);
 		header.innerHTML = `<span>${nombre_contacto}</span><span>${msgs.length}</span>`;
 		card.appendChild(header);
 
-		card.onclick = () => abrirChat(tipoChat, emisorIdPayload, nombre);
+		card.onclick = () => abrirChat(tipoChat, nombre_contacto, nombre);
 
 		msgs.forEach(m => {
 			const row = document.createElement('div');
 			row.className = 'notif-msg';
-
 			const texto = document.createElement('span');
 			texto.textContent = m.contenido ?? '';
 
@@ -476,4 +418,34 @@ function listar_notificaciones(tipo_chat, emisor_id, mensajes) {
 
 		lista.appendChild(card);
 	});
+}
+
+function agregarNotificacion(notificacion) {
+	const tipoChat = notificacion.conversacion_id.split('-')[0]
+	const nombre_contacto = notificacion.nombre
+	const timestamp = notificacion.fecha
+	const bandeja = document.getElementById('lista-notificaciones');
+	const li = document.createElement('li');
+	li.className = 'notif-card';
+	const header = document.createElement('div');
+	header.className = 'notif-header';
+	li.onclick = () => abrirChat(tipoChat, notificacion.receptor_id, nombre_contacto);
+
+	header.innerHTML = `
+		<span>${nombre_contacto}</span><span>1</span>
+	`
+	const row = document.createElement('div');
+	row.className = 'notif-msg';
+	const texto = document.createElement('span');
+	texto.textContent = notificacion.mensaje ?? '';
+
+	const fecha = document.createElement('span');
+	fecha.className = 'notif-time';
+	fecha.textContent = timestamp ? new Date(timestamp).toLocaleString() : new Date().toLocaleString();
+
+	li.appendChild(header);
+	row.appendChild(texto);
+	row.appendChild(fecha);
+	li.appendChild(row);
+	bandeja.appendChild(li);
 }
