@@ -8,15 +8,22 @@ defmodule Tpg.Services.NotificationService do
   @doc """
   Para notificar a un cliente que el chat que esta utilizando tiene un nuevo mensaje
   """
-  @spec notificar_mensaje(pid :: pid, mensaje :: %Mensaje{}) :: {:ok, String.t()} # | {:error, term()}
-  def notificar_mensaje(ws_pid, mensaje) do
-    mensaje =
-    from(e in Enviado,
-      where: e.mensaje_id == ^mensaje.id,
-      preload: [:usuario, :mensaje]
-    )
-    |> Repo.one()
-    send(ws_pid, {:nuevo_mensaje, mensaje})
+  @spec notificar_oyentes_de_mensaje(pid :: pid, mensaje :: %Mensaje{}) :: {:ok, String.t()} # | {:error, term()}
+  def notificar_oyentes_de_mensaje(ws_pid, mensaje) do
+    Logger.info("LLEGO HASTA AQUI---------1")
+    IO.inspect(mensaje)
+
+    tipo_de_chat =
+      from(e in Enviado,
+        join: r in Recibido,
+        on: r.mensaje_id == e.mensaje_id,
+        where: e.mensaje_id == ^mensaje.id,
+        preload: [:usuario, :mensaje]
+      )
+      |> Repo.one()
+
+    IO.inspect(tipo_de_chat)
+    send(ws_pid, {:notificar_mensaje_nuevo, tipo_de_chat})
   end
 
   @doc """

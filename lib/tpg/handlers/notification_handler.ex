@@ -22,6 +22,34 @@ defmodule Tpg.Handlers.NotificationHandler do
   #   {:reply, Jason.encode!(respuesta), state}
   # end
 
+  def handle_notification(
+      :nuevo_mensaje_privado,
+      %{emisor: emisor, mensaje: mensaje},
+      state
+    ) do
+
+    # state.id es el id del usuario receptor
+    conversacion_id = "privado-#{emisor.receptor_id}"
+
+    respuesta = %{
+      tipo: "notificacion_chat",
+      notificacion: %{
+        receptor_id: emisor.receptor_id,
+        nombre: emisor.nombre,
+        conversacion_id: conversacion_id
+      }
+    }
+
+    Logger.debug(inspect(respuesta))
+    {:reply, {:text, Jason.encode!(respuesta)}, state}
+  end
+
+
+  def handle_notification(tipo, _payload, state) do
+    Logger.warning("Notificación no manejada: #{inspect(tipo)}")
+    {:ok, state}
+  end
+
   def handle_notification(:agregado_como_contacto, %{contacto: contacto, por: remitente_id}, state) do
     Logger.info("[notification handler] notificacion recibida")
     respuesta = %{
