@@ -93,13 +93,11 @@ defmodule Tpg.Runtime.PrivateRoom do
 
   @impl true
   def handle_call({:agregar_mensaje, de, contenido}, _from, state) do
-    nuevo_msg = %{emisor: de, contenido: contenido, estado: "ENVIADO", fecha: DateTime.utc_now()}
-
-    para = Enum.find(state.usuarios, fn usuario -> usuario != de end)
-
-    case Mensajeria.enviar_mensaje(para, de, nuevo_msg) do
+    Enum.find(state.usuarios, fn usuario -> usuario != de end)
+    |> Mensajeria.enviar_mensaje(de, contenido)
+    |> case do
       {:ok, mensaje} ->
-        Logger.info("[ROOM-PRIVATE] Mensaje guardado: #{nuevo_msg.contenido}, de #{de}")
+        nuevo_msg = %{id: mensaje.id, emisor: de, contenido: contenido, estado: mensaje.estado, fecha: mensaje.inserted_at}
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
         # Notificar a todos los oyentes
         notificar_oyentes(new_state.listeners, mensaje)
@@ -107,7 +105,7 @@ defmodule Tpg.Runtime.PrivateRoom do
 
       {:error, motivo} ->
         Logger.alert(
-          "[ROOM-PRIVATE] Mensaje perdido: #{nuevo_msg.contenido}, de #{de}. Motivo: #{inspect(motivo)}"
+          "[ROOM-PRIVATE] Mensaje perdido: #{contenido}, de #{de}. Motivo: #{inspect(motivo)}"
         )
 
         {:reply, {:error, motivo}, state}

@@ -1,5 +1,6 @@
 defmodule Tpg.Services.NotificationService do
   require Logger
+  alias ElixirSense.Log
   alias Tpg.Repo
   alias Tpg.Dominio.Mensajes.{Recibido, Enviado, Mensaje}
   alias Tpg.Dominio.Receptores.Usuario
@@ -27,33 +28,28 @@ defmodule Tpg.Services.NotificationService do
     send(ws_pid, {:notificar_mensaje_recibido, mensaje})
   end
 
+
   @doc """
   Para marcar como leido un mensaje
   """
   @spec marcar_leido(user_id :: integer(), mensaje_id :: integer()) :: {:ok, String.t()}
   def marcar_leido(user_id, mensaje_id) do
     Logger.info("[notification] marcando como leido el mensaje #{mensaje_id} por el usuario #{user_id}")
-    hora = DateTime.utc_now() |> DateTime.truncate(:second)
+    Tpg.Dominio.Mensajeria.actualizar_estado_mensaje("VISTO", mensaje_id)
 
-    from(e in Recibido,
-      where: e.mensaje_id == ^mensaje_id and e.receptor_id == ^user_id
-    )
-    |> Repo.update_all(set: [
-      leido_at: hora,
-    ])
     # |> case do
       # {1, _} ->
         # Notificar al emisor (opcional)
-    notificar_emisor_lectura(mensaje_id, user_id, hora)
-    {:ok, hora}
+    notificar_emisor_lectura(mensaje_id, user_id)
+    {:ok, "mensaje marcado como leido"}
 
       # {0, _} ->
         # {:error, :evento_no_encontrado}
     # end
   end
 
-  @spec notificar_emisor_lectura(mensaje_id :: %Enviado{}, lector_id::integer(), time::DateTime) :: term()
-  defp notificar_emisor_lectura(mensaje_id, lector_id, hora) do
+  @spec notificar_emisor_lectura(mensaje_id :: %Enviado{}, lector_id::integer()) :: term()
+  defp notificar_emisor_lectura(mensaje_id, lector_id) do
     emisor_id = from(e in Enviado,
       where: e.mensaje_id == ^mensaje_id,
       select: e.usuario_id)
@@ -111,9 +107,15 @@ defmodule Tpg.Services.NotificationService do
   @spec notificar( :grupo_creado, miembros :: [integer()], contexto:: %{}) :: {:ok, any()} | {:error, String.t()}
   def notificar(:grupo_creado, miembros, contexto) do
     mensaje = %{grupo: contexto.grupo, creador: contexto.creador}
+    Logger.info("[notification service] notificando creacion de grupo a sus miembros...")
     Enum.each(miembros, fn usuario_id ->
       enviar_notificacion(usuario_id, :grupo_creado, mensaje)
     end)
     {:ok, "notificaciones distribuidas con exito"}
+  end
+
+  @spec listar_notificaciones(state :: %Tpg.Dominio.Dto.WebSocket{}) :: any()
+  def listar_notificaciones(state) do
+    Tpg.Dominio.Mensajeria.obtener_mensajes_estado_enviado(state.id)
   end
 end

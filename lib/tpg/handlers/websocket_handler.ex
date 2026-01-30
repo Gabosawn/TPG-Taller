@@ -15,7 +15,7 @@ defmodule Tpg.WebSocketHandler do
     operacion = :proplists.get_value("operacion", qs)
 
     {:cowboy_websocket, req,
-     %{usuario: usuario, contrasenia: contrasenia, operacion: operacion, id: nil, server_pid: nil}}
+    %Tpg.Dominio.Dto.WebSocket{usuario: usuario, contrasenia: contrasenia, operacion: operacion}}
   end
 
   def websocket_init(state) do
@@ -31,9 +31,9 @@ defmodule Tpg.WebSocketHandler do
         state = %{state | id: res.id}
         state = %{state | server_pid: res.pid}
         listar_contactos(state)
+        NotificationService.listar_notificaciones(state)
         Logger.info("[WS] cliente registrado con la sesion #{inspect(self())}")
-        {tipo, frame, new_state} = NotificationHandler.notificar(:bienvenida, nombre, state)
-        {tipo, frame, new_state}
+        NotificationHandler.notificar(:bienvenida, nombre, state)
       else
         {:error, {:already_started, pid}} ->
           {_tipo, frame, new_state} = NotificationHandler.notificar(:error, "Usuario #{nombre} ya está conectado", state)
