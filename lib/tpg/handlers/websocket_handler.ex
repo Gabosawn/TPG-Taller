@@ -62,15 +62,6 @@ defmodule Tpg.WebSocketHandler do
       {:ok, %{"accion" => "enviar", "tipo" => tipo, "para" => destinatario, "mensaje" => mensaje}} ->
         manejar_envio(tipo, destinatario, mensaje, state)
 
-      {:ok, %{"accion" => "leer_historial"}} ->
-        manejar_lectura_historial(state)
-
-      {:ok, %{"accion" => "listar_usuarios"}} ->
-        manejar_listar_usuarios(state)
-
-      {:ok, %{"accion" => "listar_usuarios_db"}} ->
-        manejar_listar_usuarios_db(state)
-
       {:ok, %{"accion" => "crear_grupo", "miembros" => miembros, "nombre" => nombre_grupo}} ->
         manejar_creacion_grupo(nombre_grupo, miembros, state)
 
@@ -111,7 +102,7 @@ defmodule Tpg.WebSocketHandler do
 
     respuesta =
       Jason.encode!(%{
-        tipo: "listar_conversaciones",
+        tipo: "contactos",
         conversaciones: conversaciones
       })
 
@@ -238,49 +229,6 @@ defmodule Tpg.WebSocketHandler do
       {:ok, _mensaje} ->
         NotificationHandler.notificar(:sistema, "Mensaje enviado correctamente", state)
     end
-  end
-
-  defp manejar_lectura_historial(state) do
-    case state.server_pid do
-      nil ->
-        NotificationHandler.notificar(:error, "No hay sesión activa", state)
-      pid ->
-        mensajes = ChatService.leer_mensajes(pid)
-
-        respuesta =
-          Jason.encode!(%{
-            tipo: "historial",
-            mensajes: mensajes
-          })
-
-        {:reply, {:text, respuesta}, state}
-    end
-  end
-
-  defp manejar_listar_usuarios(state) do
-    usuarios = SessionService.obtener_usuarios_activos()
-
-    respuesta =
-      Jason.encode!(%{
-        tipo: "usuarios_activos",
-        usuarios: usuarios
-      })
-
-    {:reply, {:text, respuesta}, state}
-  end
-
-  defp manejar_listar_usuarios_db(state) do
-    usuarios =
-      Receptores.obtener_usuarios()
-      |> Enum.filter(fn user -> user.receptor_id != state.id end)
-
-    respuesta =
-      Jason.encode!(%{
-        tipo: "listar_usuarios_db",
-        usuarios: usuarios
-      })
-
-    {:reply, {:text, respuesta}, state}
   end
 
   defp manejar_creacion_grupo(nombre_grupo, miembros, state) do

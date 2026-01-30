@@ -61,7 +61,6 @@ defmodule Tpg.Views.PageView do
           <input type="text" id="nombre-grupo" placeholder="Nombre del grupo" />
           <div>
             <h4>Seleccionar miembros:</h4>
-            <ul id="lista-usuarios"></ul>
             <div id="usuarios-checkbox"></div>
           </div>
           <button onclick="crearGrupo()">Crear Grupo</button>

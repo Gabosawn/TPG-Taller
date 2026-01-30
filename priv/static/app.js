@@ -1,8 +1,6 @@
 
 let ws = null;
 let chatActual = null
-document.getElementById('lista-usuarios')
-
 
 function setSidebarView(view) {
 	const chats = document.getElementById('chats-usuario');
@@ -45,10 +43,6 @@ function registrar() {
 	}
 	ws = new WebSocket(`ws://localhost:4000/ws?operacion=crear&usuario=${usuario}&contrasenia=${contrasenia}`);
 
-	ws.onopen = () => {
-		listarTodosLosUsuarios();
-	};
-
 	ws.onmessage = (event) => {
 		const data = JSON.parse(event.data);
 		manejarMensaje(data);
@@ -83,10 +77,6 @@ function conectar() {
 	}
 	ws = new WebSocket(`ws://localhost:4000/ws?operacion=conectar&usuario=${usuario}&contrasenia=${contrasenia}`);
 	
-	ws.onopen = () => {
-		listarTodosLosUsuarios();
-	};
-	
 	ws.onmessage = (event) => {
 		const data = JSON.parse(event.data);
 		manejarMensaje(data);
@@ -111,23 +101,16 @@ function desconectar() {
 	}
 }
 
-function obtenerContactos() {
-}
-
-function listarUsuarios() {
-	ws.send(JSON.stringify({ accion: 'listar_usuarios' }));
-}
-
-function listarTodosLosUsuarios() {
-	ws.send(JSON.stringify({ accion: 'listar_usuarios_db' }));
-}
-
 function manejarMensaje(data) {
 	switch (data.tipo) {
 		case 'bienvenida':
 			autorizar_usuario(data)
+			break;
 		case 'notificaciones':
 			listar_notificaciones(data.tipo_chat, data.emisor_id ,data.mensajes);
+			break;
+		case 'contactos':
+			listar_contactos(data.conversaciones);
 			break;
 		case 'mensaje_nuevo':
 			agregarMensaje('nuevo', `💬 ${data.de}: ${data.mensaje}`);
@@ -144,17 +127,9 @@ function manejarMensaje(data) {
 		case 'mensaje_bandeja':
 			agregarNotificacion(data.notificacion);
 			break;
-		case 'listar_conversaciones':
-			listar_conversaciones_response(data.conversaciones);
-			break;
 		case 'grupo_creado':
 			agregarMensaje('sistema', `✅ Grupo "${data.grupo}" creado con éxito.`);
 			break;
-		case 'usuarios':
-			listar_todos_usuarios(data.usuarios);
-			break;
-		case 'listar_usuarios_db':
-			listar_usuarios_agrupables(data.usuarios)
 		case 'chat_abierto':
 			mostrarChat(data.receptor_id, data.mensajes);
 			break;
@@ -220,8 +195,7 @@ function limpiarNotificaciones() {
   contador.style.display = 'none';
 }
 
-function agregarConversacion(tipo, id, nombre) {
-	const lista = document.getElementById('lista-conversaciones');
+function agregarConversacion(lista, tipo, id, nombre) {
 	const li = document.createElement('li');
 	li.id = `${tipo}-${id}`;
 	li.textContent = nombre;
@@ -229,58 +203,49 @@ function agregarConversacion(tipo, id, nombre) {
 	li.onclick = () => abrirChat(tipo, id, nombre);
 	lista.appendChild(li);
 }
-function listar_conversaciones_response(conversaciones) {
+
+function agregarListaCrearGrupo(checkboxContainer, tipo, id, nombre) {
+	if (tipo !== "privado") { return; }
+	const checkboxDiv = document.createElement('div');
+	checkboxDiv.className = 'checkbox-item';
+	
+	const checkbox = document.createElement('input');
+	checkbox.type = 'checkbox';
+	checkbox.id = id;
+	checkbox.value = id;
+	
+	const label = document.createElement('label');
+	label.htmlFor = id;
+	label.textContent = nombre;
+	
+	checkboxDiv.appendChild(checkbox);
+	checkboxDiv.appendChild(label);
+	checkboxContainer.appendChild(checkboxDiv);
+}
+
+function listar_contactos(contactos) {
 	const lista = document.getElementById('lista-conversaciones');
 	lista.innerHTML = '';
 
-	if (conversaciones.length === 0) {
-		const li = document.createElement('li');
-		li.textContent = 'No hay conversaciones';
-		li.style.color = '#999';
-		lista.appendChild(li);
-		return;
-	}
-	
-
-	conversaciones.forEach(conversacion => {
-		agregarConversacion(conversacion.tipo, conversacion.id, conversacion.nombre);
-	});
-}
-
-function listar_usuarios_agrupables(usuarios) {
-	const lista = document.getElementById('lista-usuarios');
-	lista.innerHTML = '';
-	
 	const checkboxContainer = document.getElementById('usuarios-checkbox');
 	checkboxContainer.innerHTML = '';
-	
-	if (usuarios.length === 0) {
+	 
+
+	if (contactos.length === 0) {
 		const li = document.createElement('li');
-		li.textContent = 'No hay usuarios conectados';
+		li.textContent = 'No hay contactos disponibles';
 		li.style.color = '#999';
 		lista.appendChild(li);
 		return;
 	}
 	
-	usuarios.forEach(usuario => {
-		// Crear checkbox para selección de grupo
-		const checkboxDiv = document.createElement('div');
-		checkboxDiv.className = 'checkbox-item';
-		
-		const checkbox = document.createElement('input');
-		checkbox.type = 'checkbox';
-		checkbox.id = usuario.receptor_id;
-		checkbox.value = usuario.receptor_id;
-		
-		const label = document.createElement('label');
-		label.htmlFor = usuario.receptor_id;
-		label.textContent = usuario.nombre;
-		
-		checkboxDiv.appendChild(checkbox);
-		checkboxDiv.appendChild(label);
-		checkboxContainer.appendChild(checkboxDiv);
+
+	contactos.forEach(contacto => {
+		agregarConversacion(lista, contacto.tipo, contacto.id, contacto.nombre);
+		agregarListaCrearGrupo(checkboxContainer, contacto.tipo, contacto.id, contacto.nombre);
 	});
 }
+
 
 function abrirChat(tipo, receptorId, nombreReceptor) {
 	chatActual = {tipo: tipo, id: receptorId};
