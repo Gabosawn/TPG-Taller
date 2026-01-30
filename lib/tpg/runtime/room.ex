@@ -103,11 +103,9 @@ defmodule Tpg.Runtime.Room do
 
   @impl true
   def handle_call({:agregar_mensaje, de, contenido}, _from, state) do
-    nuevo_msg = %{emisor: de, contenido: contenido, estado: "ENVIADO", fecha: DateTime.utc_now()}
-
-    case Mensajeria.enviar_mensaje(state.group_id, de, nuevo_msg) do
+    case Mensajeria.enviar_mensaje(state.group_id, de, contenido) do
       {:ok, mensaje} ->
-        Logger.info("[room] Mensaje guardado: #{nuevo_msg.contenido}, de #{de}")
+        nuevo_msg = %{id: mensaje.id, emisor: de, contenido: contenido, estado: mensaje.estado, fecha: mensaje.inserted_at}
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
         # Notificar a todos los oyentes
         notificar_oyentes(new_state.listeners, mensaje)
@@ -115,7 +113,7 @@ defmodule Tpg.Runtime.Room do
 
       {:error, motivo} ->
         Logger.alert(
-          "[room] Mensaje perdido: #{nuevo_msg.contenido}, de #{de}. Motivo: #{inspect(motivo)}"
+          "[room] Mensaje perdido: #{contenido}, de #{de}. Motivo: #{inspect(motivo)}"
         )
 
         {:reply, {:error, motivo}, state}

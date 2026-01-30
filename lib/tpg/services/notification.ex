@@ -1,5 +1,6 @@
 defmodule Tpg.Services.NotificationService do
   require Logger
+  alias ElixirSense.Log
   alias Tpg.Repo
   alias Tpg.Dominio.Mensajes.{Recibido, Enviado, Mensaje}
   alias Tpg.Dominio.Receptores.Usuario
@@ -105,9 +106,17 @@ defmodule Tpg.Services.NotificationService do
   """
   @spec notificar( :grupo_creado, miembros :: [integer()], contexto:: %{}) :: {:ok, any()} | {:error, String.t()}
   def notificar(:grupo_creado, miembros, contexto) do
+    Logger.info("[notification service] notificando creacion de grupo a sus miembros...")
+    Logger.info("[notification service] miembros: #{inspect(miembros)}")
+    Logger.info("[notification service] contexto: #{inspect(contexto)}")
     mensaje = %{grupo: contexto.grupo, por: contexto.creador}
     Enum.each(miembros, fn usuario_id ->
-      notificar(:grupo_creado, usuario_id, mensaje)
+      enviar_notificacion(usuario_id, :grupo_creado, mensaje)
     end)
+  end
+
+  @spec listar_notificaciones(state :: %Tpg.Dominio.Dto.WebSocket{}) :: any()
+  def listar_notificaciones(state) do
+    Tpg.Dominio.Mensajeria.obtener_mensajes_estado_enviado(state.id)
   end
 end

@@ -4,17 +4,6 @@ defmodule Tpg.Dominio.Mensajeria do
   import Ecto.Query
   alias Tpg.Dominio.Mensajes.{Recibido, Mensaje, Enviado}
 
-  defp insertar_eventos_grupo(multi, miembros_ids) do
-    Enum.reduce(miembros_ids, multi, fn miembro_id, acc ->
-      Multi.insert(acc, {:recibido, miembro_id}, fn %{mensaje: mensaje} ->
-        Recibido.changeset(%Recibido{}, %{
-          mensaje_id: mensaje.id,
-          receptor_id: miembro_id
-        })
-      end)
-    end)
-  end
-
   @doc """
   Envia el mensaje del emisor al receptor marcandolo como 'ENVIADO'
   """
@@ -87,6 +76,48 @@ defmodule Tpg.Dominio.Mensajeria do
       )
 
     Repo.all(mensajes_query)
+  end
+
+  def obtener_mensajes_estado_enviado(usuario_id) do
+    mensajes_por_usuario(usuario_id) ++ mensajes_por_grupo(usuario_id)
+  end
+
+  defp mensajes_por_usuario(usuario_id) do
+    from(receptor in Recibido,
+      join: mensaje in Mensaje, on: receptor.mensaje_id == mensaje.id,
+      join: emisor in Enviado, on: mensaje.id == emisor.mensaje_id,
+      join: usuario in Tpg.Dominio.Receptores.Usuario, on: emisor.usuario_id == usuario.receptor_id,
+      where: receptor.receptor_id == ^usuario_id,
+      select: %{
+        id: mensaje.id,
+        emisor: emisor.usuario_id,
+        emisor_nombre: usuario.nombre,
+        contenido: mensaje.contenido,
+        estado: mensaje.estado,
+        fecha: mensaje.inserted_at
+      },
+      order_by: [desc: mensaje.inserted_at]
+    ) |> Repo.all()
+    |> IO.inspect()
+  end
+
+  defp mensajes_por_grupo(usuario_id) do
+    from(receptor in Recibido,
+      join: mensaje in Mensaje, on: receptor.mensaje_id == mensaje.id,
+      join: emisor in Enviado, on: mensaje.id == emisor.mensaje_id,
+      join: grupo in Tpg.Dominio.Receptores.Grupo, on: emisor.usuario_id == grupo.receptor_id,
+      where: receptor.receptor_id == ^usuario_id,
+      select: %{
+        id: mensaje.id,
+        emisor: emisor.usuario_id,
+        emisor_nombre: grupo.nombre,
+        contenido: mensaje.contenido,
+        estado: mensaje.estado,
+        fecha: mensaje.inserted_at
+      },
+      order_by: [desc: mensaje.inserted_at]
+    ) |> Repo.all()
+    |> IO.inspect()
   end
 
   def actualizar_estado_mensaje(estado, mensaje_id) do
