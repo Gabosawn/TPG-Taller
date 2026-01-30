@@ -1,9 +1,9 @@
 import Config
 config :tpg, Tpg.Repo,
-  username: "postgres",
-  password: "postgres",
+  username: "tpg_user",
+  password: "tpg_password",
   hostname: "localhost",
-  database: "tpg_test#{System.get_env("MIX_TEST_PARTITION")}",
+  database: "tpg_repo#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 10
 
