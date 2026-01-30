@@ -17,7 +17,7 @@ defmodule Tpg.Handlers.NotificationHandler do
         nombre: nombre
       },
     }
-    IO.inspect(respuesta)
+    Logger.debug( IO.inspect(respuesta))
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
 
@@ -35,7 +35,7 @@ defmodule Tpg.Handlers.NotificationHandler do
         conversacion_id: "privado-#{contacto.receptor_id}"
       },
     }
-    respuesta
+    Logger.debug( IO.inspect(respuesta))
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
 
@@ -49,6 +49,7 @@ defmodule Tpg.Handlers.NotificationHandler do
         conversacion_id: "grupo-#{grupo.id}"
       }
     }
+    Logger.debug( IO.inspect(respuesta))
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
   # Catch-all para notificaciones desconocidas

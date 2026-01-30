@@ -112,7 +112,7 @@ defmodule Tpg.Services.NotificationService do
   def notificar(:grupo_creado, miembros, contexto) do
     mensaje = %{grupo: contexto.grupo, creador: contexto.creador}
     Enum.each(miembros, fn usuario_id ->
-      enviar_notificacion(:grupo_creado, usuario_id, mensaje)
+      enviar_notificacion(usuario_id, :grupo_creado, mensaje)
     end)
     {:ok, "notificaciones distribuidas con exito"}
   end
