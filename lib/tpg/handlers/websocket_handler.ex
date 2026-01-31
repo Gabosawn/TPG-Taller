@@ -216,11 +216,12 @@ end
 
   def manejar_abrir_chat(tipo, id_receptor, state) do
     with {:ok, mensajes} <- SessionService.oir_chat(tipo, state.id, id_receptor, self()),
-      {:ok, receptor} = Receptores.obtener(tipo, id_receptor) do
-        NotificationHandler.handle_notification(:chat_abierto, %{receptor: receptor, mensajes: mensajes}, state)
+        {:ok, receptor} <- Receptores.obtener(tipo, id_receptor),
+        {:ok, receptor} <- SessionService.agregar_ultima_conexion(receptor) do
+          NotificationHandler.handle_notification(:chat_abierto, %{receptor: receptor, mensajes: mensajes}, state)
     else
       {:ya_esta_escuchando, mensajes} ->
-        {:no_reply, state}
+        {:ok, state}
       _ ->
         NotificationHandler.handle_notification(:error, "Error abriendo chat" , state)
     end

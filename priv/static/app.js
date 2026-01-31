@@ -254,7 +254,9 @@ function mostrarChat(usuario, mensajes) {
 
 	// Mostrar última conexión
 	const ultimaConexionEl = document.getElementById('ultima-conexion');
-	if (ultimaConexionEl) {
+	if (usuario.en_linea == 1) {
+		ultimaConexionEl.textContent = 'En linea';
+	} else if (ultimaConexionEl) {
 		ultimaConexionEl.textContent = formatearUltimaConexion(usuario.ultima_conexion);
 	}
 	
