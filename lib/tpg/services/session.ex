@@ -144,6 +144,20 @@ defmodule Tpg.Services.SessionService do
         {:error, "[session service] error al oir chat"}
     end
   end
+  @doc """
+  Agrega al mapa 'receptor' el campo 'en_linea'
+  """
+  def agregar_ultima_conexion(receptor) do
+    with "privado" <- Map.get(receptor, :tipo),
+    {:ok, _} <- get_session_pid(receptor.receptor_id) do
+      nuevo_receptor = Map.put(receptor, :en_linea, 1)
+      {:ok, nuevo_receptor}
+    else
+      _ ->
+        nuevo_receptor = Map.put(receptor, :en_linea, 0)
+        {:ok, nuevo_receptor}
+    end
+  end
 
   def get_session_pid(id_usuario) do
     case :global.whereis_name(id_usuario) do
