@@ -5,6 +5,7 @@ defmodule Tpg.Dominio.Mensajes.Recibido do
   schema "recibidos" do
     belongs_to :receptor, Tpg.Dominio.Receptores.Receptor, foreign_key: :receptor_id
     belongs_to :mensaje, Tpg.Dominio.Mensajes.Mensaje, foreign_key: :mensaje_id
+    timestamps(updated_at: false)
   end
 
 
