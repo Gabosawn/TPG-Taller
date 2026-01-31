@@ -8,7 +8,43 @@ defmodule Tpg.Handlers.NotificationHandler do
   @doc """
   Notifica al cliente que tiene un contacto nuevo con el que puede comunicarse
   """
+  # def handle_notification(:contacto_agregado, %{contacto: contacto, por: remitente_id}, state) do
+  #
+  #   respuesta = %{
+  #     tipo: "contacto_agregado",
+  #     contacto: %{
+  #       receptor_id: contacto.receptor_id,
+  #       nombre: contacto.nombre
+  #     },
+  #   }
+
+  #   {:reply, Jason.encode!(respuesta), state}
+  # end
+
+  def handle_notification(
+      :nuevo_mensaje_privado,
+      %{emisor: emisor, mensaje: mensaje},
+      state
+    ) do
+
+    # state.id es el id del usuario receptor
+    conversacion_id = "privado-#{emisor.receptor_id}"
+
+    respuesta = %{
+      tipo: "notificacion_chat",
+      notificacion: %{
+        receptor_id: emisor.receptor_id,
+        nombre: emisor.nombre,
+        conversacion_id: conversacion_id
+      }
+    }
+
+    Logger.debug(inspect(respuesta))
+    {:reply, {:text, Jason.encode!(respuesta)}, state}
+  end
+
   def handle_notification(:contacto_nuevo, %{tipo: tipo, receptor_id: receptor_id, nombre: nombre}, state) do
+    Logger.info("[notification handler] notificacion recibida")
     respuesta = %{
       tipo: "contacto_nuevo",
       contacto: %{

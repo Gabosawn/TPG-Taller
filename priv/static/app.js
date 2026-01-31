@@ -102,6 +102,7 @@ function desconectar() {
 }
 
 function manejarMensaje(data) {
+	console.log("WS mensaje recibido:", data);
 	switch (data.tipo) {
 		case 'bienvenida':
 			autorizar_usuario(data)
@@ -139,12 +140,30 @@ function manejarMensaje(data) {
 		case 'sistema':
 			agregarMensaje('Notificacion:', data.mensaje);
 			break;
+		case 'notificacion_chat':
+			notificacion_punto_verde(data)
+			break;
 		case 'do_nothing':
 			break;
 		default:
 			agregarMensaje('sistema', JSON.stringify(data));
 	}
 }
+
+function notificacion_punto_verde(data) {
+  const convId = data.notificacion.conversacion_id; // ejemplo: "privado-2"
+  let conversacion = document.querySelector(`.conversacion[data-conversacion-id="${convId}"]`);
+
+  if (!conversacion) {
+    console.warn("⚠️ No se encontró la conversacion, creando automáticamente...");
+  }
+
+  if (conversacion) {
+    conversacion.classList.add("punto-verde");
+    console.log("✅ Punto verde agregado para", convId);
+  }
+}
+
 function autorizar_usuario(payload) {
 	document.getElementById('status').textContent = 'Conectado';
 	document.getElementById('status').style.color = 'green';
@@ -215,7 +234,7 @@ function listar_usuarios_agrupables(usuarios) {
 
 function abrirChat(tipo, receptorId, nombreReceptor) {
 	chatActual = {tipo: tipo, id: receptorId};
-	
+
 	// Remover clase active de todos los chats
 	document.querySelectorAll('.chat-item').forEach(item => {
 		item.classList.remove('active');

@@ -34,9 +34,9 @@ defmodule Tpg.Runtime.PrivateRoom do
     GenServer.call(via_tuple(room_id), {:quitar_oyente, websocket_pid})
   end
 
-  def agregar_mensaje(usuario_1, usuario_2, de, contenido) do
+  def agregar_mensaje(usuario_1, usuario_2, contenido) do
     room_id = normalize_room_id(usuario_1, usuario_2)
-    GenServer.call(via_tuple(room_id), {:agregar_mensaje, de, contenido})
+    GenServer.call(via_tuple(room_id), {:agregar_mensaje, usuario_1, contenido})
   end
 
   def obtener_historial(usuario_1, usuario_2) do
@@ -92,12 +92,14 @@ defmodule Tpg.Runtime.PrivateRoom do
   end
 
   @impl true
-  def handle_call({:agregar_mensaje, de, contenido}, _from, state) do
-    Enum.find(state.usuarios, fn usuario -> usuario != de end)
-    |> Mensajeria.enviar_mensaje(de, contenido)
-    |> case do
+  def handle_call({:agregar_mensaje, emisor, contenido}, _from, state) do
+    nuevo_msg = %{emisor: emisor, contenido: contenido, estado: "ENVIADO", fecha: DateTime.utc_now()}
+
+    receptor = Enum.find(state.usuarios, fn usuario -> usuario != emisor end)
+
+    case Mensajeria.enviar_mensaje(receptor, emisor, nuevo_msg) do
       {:ok, mensaje} ->
-        nuevo_msg = %{id: mensaje.id, emisor: de, contenido: contenido, estado: mensaje.estado, fecha: mensaje.inserted_at}
+        Logger.info("[ROOM-PRIVATE] Mensaje guardado: #{nuevo_msg.contenido}, de #{emisor}")
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
         # Notificar a todos los oyentes
         notificar_oyentes(new_state.listeners, mensaje)
@@ -105,7 +107,7 @@ defmodule Tpg.Runtime.PrivateRoom do
 
       {:error, motivo} ->
         Logger.alert(
-          "[ROOM-PRIVATE] Mensaje perdido: #{contenido}, de #{de}. Motivo: #{inspect(motivo)}"
+          "[ROOM-PRIVATE] Mensaje perdido: #{nuevo_msg.contenido}, de #{emisor}. Motivo: #{inspect(motivo)}"
         )
 
         {:reply, {:error, motivo}, state}
@@ -143,7 +145,7 @@ defmodule Tpg.Runtime.PrivateRoom do
 
     Enum.each(Map.keys(listeners), fn pid ->
       Logger.info("[ROOM-PRIVATE] Notificando usuario")
-      NotificationService.notificar_mensaje(pid, mensaje)
+      NotificationService.notificar_oyentes_de_mensaje(pid, mensaje)
     end)
   end
 end
