@@ -5,10 +5,14 @@ defmodule Tpg.Views.PageView do
     <html>
     <head>
       <title>Chat WebSocket</title>
+      <link rel="icon" type="image/png" href="/static/img/cowboy.svg">
       <link rel="stylesheet" href="/static/style.css">
     </head>
     <body>
-      <h1>Chat WebSocket TPG</h1>
+     <div class="header-container">
+        <img src="/static/img/cowboy.png" alt="Logo" class="logo-header" />
+        <h1>Chat WebSocket TPG</h1>
+      </div>
       <div>Status: <span id="status">Desconectado</span></div>
 
       <div>
@@ -103,6 +107,16 @@ defmodule Tpg.Views.PageView do
         }
       </script>
       <script src="/static/app.js"></script>
+      <footer class="footer">
+        <p>&copy; 2026 TPG Development Team. Todos los derechos reservados.</p>
+        <div class="footer-emails">
+          <p class="footer-email">johernandez@fi.uba.ar</p>
+          <span class="separator">|</span>
+          <p class="footer-email">gnarvaez@fi.uba.ar</p>
+          <span class="separator">|</span>
+          <p class="footer-email">flamanna@fi.uba.ar</p>
+        </div>
+      </footer>
     </body>
     </html>
     """

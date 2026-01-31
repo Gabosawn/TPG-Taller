@@ -351,3 +351,45 @@ input, button { padding: 10px; margin: 5px; }
   border-radius: 50%;
   box-shadow: 0 0 4px rgba(76, 175, 80, 0.8);
 }
+.header-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.logo-header {
+  width: 40px;
+  height: 40px;
+}
+.footer {
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  padding: 20px;
+  margin-top: 30px;
+  position: relative;
+  bottom: 0;
+  width: 100%;
+}
+
+.footer p {
+  margin: 0;
+  font-size: 14px;
+}
+.footer-emails {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.footer-email {
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.footer .separator {
+  color: #666;
+  font-size: 14px;
+}

@@ -116,7 +116,6 @@ defmodule Tpg.WebSocketHandler do
   end
 
   def websocket_info({:nuevo_mensaje, mensaje}, state) do
-    Logger.info("[ws] marcando mensaje como leido")
     respuesta =
       Jason.encode!(%{
         tipo: "mensaje_nuevo",
@@ -127,17 +126,17 @@ defmodule Tpg.WebSocketHandler do
   end
 
   def websocket_info({:notificar_mensaje_nuevo, mensaje}, state) do
-  Logger.info("Enviando notificacion de PUNTO VERDE")
-  # FALTA SEPARAR EN PRIVADOS Y GRUPOS
-  NotificationHandler.handle_notification(
-    :nuevo_mensaje_privado,
-    %{
-      emisor: mensaje.usuario,
-      mensaje: mensaje.mensaje.contenido
-    },
-    state
-  )
-end
+    Logger.info("Enviando notificacion de PUNTO VERDE")
+    # FALTA SEPARAR EN PRIVADOS Y GRUPOS
+    NotificationHandler.handle_notification(
+      :nuevo_mensaje_privado,
+      %{
+        emisor: mensaje.usuario,
+        mensaje: mensaje.mensaje.contenido
+      },
+      state
+    )
+  end
 
 
   def websocket_info({:notificar_mensaje_recibido, _mensaje}, state) do
