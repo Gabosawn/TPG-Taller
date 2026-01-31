@@ -36,6 +36,7 @@ defmodule Tpg.Views.PageView do
         <div class="chat-area">
           <div class="chat-header">
             <div id="nombre-chat-actual">Selecciona un chat</div>
+            <div id="ultima-conexion"></div>
           </div>
 
           <div id="mensajes"></div>
@@ -64,6 +65,7 @@ defmodule Tpg.Views.PageView do
             <div id="usuarios-checkbox"></div>
           </div>
           <button onclick="crearGrupo()">Crear Grupo</button>
+          <button onclick="closeModal()">Cancelar</button>
         </div>
         <div class="agregar-contacto" style="display:none;">
           <h3>Agregar Contacto</h3>

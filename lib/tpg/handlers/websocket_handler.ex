@@ -27,13 +27,13 @@ defmodule Tpg.WebSocketHandler do
 
   defp load_user(operacion, nombre, contrasenia, state) do
     with {:ok, res} <- SessionService.loggear(operacion, %{nombre: nombre, contrasenia: contrasenia}),
-      {:ok, _} <- SessionService.registrar_cliente( res.id, self()) do
+      {:ok, _} <- SessionService.registrar_cliente(res.id, self()) do
         state = %{state | id: res.id}
         state = %{state | server_pid: res.pid}
         listar_contactos(state)
-        NotificationService.listar_notificaciones(state)
+        listar_notificaciones(state)
+        NotificationService.notificar(:en_linea, %{receptor_id: res.id, nombre: nombre})
         Logger.info("[WS] cliente registrado con la sesion #{inspect(self())}")
-        NotificationService.notificar(:en_linea, %{receptor_id: state.id, nombre: nombre})
         NotificationHandler.notificar(:bienvenida, nombre, state)
       else
         {:error, {:already_started, pid}} ->
@@ -42,7 +42,7 @@ defmodule Tpg.WebSocketHandler do
           {:reply, frame, new_state}
 
         {:error, reason} ->
-          {_tipo, frame, new_state} = NotificationHandler.notificar(:error, "Error al conectar: #{inspect(reason)}", state)
+          {_tipo, frame, new_state} = NotificationHandler.notificar(:error, "Error al iniciar sesion: #{inspect(reason)}", state)
           send(self(), :cerrar_conexion)
           {:reply, frame, new_state}
         end
@@ -94,6 +94,11 @@ defmodule Tpg.WebSocketHandler do
   defp listar_contactos(state) do
     send(self(), {:listar_conversaciones, state.id})
   end
+  defp listar_notificaciones(state) do
+    Logger.info("[ws] listando notificaciones al loggearse... ")
+    NotificationService.listar_notificaciones(state.id)
+  end
+
 
   def websocket_info({:listar_conversaciones, user_id}, state) do
     Logger.info("[WS] Listando contactos para el usuario TUPLA #{state.id}")
@@ -110,12 +115,14 @@ defmodule Tpg.WebSocketHandler do
     {:reply, {:text, respuesta}, state}
   end
 
-  def websocket_info({:nuevo_mensaje, mensaje}, state) do
+  def websocket_info({:nuevo_mensaje, mensaje, emisor, receptor}, state) do
     respuesta =
       Jason.encode!(%{
         tipo: "mensaje_nuevo",
-        de: mensaje.usuario.receptor_id,
+        emisor: emisor,
+        receptor: receptor,
         mensaje: mensaje.mensaje.contenido,
+        user_ws_id: state.id
       })
     {:reply, {:text, respuesta}, state}
   end
@@ -174,7 +181,7 @@ defmodule Tpg.WebSocketHandler do
   Cuando se recibe una notificación desde algun punto del sistema, se delega al handler la respuesta que se debe devolver
   """
   def websocket_info({:notificacion, tipo, notificacion}, state) do
-    Logger.info("[ws] Recibiendo notificacion...")
+    Logger.info("[ws] usuario #{state.usuario} Recibiendo notificacion...")
     IO.inspect({tipo, notificacion})
     NotificationHandler.handle_notification(tipo, notificacion, state)
   end
@@ -186,6 +193,7 @@ defmodule Tpg.WebSocketHandler do
   # Cleanup cuando se cierra la conexión
   def terminate(_reason, _req, state) do
     if state.server_pid do
+      NotificationService.notificar(:saliendo_de_linea, %{receptor_id: state.id, nombre: state.usuario})
       SessionService.desloggear(state.id)
     end
 
@@ -208,26 +216,15 @@ defmodule Tpg.WebSocketHandler do
   end
 
   def manejar_abrir_chat(tipo, id_receptor, state) do
-    {return_call, mensajes} =
-      case SessionService.oir_chat(tipo, state.id, id_receptor, self()) do
-        {:ok, mensajes} ->
-          {"chat_abierto", mensajes}
-
-        {:ya_esta_escuchando, mensajes} ->
-          {"do_nothing", mensajes}
-
-        _ ->
-          {"mostrar_error", "Error abriendo chat"}
-      end
-
-    respuesta =
-      Jason.encode!(%{
-        tipo: return_call,
-        receptor_id: state.id,
-        mensajes: mensajes
-      })
-
-    {:reply, {:text, respuesta}, state}
+    with {:ok, mensajes} <- SessionService.oir_chat(tipo, state.id, id_receptor, self()),
+      {:ok, receptor} = Receptores.obtener(tipo, id_receptor) do
+        NotificationHandler.handle_notification(:chat_abierto, %{receptor: receptor, mensajes: mensajes}, state)
+    else
+      {:ya_esta_escuchando, mensajes} ->
+        {:no_reply, state}
+      _ ->
+        NotificationHandler.handle_notification(:error, "Error abriendo chat" , state)
+    end
   end
 
   defp manejar_envio(tipo, destinatario, mensaje, state) do

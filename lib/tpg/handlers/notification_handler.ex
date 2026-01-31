@@ -50,7 +50,19 @@ defmodule Tpg.Handlers.NotificationHandler do
     }
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
-
+  def handle_notification(:saliendo_de_linea, %{contacto: emisor}, state) do
+    conversacion_id = "privado-#{emisor.receptor_id}"
+    respuesta = %{
+      tipo: "contacto_no_en_linea",
+      notificacion: %{
+        receptor_id: emisor.receptor_id,
+        nombre: emisor.nombre,
+        conversacion_id: conversacion_id
+      }
+    }
+    IO.inspect(respuesta)
+    {:reply, {:text, Jason.encode!(respuesta)}, state}
+  end
   def handle_notification(:contacto_nuevo, %{tipo: tipo, receptor_id: receptor_id, nombre: nombre}, state) do
     Logger.info("[notification handler] notificacion recibida")
     respuesta = %{
@@ -96,6 +108,18 @@ defmodule Tpg.Handlers.NotificationHandler do
     Logger.debug( IO.inspect(respuesta))
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
+
+  def handle_notification(:chat_abierto, %{receptor: receptor, mensajes: mensajes}, state) do
+    respuesta = %{
+      tipo: "chat_abierto",
+      receptor: Map.take(receptor, [:receptor_id, :nombre, :ultima_conexion, :descripcion, :tipo]),
+      mensajes: mensajes
+    }
+    Logger.debug( IO.inspect(respuesta))
+    {:reply, {:text, Jason.encode!(respuesta)}, state}
+  end
+
+
   # Catch-all para notificaciones desconocidas
   def handle_notification(tipo, payload, state) do
     Logger.warning("[NotificationHandler] Notificación no manejada: #{inspect(tipo)}")
