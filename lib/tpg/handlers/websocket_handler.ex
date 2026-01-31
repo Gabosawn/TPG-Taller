@@ -33,6 +33,7 @@ defmodule Tpg.WebSocketHandler do
         listar_contactos(state)
         NotificationService.listar_notificaciones(state)
         Logger.info("[WS] cliente registrado con la sesion #{inspect(self())}")
+        NotificationService.notificar(:en_linea, %{receptor_id: state.id, nombre: nombre})
         NotificationHandler.notificar(:bienvenida, nombre, state)
       else
         {:error, {:already_started, pid}} ->

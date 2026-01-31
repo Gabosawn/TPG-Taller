@@ -143,8 +143,11 @@ function manejarMensaje(data) {
 		case 'notificacion_chat':
 			notificacion_punto_verde(data)
 			break;
+		case 'contacto_en_linea':
+			notificacion_punto_verde(data)
 		case 'do_nothing':
 			break;
+
 		default:
 			agregarMensaje('sistema', JSON.stringify(data));
 	}
@@ -152,7 +155,7 @@ function manejarMensaje(data) {
 
 function notificacion_punto_verde(data) {
   const convId = data.notificacion.conversacion_id; // ejemplo: "privado-2"
-  let conversacion = document.querySelector(`.conversacion[data-conversacion-id="${convId}"]`);
+  let conversacion = document.getElementById(convId);
 
   if (!conversacion) {
     console.warn("⚠️ No se encontró la conversacion, creando automáticamente...");

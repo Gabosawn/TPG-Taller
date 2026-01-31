@@ -3,6 +3,7 @@ defmodule Tpg.Services.NotificationService do
   alias ElixirSense.Log
   alias Tpg.Repo
   alias Tpg.Dominio.Mensajes.{Recibido, Enviado, Mensaje}
+  alias Tpg.Dominio.Receptores
   alias Tpg.Dominio.Receptores.Usuario
   alias Tpg.Services.SessionService
   import Ecto.Query
@@ -72,9 +73,6 @@ defmodule Tpg.Services.NotificationService do
     end
   end
 
-  @doc """
-  Envia a un id una notificacion con un mensaje. Si no encuentra a ese id en linea, no hace nada.
-  """
   @spec enviar_notificacion(usuario_id::integer(), mensaje:: atom(), notificacion:: map()) ::  {:ok, any()} | {:pass | :error, any()}
   defp enviar_notificacion(usuario_id, mensaje, notificacion) do
     with {:ok, session_pid} <- SessionService.get_session_pid(usuario_id),
@@ -120,6 +118,23 @@ defmodule Tpg.Services.NotificationService do
     end)
     {:ok, "notificaciones distribuidas con exito"}
   end
+  @doc """
+  Notifica a un los contactos de un usuario que este esta en linea
+  receptor_id: Id del usuario en linea
+  nombre: Nombre del usuario en linea
+  """
+  @spec notificar(:en_linea, contexto :: %{receptor_id: integer(), nombre: String.t()}) :: {:ok, any()} | {:error, String.t()}
+  def notificar(:en_linea, contexto) do
+    mensaje = %{contacto: contexto}
+    Logger.info("[notification service] notificando creacion de grupo a sus miembros...")
+    contactos = Receptores.obtener_contactos_agenda(contexto.receptor_id)
+    Enum.each(contactos, fn contacto ->
+      Logger.info("[notification service] enviando notificacion a #{contacto.id}")
+      enviar_notificacion(contacto.id, :contacto_en_linea, mensaje)
+    end)
+    {:ok, "notificaciones distribuidas con exito"}
+  end
+
 
   @spec listar_notificaciones(state :: %Tpg.Dominio.Dto.WebSocket{}) :: any()
   def listar_notificaciones(state) do
