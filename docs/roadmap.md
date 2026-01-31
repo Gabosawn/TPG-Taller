@@ -12,20 +12,21 @@ Se requieren metodos para *crear*, *enviar_mensaje*, *leer_mensajes* [x]
 
 **V0.5**: Utilizando la logica de los servicios de Logging y Chatting configurar las conexiones a los WebSockets con los Cowboy Handelers para que varios terminales puedan loggearse a la vez e interactuar.[x]
 
-**V0.6**: Utilizando Ecto actualizar el estado de los mensajes a 'leido' cuando un proceso receptor envia una confirmacion al usuario emisor de que recibió su mensaje.
-**V0.6.1**: Usuario-Usuario.
-**V0.6.2**: Grupos.
-
-**V0.7**: Utilizando Ecto se deben poder loggear un usuario por su ID de postgres y obtener el historial de los ultimos 10 mensajes que recibió recuperando su estado antes de su desconexion (simulada por un cierre de iex o GenServer.stop) (recuperacion de mensajes y bandeja de entrada)
-
-**V0.8**: Utilizando DynamicSupervisor automatizar el ciclo de vida de los procesos de usuarios (para levantar procesos bajo demanda y luego de un tiempo que hibernen) hayando los PID's de los procesos en un Registry usando como clave el ID del usuario en la base de datos.
-
-**V0.9**: Consultando en el Registry enviar al receptor un mensaje y que a este, si se encuentra activo, mostrarle el mensaje de manera instantanea como si tuviera la conversacion abierta en su UI. 
+**V0.6**: Consultando en el Registry enviar al receptor un mensaje y que a este, si se encuentra activo, mostrarle el mensaje de manera instantanea como si tuviera la conversacion abierta en su UI. 
 Ejemplo: 
 1. Proceso Juan: Llama a Registry.lookup(ChatApp.Registry, 2).
 2. Caso A (Maria Online): El Registry devuelve el PID de Maria. El proceso de Juan hace un GenServer.cast(pid_maria, {:nuevo_mensaje, msg}). Maria recibe el mensaje en su terminal instantáneamente.
 3. Caso B (Maria Offline): El Registry devuelve []. El proceso de Juan solo escribe en la DB. Cuando Maria ejecute su V0.4 al loguearse más tarde, verá ese mensaje.
 
+**V0.7**: Utilizando Ecto actualizar el estado de los mensajes a 'leido' cuando un proceso receptor envia una confirmacion al usuario emisor de que recibió su mensaje.
+**V0.7.1**: Usuario-Usuario.
+**V0.7.2**: Grupos.
+
+**V0.8**: Utilizando Ecto se deben poder loggear un usuario por su ID de postgres y obtener el historial de los ultimos 10 mensajes que recibió recuperando su estado antes de su desconexion (simulada por un cierre de iex o GenServer.stop) (recuperacion de mensajes y bandeja de entrada)
+
+**V0.9**: Utilizando DynamicSupervisor automatizar el ciclo de vida de los procesos de usuarios (para levantar procesos bajo demanda y luego de un tiempo que hibernen) hayando los PID's de los procesos en un Registry usando como clave el ID del usuario en la base de datos.
+
+**V1.0**: Utilizando la informacion de la sala abierta en el navegador, permitir al usuario hacer una busqueda de un mensaje en el historial del chat. Mostrar todos los miensajes coincidentes ( o al menos 10) con la informacion de Quien lo envió y a que hora.
 
 
 
