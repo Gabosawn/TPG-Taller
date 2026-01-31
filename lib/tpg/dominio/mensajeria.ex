@@ -1,4 +1,5 @@
 defmodule Tpg.Dominio.Mensajeria do
+  require Logger
   alias Ecto.Multi
   alias Tpg.Repo
   import Ecto.Query
@@ -78,17 +79,6 @@ defmodule Tpg.Dominio.Mensajeria do
     Repo.all(mensajes_query)
   end
 
-  def obtener_mensajes_estado_enviado(usuario_id) do
-    notificaciones_usuario = Tpg.Dominio.Mensajeria.mensajes_por_usuario(usuario_id)
-    |> Enum.group_by(&(&1.emisor))
-    |> IO.inspect()
-
-
-    notificaciones_grupos = Tpg.Dominio.Mensajeria.mensajes_por_grupo(usuario_id)
-    |> Enum.group_by(&(&1.receptor))
-    |> IO.inspect()
-  end
-
   def mensajes_por_usuario(usuario_id) do
     from(receptor in Recibido,
       join: mensaje in Mensaje, on: receptor.mensaje_id == mensaje.id,
@@ -102,10 +92,8 @@ defmodule Tpg.Dominio.Mensajeria do
         contenido: mensaje.contenido,
         estado: mensaje.estado,
         fecha: mensaje.inserted_at
-      },
-      order_by: [desc: mensaje.inserted_at]
+      }
     ) |> Repo.all()
-    |> IO.inspect()
   end
 
   def mensajes_por_grupo(usuario_id) do
@@ -123,10 +111,8 @@ defmodule Tpg.Dominio.Mensajeria do
         contenido: mensaje.contenido,
         estado: mensaje.estado,
         fecha: mensaje.inserted_at
-      },
-      order_by: [desc: mensaje.inserted_at]
+      }
     ) |> Repo.all()
-    |> IO.inspect()
   end
 
   def actualizar_estado_mensaje(estado, mensaje_id) do

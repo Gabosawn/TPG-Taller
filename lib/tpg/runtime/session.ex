@@ -53,17 +53,6 @@ defmodule Tpg.Runtime.Session do
     {:noreply, state}
   end
 
-  def handle_cast({:mostrar_notificaciones, mensajes, emisor_id, tipoChat}, state) do
-    Logger.info("[SESSION RUNTIME] Notificando a WS ")
-
-    Enum.each(state.websocket_pids, fn ws_pid ->
-      Logger.info("[SESSION RUNTIME] Notificando a WS PID=#{inspect(ws_pid)} asociado a Usuario=#{state.usuario}, mensajes=#{inspect(mensajes)}")
-      send(ws_pid, {:mostrar_notificaciones, mensajes, emisor_id, tipoChat})
-    end)
-
-    {:noreply, state}
-  end
-
   # Limpiar WebSockets caídos
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
     Logger.info("WebSocket PID=#{inspect(pid)} desconectado de Usuario=#{state.usuario}")

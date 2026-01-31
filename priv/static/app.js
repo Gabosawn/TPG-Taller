@@ -88,6 +88,12 @@ function conectar() {
 
 	ws.onclose = () => {
 		desconectar()
+		document.getElementById('lista-notificaciones').innerHTML = '';
+		document.getElementById('lista-conversaciones').innerHTML = '';
+		document.getElementById('mensajes').innerHTML = '';
+		document.getElementById('nombre-chat-actual').textContent = 'Selecciona un chat';
+		document.getElementById('ultima-conexion').textContent = '';
+		chatActual = null;
 	};
 }
 
@@ -108,7 +114,7 @@ function manejarMensaje(data) {
 			autorizar_usuario(data)
 			break;
 		case 'notificaciones':
-			listar_notificaciones(data.tipo_chat, data.emisor_id ,data.mensajes);
+			listar_notificaciones(data.notificaciones);
 			break;
 		case 'contactos':
 			listar_contactos(data.conversaciones);
@@ -392,84 +398,98 @@ function agregarMensaje(tipo, texto, fecha) {
 	div.scrollIntoView();
 }
 
-function listar_notificaciones(tipo_chat, emisor_id, mensajes) {
+function listar_notificaciones(notificaciones) {
 	const lista = document.getElementById('lista-notificaciones');
 
-	const tipoChat = tipo_chat ?? 'Usuario';
-	const emisorIdPayload = emisor_id ?? null;
-	const nombrePayload = null;
-	if(mensajes.length === 0) {return;}
-	const chatItemId = `${tipoChat}-${emisorIdPayload ?? ''}`.trim();
-	if (chatItemId) {
-		const chatItem = document.getElementById(chatItemId);
-		if (chatItem) chatItem.classList.add('has-notif');
-	}
+	if (notificaciones.length === 0) { return; }
 
-	const agrupadas = mensajes.reduce((acc, notificacion) => {
-		const key = notificacion.emisor ?? 'desconocido';
-		if (!acc[key]) acc[key] = [];
-		acc[key].push(notificacion);
-		return acc;
-	}, {});
+	console.log("Listando notificaciones...");
+	console.log(notificaciones);	
 
-	Object.entries(agrupadas).forEach(([emisor, msgs]) => {
-		const card = document.createElement('li');
-		card.className = 'notif-card';
-
-		const header = document.createElement('div');
-		header.className = 'notif-header';
-		const nombre_contacto = document.getElementById(`${tipoChat}-${emisorIdPayload}`).outerText;
-		const nombre = nombrePayload ?? (tipoChat === 'Grupo' ? `Grupo ${emisor}` : `Usuario ${emisor}`);
-		header.innerHTML = `<span>${nombre_contacto}</span><span>${msgs.length}</span>`;
-		card.appendChild(header);
-
-		card.onclick = () => abrirChat(tipoChat, nombre_contacto, nombre);
-
-		msgs.forEach(m => {
-			const row = document.createElement('div');
-			row.className = 'notif-msg';
-			const texto = document.createElement('span');
-			texto.textContent = m.contenido ?? '';
-
-			const fecha = document.createElement('span');
-			fecha.className = 'notif-time';
-			fecha.textContent = m.fecha ? new Date(m.fecha).toLocaleString() : '';
-
-			row.appendChild(texto);
-			row.appendChild(fecha);
-			card.appendChild(row);
-		});
-
-		lista.appendChild(card);
+	notificaciones.forEach(notificacion => {
+		agregarNotificacion(notificacion);
 	});
 }
 
 function agregarNotificacion(notificacion) {
-	const tipoChat = notificacion.conversacion_id.split('-')[0]
-	const nombre_contacto = notificacion.nombre
-	const timestamp = notificacion.fecha
+	const esListado = Array.isArray(notificacion.mensajes);
+	let tipoChat = '';
+	let receptorId = null;
+	let nombre_contacto = '';
+	let timestamp = null;
+	let mensajeTexto = '';
+	let cantidad = 1;
+
+	if (esListado) {
+		tipoChat = notificacion.tipo;
+		receptorId = notificacion.receptor_id;
+		const mensajes = notificacion.mensajes || [];
+		cantidad = mensajes.length;
+		const ultimo = mensajes.reduce((acc, curr) => {
+			if (!acc) { return curr; }
+			return new Date(curr.fecha) > new Date(acc.fecha) ? curr : acc;
+		}, null);
+		mensajeTexto = ultimo?.contenido ?? '';
+		timestamp = ultimo?.fecha ?? null;
+		const conversacionId = `${tipoChat}-${receptorId}`;
+		if (tipoChat === 'privado') {
+			nombre_contacto = ultimo?.emisor_nombre || `Privado #${receptorId}`;
+		} else {
+			const convEl = document.getElementById(conversacionId);
+			nombre_contacto = convEl?.textContent || `Grupo #${receptorId}`;
+		}
+	} else {
+		tipoChat = notificacion.conversacion_id.split('-')[0];
+		receptorId = notificacion.receptor_id;
+		if (tipoChat === 'privado') {
+			nombre_contacto = notificacion.emisor_nombre || notificacion.nombre || `Privado #${receptorId}`;
+		} else {
+			const convEl = document.getElementById(`${tipoChat}-${receptorId}`);
+			nombre_contacto = convEl?.textContent || notificacion.nombre || `Grupo #${receptorId}`;
+		}
+		timestamp = notificacion.fecha;
+		mensajeTexto = notificacion.mensaje ?? '';
+		cantidad = notificacion.cantidad ?? 1;
+	}
+
 	const bandeja = document.getElementById('lista-notificaciones');
 	const li = document.createElement('li');
 	li.className = 'notif-card';
 	const header = document.createElement('div');
 	header.className = 'notif-header';
-	li.onclick = () => abrirChat(tipoChat, notificacion.receptor_id, nombre_contacto);
+	li.onclick = () => abrirChat(tipoChat, receptorId, nombre_contacto);
 
 	header.innerHTML = `
-		<span>${nombre_contacto}</span><span>1</span>
+		<span>${nombre_contacto}</span><span>${cantidad}</span>
 	`
-	const row = document.createElement('div');
-	row.className = 'notif-msg';
-	const texto = document.createElement('span');
-	texto.textContent = notificacion.mensaje ?? '';
-
-	const fecha = document.createElement('span');
-	fecha.className = 'notif-time';
-	fecha.textContent = timestamp ? new Date(timestamp).toLocaleString() : new Date().toLocaleString();
-
 	li.appendChild(header);
-	row.appendChild(texto);
-	row.appendChild(fecha);
-	li.appendChild(row);
+
+	if (esListado) {
+		const mensajes = notificacion.mensajes || [];
+		mensajes.forEach(mensaje => {
+			const row = document.createElement('div');
+			row.className = 'notif-msg';
+			const texto = document.createElement('span');
+			texto.textContent = mensaje.contenido ?? '';
+			const fecha = document.createElement('span');
+			fecha.className = 'notif-time';
+			fecha.textContent = mensaje.fecha ? new Date(mensaje.fecha).toLocaleString() : new Date().toLocaleString();
+			row.appendChild(texto);
+			row.appendChild(fecha);
+			li.appendChild(row);
+		});
+	} else {
+		const row = document.createElement('div');
+		row.className = 'notif-msg';
+		const texto = document.createElement('span');
+		texto.textContent = mensajeTexto;
+		const fecha = document.createElement('span');
+		fecha.className = 'notif-time';
+		fecha.textContent = timestamp ? new Date(timestamp).toLocaleString() : new Date().toLocaleString();
+		row.appendChild(texto);
+		row.appendChild(fecha);
+		li.appendChild(row);
+	}
+
 	bandeja.appendChild(li);
 }

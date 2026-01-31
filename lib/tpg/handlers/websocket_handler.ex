@@ -94,11 +94,27 @@ defmodule Tpg.WebSocketHandler do
   defp listar_contactos(state) do
     send(self(), {:listar_conversaciones, state.id})
   end
+
   defp listar_notificaciones(state) do
     Logger.info("[ws] listando notificaciones al loggearse... ")
-    NotificationService.listar_notificaciones(state.id)
+    send(self(), {:listar_notificaciones, state.id})
   end
 
+
+  def websocket_info({:listar_notificaciones, user_id}, state) do
+    Logger.info("[WS] Listando notificaciones para el usuario TUPLA #{state.id}")
+    Logger.info("[WS] Listando notificaciones para el usuario STATE #{state.id}")
+
+    notificaciones = NotificationService.listar_notificaciones(user_id)
+
+    respuesta =
+      Jason.encode!(%{
+        tipo: "notificaciones",
+        notificaciones: notificaciones
+      })
+
+    {:reply, {:text, respuesta}, state}
+  end
 
   def websocket_info({:listar_conversaciones, user_id}, state) do
     Logger.info("[WS] Listando contactos para el usuario TUPLA #{state.id}")
@@ -145,18 +161,6 @@ defmodule Tpg.WebSocketHandler do
     )
 
     {:no_reply, state}
-  end
-
-  def websocket_info({:mostrar_notificaciones, mensajes, emisor_id, tipoChat}, state) do
-    Logger.info("[WS] Se estan cargando notificaciones para el usuario #{state.id}:\n #{inspect(mensajes)}")
-    respuesta = Jason.encode!(%{
-      tipo: "notificaciones",
-      emisor_id: emisor_id,
-      tipo_chat: tipoChat,
-      mensajes: mensajes
-    })
-
-    {:reply, {:text, respuesta}, state}
   end
 
   def websocket_info({:mensaje_leido, mensaje}, state) do

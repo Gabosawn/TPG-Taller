@@ -168,7 +168,31 @@ defmodule Tpg.Services.NotificationService do
 
   @spec listar_notificaciones(id_usuario::integer()) :: any()
   def listar_notificaciones(id_usuario) do
-    Tpg.Dominio.Mensajeria.obtener_mensajes_estado_enviado(id_usuario)
-    {:ok, "[notification service] estado mensajes enviados"}
+    usuarios =
+      Tpg.Dominio.Mensajeria.mensajes_por_usuario(id_usuario)
+      |> Enum.group_by(&(&1.emisor))
+      |> Map.to_list()
+      |> Enum.map(fn {k, v} ->
+        %{receptor_id: k, tipo: "privado", mensajes: v}
+      end)
+
+    grupos =
+      Tpg.Dominio.Mensajeria.mensajes_por_grupo(id_usuario)
+      |> Enum.group_by(&(&1.receptor))
+      |> Map.to_list()
+      |> Enum.map(fn {k, v} ->
+        %{
+          receptor_id: k,
+          tipo: "grupo",
+          mensajes: Enum.map(v, &Map.delete(&1, :receptor))
+        }
+      end)
+      |> Enum.concat(usuarios)
+      |> Enum.sort_by(fn %{mensajes: mensajes} ->
+        mensajes
+        |> Enum.max_by(& &1.fecha, fn -> %{fecha: ~N[0000-01-01 00:00:00]} end)
+        |> Map.get(:fecha)
+      end, :desc)
+      |> IO.inspect(label: "Notificaciones para el usuario #{id_usuario}")
   end
 end

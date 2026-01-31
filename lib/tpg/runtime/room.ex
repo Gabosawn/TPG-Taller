@@ -44,15 +44,6 @@ defmodule Tpg.Runtime.Room do
   end
 
   @impl true
-  def handle_call({:enviar_notificaciones, emisor}, _from, state) do
-    state.mensajes
-    |> Enum.filter(fn msg -> msg.emisor != emisor and msg.estado == "ENVIADO" end)
-    |> Tpg.Services.SessionService.mostrar_notificaciones(emisor, state.group_id, "grupo")
-    Logger.debug("[ROOM-GROUP] Notificaciones enviadas a #{emisor}")
-    {:reply, :ok, state}
-  end
-
-  @impl true
   def handle_call({:agregar_oyente, websocket_pid}, _from, state) do
     {new_listeners, mensajes_respuesta} =
       if Map.has_key?(state.listeners, websocket_pid) do
