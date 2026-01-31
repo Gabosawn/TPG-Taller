@@ -12,13 +12,13 @@ defmodule Tpg.Dominio.Receptores do
   # --------------------- Usuarios ---------------------
   def obtener_usuarios() do
     Repo.all(
-      from u in Tpg.Dominio.Receptores.Usuario,
+      from u in Usuario,
         select: %{nombre: u.nombre, receptor_id: u.receptor_id}
     )
   end
 
   def obtener_usuario(attrs) do
-    case Repo.get_by(Tpg.Dominio.Receptores.Usuario,
+    case Repo.get_by(Usuario,
            nombre: attrs.nombre,
            contrasenia: attrs.contrasenia
          ) do
@@ -67,27 +67,27 @@ defmodule Tpg.Dominio.Receptores do
   end
 
   defp validar_usuario_existe(id_usuario) do
-    case Repo.get(Tpg.Dominio.Receptores.Usuario, id_usuario) do
+    case Repo.get(Usuario, id_usuario) do
       nil -> {:error, :usuario_no_existe}
       usuario -> {:ok, usuario}
     end
   end
 
   defp validar_contacto_existe(nombre_usuario) do
-    case Repo.get_by(Tpg.Dominio.Receptores.Usuario, nombre: nombre_usuario) do
+    case Repo.get_by(Usuario, nombre: nombre_usuario) do
       nil -> {:error, :contacto_no_existe}
       contacto -> {:ok, contacto}
     end
   end
 
   defp insertar_contacto(id_usuario, id_contacto) do
-    case Repo.get_by(Tpg.Dominio.Receptores.Agendado,
+    case Repo.get_by(Agendado,
            usuario_id: id_usuario,
            contacto_id: id_contacto
          ) do
       nil ->
         # No existe, proceder con insert
-        %Tpg.Dominio.Receptores.Agendado{}
+        %Agendado{}
         |> cast(%{usuario_id: id_usuario, contacto_id: id_contacto}, [:usuario_id, :contacto_id])
         |> validate_required([:usuario_id, :contacto_id])
         |> Repo.insert()
@@ -184,6 +184,43 @@ defmodule Tpg.Dominio.Receptores do
       select: %{nombre: contacto.nombre, id: contacto.receptor_id, tipo: "privado"}
     )
     |> Tpg.Repo.all()
+  end
+
+  # --------------------- Receptores ---------------------
+
+  def obtener(tipo, receptor_id) do
+    resultado = case tipo do
+      "grupo" ->
+        from(g in Grupo,
+          where: g.receptor_id == ^receptor_id,
+          select: %{
+            nombre: g.nombre,
+            receptor_id: g.receptor_id,
+            tipo: "grupo",
+            descripcion: g.descripcion,
+            ultima_conexion: nil
+          }
+        )
+        |> Tpg.Repo.one()
+
+      "privado" ->
+        from(u in Usuario,
+          where: u.receptor_id == ^receptor_id,
+          select: %{
+            nombre: u.nombre,
+            receptor_id: u.receptor_id,
+            tipo: "privado",
+            ultima_conexion: u.ultima_conexion,
+            descripcion: nil
+          }
+        )
+        |> Tpg.Repo.one()
+    end
+
+    case resultado do
+      nil -> {:error, :no_encontrado}
+      receptor -> {:ok, receptor}
+    end
   end
 
 end

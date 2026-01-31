@@ -36,6 +36,7 @@ defmodule Tpg.Views.PageView do
         <div class="chat-area">
           <div class="chat-header">
             <div id="nombre-chat-actual">Selecciona un chat</div>
+            <div id="ultima-conexion"></div>
           </div>
 
           <div id="mensajes"></div>

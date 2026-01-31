@@ -215,26 +215,15 @@ end
   end
 
   def manejar_abrir_chat(tipo, id_receptor, state) do
-    {return_call, mensajes} =
-      case SessionService.oir_chat(tipo, state.id, id_receptor, self()) do
-        {:ok, mensajes} ->
-          {"chat_abierto", mensajes}
-
-        {:ya_esta_escuchando, mensajes} ->
-          {"do_nothing", mensajes}
-
-        _ ->
-          {"mostrar_error", "Error abriendo chat"}
-      end
-
-    respuesta =
-      Jason.encode!(%{
-        tipo: return_call,
-        receptor_id: state.id,
-        mensajes: mensajes
-      })
-
-    {:reply, {:text, respuesta}, state}
+    with {:ok, mensajes} <- SessionService.oir_chat(tipo, state.id, id_receptor, self()),
+      {:ok, receptor} = Receptores.obtener(tipo, id_receptor) do
+        NotificationHandler.handle_notification(:chat_abierto, %{receptor: receptor, mensajes: mensajes}, state)
+    else
+      {:ya_esta_escuchando, mensajes} ->
+        {:no_reply, state}
+      _ ->
+        NotificationHandler.handle_notification(:error, "Error abriendo chat" , state)
+    end
   end
 
   defp manejar_envio(tipo, destinatario, mensaje, state) do

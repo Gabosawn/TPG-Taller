@@ -105,6 +105,12 @@ body { font-family: Arial; max-width: 1200px; margin: 50px auto; }
   font-size: 18px;
 }
 
+#ultima-conexion {
+  font-size: 12px;
+  color: #666;
+  margin-top: 3px;
+}
+
 #mensajes {
   flex: 1;
   overflow-y: scroll;

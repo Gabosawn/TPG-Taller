@@ -132,7 +132,7 @@ function manejarMensaje(data) {
 			agregarMensaje('sistema', `✅ Grupo "${data.grupo}" creado con éxito.`);
 			break;
 		case 'chat_abierto':
-			mostrarChat(data.receptor_id, data.mensajes);
+			mostrarChat(data.receptor, data.mensajes);
 			break;
 		case 'error':
 			agregarMensaje('error', '❌ ' + data.mensaje);
@@ -248,19 +248,7 @@ function listar_usuarios_agrupables(usuarios) {
 
 
 function abrirChat(tipo, receptorId, nombreReceptor) {
-	chatActual = {tipo: tipo, id: receptorId};
 
-	// Remover clase active de todos los chats
-	document.querySelectorAll('.chat-item').forEach(item => {
-		item.classList.remove('active');
-	});
-	
-	// Agregar clase active al chat seleccionado
-	document.getElementById(`${tipo}-${receptorId}`).classList.add('active');
-	
-	// Actualizar el header del chat
-	document.getElementById('nombre-chat-actual').textContent = nombreReceptor;
-	
 	// Enviar solicitud para abrir el chat
 	const payload = {
 		accion: 'abrir_chat',
@@ -271,22 +259,61 @@ function abrirChat(tipo, receptorId, nombreReceptor) {
 	ws.send(JSON.stringify(payload));
 }
 
-function mostrarChat(receptorId, mensajes) {
-	console.log('Mostrando chat con receptor ID:', receptorId);
-	console.log('Mensajes recibidos:', mensajes);
+function mostrarChat(usuario, mensajes) {
+	chatActual = {tipo: usuario.tipo, id: usuario.receptor_id};
+
+	// Remover clase active de todos los chats
+	document.querySelectorAll('.chat-item').forEach(item => {
+		item.classList.remove('active');
+	});
+	
+	// Agregar clase active al chat seleccionado
+	document.getElementById(`${usuario.tipo}-${usuario.receptor_id}`).classList.add('active');
+	
+	// Actualizar el header del chat
+	document.getElementById('nombre-chat-actual').textContent = usuario.nombre;
+
+	// Mostrar última conexión
+	const ultimaConexionEl = document.getElementById('ultima-conexion');
+	if (ultimaConexionEl) {
+		ultimaConexionEl.textContent = formatearUltimaConexion(usuario.ultima_conexion);
+	}
+	
 	const mensajesDiv = document.getElementById('mensajes');
 	mensajesDiv.innerHTML = '';
 
 	if (mensajes && mensajes.length > 0) {
 		// Invertir el orden de los mensajes para mostrar el último primero
 		mensajes.reverse().forEach(m => {
-			agregarMensaje(m.emisor == receptorId ? 'enviado' : 'recibido', m.contenido, m.fecha);
+			agregarMensaje(m.emisor == usuario.receptor_id ? 'enviado' : 'recibido', m.contenido, m.fecha);
 		});
 	} else {
 		agregarMensaje('sistema', 'No hay mensajes en esta conversación');
 	}
 }
-
+function formatearUltimaConexion(fechaConexion) {
+	if (!fechaConexion) return '';
+	
+	const fecha = new Date(fechaConexion);
+	const ahora = new Date();
+	const diferencia = ahora - fecha;
+	
+	const minutos = Math.floor(diferencia / 60000);
+	const horas = Math.floor(diferencia / 3600000);
+	const dias = Math.floor(diferencia / 86400000);
+	
+	if (minutos < 1) {
+		return 'En línea';
+	} else if (minutos < 60) {
+		return `Últ. vez hace ${minutos} min`;
+	} else if (horas < 24) {
+		return `Últ. vez hace ${horas} h`;
+	} else if (dias < 7) {
+		return `Últ. vez hace ${dias} d`;
+	} else {
+		return fecha.toLocaleDateString();
+	}
+}
 function enviarMensaje() {
 	const mensaje = document.getElementById('mensaje').value;
 

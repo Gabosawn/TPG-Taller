@@ -108,6 +108,18 @@ defmodule Tpg.Handlers.NotificationHandler do
     Logger.debug( IO.inspect(respuesta))
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
+
+  def handle_notification(:chat_abierto, %{receptor: receptor, mensajes: mensajes}, state) do
+    respuesta = %{
+      tipo: "chat_abierto",
+      receptor: Map.take(receptor, [:receptor_id, :nombre, :ultima_conexion, :descripcion, :tipo]),
+      mensajes: mensajes
+    }
+    Logger.debug( IO.inspect(respuesta))
+    {:reply, {:text, Jason.encode!(respuesta)}, state}
+  end
+
+
   # Catch-all para notificaciones desconocidas
   def handle_notification(tipo, payload, state) do
     Logger.warning("[NotificationHandler] Notificación no manejada: #{inspect(tipo)}")
