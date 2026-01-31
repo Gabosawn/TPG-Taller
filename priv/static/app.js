@@ -114,7 +114,7 @@ function manejarMensaje(data) {
 			listar_contactos(data.conversaciones);
 			break;
 		case 'mensaje_nuevo':
-			agregarMensaje('nuevo', `💬 ${data.de}: ${data.mensaje}`);
+			mostrarMensaje(data.de, data.mensaje);
 			break;
 		case 'usuarios_activos':
 			agregarMensaje('sistema', '👥 Usuarios: ' + data.usuarios.join(', '));
@@ -138,7 +138,7 @@ function manejarMensaje(data) {
 			agregarMensaje('error', '❌ ' + data.mensaje);
 			break;
 		case 'sistema':
-			agregarMensaje('Notificacion:', data.mensaje);
+			mensajeDeSistema(data.mensaje);
 			break;
 		case 'notificacion_chat':
 			notificacion_punto_verde(data)
@@ -151,6 +151,10 @@ function manejarMensaje(data) {
 		default:
 			agregarMensaje('sistema', JSON.stringify(data));
 	}
+}
+
+function mensajeDeSistema(mensaje) {
+	console.log('Notificacion del sistema:', mensaje);
 }
 
 function notificacion_punto_verde(data) {
@@ -234,7 +238,6 @@ function listar_usuarios_agrupables(usuarios) {
 	});
 }
 
-
 function abrirChat(tipo, receptorId, nombreReceptor) {
 	chatActual = {tipo: tipo, id: receptorId};
 
@@ -257,6 +260,11 @@ function abrirChat(tipo, receptorId, nombreReceptor) {
 	};
 	
 	ws.send(JSON.stringify(payload));
+}
+
+function mostrarMensaje(receptor_id, mensaje) {
+	console.log('(CAPAZ) Mostrando mensaje:', mensaje, receptor_id);
+	agregarMensaje(mensaje.emisor == receptor_id ? 'recibido' : 'enviado', mensaje, mensaje.fecha);
 }
 
 function mostrarChat(receptorId, mensajes) {
@@ -349,6 +357,7 @@ function agregarUsuario() {
 }
 
 function agregarMensaje(tipo, texto, fecha) {
+	console.log(`Agregando mensaje de tipo "${tipo}": ${texto}`);
 	const div = document.createElement('div');
 	div.className = 'mensaje ' + tipo;
 	

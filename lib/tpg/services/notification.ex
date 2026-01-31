@@ -25,6 +25,7 @@ defmodule Tpg.Services.NotificationService do
       |> Repo.one()
 
     IO.inspect(tipo_de_chat)
+    send(ws_pid, {:nuevo_mensaje, tipo_de_chat})
     send(ws_pid, {:notificar_mensaje_nuevo, tipo_de_chat})
   end
 
