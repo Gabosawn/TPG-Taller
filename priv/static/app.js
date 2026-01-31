@@ -268,7 +268,7 @@ function mostrarChat(usuario, mensajes) {
 	if (mensajes && mensajes.length > 0) {
 		// Invertir el orden de los mensajes para mostrar el último primero
 		mensajes.reverse().forEach(m => {
-			agregarMensaje(m.emisor == usuario.receptor_id ? 'enviado' : 'recibido', m.contenido, m.fecha);
+			agregarMensaje(m.emisor == usuario.receptor_id ? 'recibido' : 'enviado', m.contenido, m.fecha);
 		});
 	} else {
 		agregarMensaje('sistema', 'No hay mensajes en esta conversación');

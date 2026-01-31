@@ -115,7 +115,7 @@ defmodule Tpg.Handlers.NotificationHandler do
       receptor: Map.take(receptor, [:receptor_id, :nombre, :ultima_conexion, :descripcion, :tipo]),
       mensajes: mensajes
     }
-    Logger.debug( IO.inspect(respuesta))
+
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
 
