@@ -131,6 +131,10 @@ defmodule Tpg.Services.NotificationService do
     Enum.each(contactos, fn contacto ->
       Logger.info("[notification service] enviando notificacion a #{contacto.id}")
       enviar_notificacion(contacto.id, :contacto_en_linea, mensaje)
+      with {:ok, _} <-  SessionService.get_session_pid(contacto.id) do
+          mensaje2 = %{contacto: %{receptor_id: contacto.id, nombre: ""}}
+          enviar_notificacion(contexto.receptor_id, :contacto_en_linea, mensaje2)
+      end
     end)
     {:ok, "notificaciones distribuidas con exito"}
   end
