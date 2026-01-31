@@ -65,6 +65,7 @@ defmodule Tpg.Views.PageView do
             <div id="usuarios-checkbox"></div>
           </div>
           <button onclick="crearGrupo()">Crear Grupo</button>
+          <button onclick="closeModal()">Cancelar</button>
         </div>
         <div class="agregar-contacto" style="display:none;">
           <h3>Agregar Contacto</h3>

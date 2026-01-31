@@ -217,35 +217,14 @@ function agregarListaCrearGrupo(checkboxContainer, tipo, id, nombre) {
 function listar_contactos(conversaciones) {
 	const lista = document.getElementById('lista-conversaciones');
 	lista.innerHTML = '';
+	const checkboxContainer = document.getElementById('usuarios-checkbox');
+	checkboxContainer.innerHTML = ''
 
 	conversaciones.forEach(conversacion => {
 		agregarConversacion(conversacion.tipo, conversacion.id, conversacion.nombre);
+		agregarListaCrearGrupo(checkboxContainer, conversacion.tipo, conversacion.id, conversacion.nombre);
 	});
 }
-
-function listar_usuarios_agrupables(usuarios) {
-	const lista = document.getElementById('lista-usuarios');
-	lista.innerHTML = '';
-
-	const checkboxContainer = document.getElementById('usuarios-checkbox');
-	checkboxContainer.innerHTML = '';
-	 
-
-	if (contactos.length === 0) {
-		const li = document.createElement('li');
-		li.textContent = 'No hay contactos disponibles';
-		li.style.color = '#999';
-		lista.appendChild(li);
-		return;
-	}
-	
-
-	contactos.forEach(contacto => {
-		agregarConversacion(lista, contacto.tipo, contacto.id, contacto.nombre);
-		agregarListaCrearGrupo(checkboxContainer, contacto.tipo, contacto.id, contacto.nombre);
-	});
-}
-
 
 function abrirChat(tipo, receptorId, nombreReceptor) {
 
@@ -302,9 +281,7 @@ function formatearUltimaConexion(fechaConexion) {
 	const horas = Math.floor(diferencia / 3600000);
 	const dias = Math.floor(diferencia / 86400000);
 	
-	if (minutos < 1) {
-		return 'En línea';
-	} else if (minutos < 60) {
+	if (minutos < 60) {
 		return `Últ. vez hace ${minutos} min`;
 	} else if (horas < 24) {
 		return `Últ. vez hace ${horas} h`;
