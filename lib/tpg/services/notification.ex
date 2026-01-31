@@ -116,7 +116,7 @@ defmodule Tpg.Services.NotificationService do
     Enum.each(miembros, fn usuario_id ->
       enviar_notificacion(usuario_id, :grupo_creado, mensaje)
     end)
-    {:ok, "notificaciones distribuidas con exito"}
+    {:ok, "[notification service] notificaciones distribuidas con exito"}
   end
   @doc """
   Notifica a un los contactos de un usuario que este esta en linea
@@ -126,22 +126,48 @@ defmodule Tpg.Services.NotificationService do
   @spec notificar(:en_linea, contexto :: %{receptor_id: integer(), nombre: String.t()}) :: {:ok, any()} | {:error, String.t()}
   def notificar(:en_linea, contexto) do
     mensaje = %{contacto: contexto}
-    Logger.info("[notification service] notificando creacion de grupo a sus miembros...")
-    contactos = Receptores.obtener_contactos_agenda(contexto.receptor_id)
-    Enum.each(contactos, fn contacto ->
-      Logger.info("[notification service] enviando notificacion a #{contacto.id}")
-      enviar_notificacion(contacto.id, :contacto_en_linea, mensaje)
-      with {:ok, _} <-  SessionService.get_session_pid(contacto.id) do
-          mensaje2 = %{contacto: %{receptor_id: contacto.id, nombre: ""}}
-          enviar_notificacion(contexto.receptor_id, :contacto_en_linea, mensaje2)
-      end
-    end)
-    {:ok, "notificaciones distribuidas con exito"}
+    with contactos <- Receptores.obtener_contactos_agenda(contexto.receptor_id) do
+      Enum.each(contactos, fn contacto ->
+        Logger.info("[notification service] enviando notificacion a #{contacto.id}")
+        enviar_notificacion_si_id_esta_en_linea(:contacto_en_linea, %{contacto: %{receptor_id: contacto.id, nombre: ""}}, contacto.id, contexto.receptor_id)
+        enviar_notificacion_si_id_esta_en_linea(:contacto_en_linea, %{contacto: %{receptor_id: contexto.receptor_id, nombre: contexto.nombre}}, contexto.receptor_id, contacto.id)
+      end)
+      {:ok, "[notification service] notificaciones distribuidas con exito"}
+    else
+      {:error, motivo} ->
+        {:error, motivo}
+    end
+  end
+  @spec enviar_notificacion_si_id_esta_en_linea( operacion:: atom(), mensaje:: %{}, id_a_validar:: integer(), id_objetivo:: integer()) :: {:ok, any()} | {:error, String.t()}
+  defp enviar_notificacion_si_id_esta_en_linea(operacion, mensaje, id_a_validar, id_objetivo) do
+    with {:ok, _} <-  SessionService.get_session_pid(id_a_validar) do
+        enviar_notificacion(id_objetivo, operacion, mensaje)
+        Logger.info("[notification service] id_validado y notificacion enviada")
+        {:ok, "[notification service] usuario validado y notificacion enviada"}
+    end
+  end
+  @doc """
+  Notifica a un los contactos de un usuario que este saliendo de 'en_linea'
+  receptor_id: Id del usuario en linea
+  nombre: Nombre del usuario en linea
+  """
+  @spec notificar(:saliendo_de_linea, contexto :: %{receptor_id: integer(), nombre: String.t()}) :: {:ok, any()} | {:error, String.t()}
+  def notificar(:saliendo_de_linea, contexto) do
+    mensaje = %{contacto: contexto}
+    with contactos <- Receptores.obtener_contactos_agenda(contexto.receptor_id) do
+      Enum.each(contactos, fn contacto ->
+        enviar_notificacion_si_id_esta_en_linea(:saliendo_de_linea, %{contacto: %{receptor_id: contexto.receptor_id, nombre: contexto.nombre}}, contacto.id, contacto.id)
+      end)
+      {:ok, " [notification service] notificaciones distribuidas con exito"}
+    else
+      {:error, motivo} ->
+        {:error, motivo}
+    end
   end
 
-
-  @spec listar_notificaciones(state :: %Tpg.Dominio.Dto.WebSocket{}) :: any()
-  def listar_notificaciones(state) do
-    Tpg.Dominio.Mensajeria.obtener_mensajes_estado_enviado(state.id)
+  @spec listar_notificaciones(id_usuario::integer()) :: any()
+  def listar_notificaciones(id_usuario) do
+    Tpg.Dominio.Mensajeria.obtener_mensajes_estado_enviado(id_usuario)
+    {:ok, "[notification service] estado mensajes enviados"}
   end
 end

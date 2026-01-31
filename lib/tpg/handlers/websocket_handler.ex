@@ -27,13 +27,13 @@ defmodule Tpg.WebSocketHandler do
 
   defp load_user(operacion, nombre, contrasenia, state) do
     with {:ok, res} <- SessionService.loggear(operacion, %{nombre: nombre, contrasenia: contrasenia}),
-      {:ok, _} <- SessionService.registrar_cliente( res.id, self()) do
+      {:ok, _} <- SessionService.registrar_cliente(res.id, self()) do
         state = %{state | id: res.id}
         state = %{state | server_pid: res.pid}
         listar_contactos(state)
-        NotificationService.listar_notificaciones(state)
+        listar_notificaciones(state)
+        NotificationService.notificar(:en_linea, %{receptor_id: res.id, nombre: nombre})
         Logger.info("[WS] cliente registrado con la sesion #{inspect(self())}")
-        NotificationService.notificar(:en_linea, %{receptor_id: state.id, nombre: nombre})
         NotificationHandler.notificar(:bienvenida, nombre, state)
       else
         {:error, {:already_started, pid}} ->
@@ -42,7 +42,7 @@ defmodule Tpg.WebSocketHandler do
           {:reply, frame, new_state}
 
         {:error, reason} ->
-          {_tipo, frame, new_state} = NotificationHandler.notificar(:error, "Error al conectar: #{inspect(reason)}", state)
+          {_tipo, frame, new_state} = NotificationHandler.notificar(:error, "Error al iniciar sesion: #{inspect(reason)}", state)
           send(self(), :cerrar_conexion)
           {:reply, frame, new_state}
         end
@@ -94,6 +94,11 @@ defmodule Tpg.WebSocketHandler do
   defp listar_contactos(state) do
     send(self(), {:listar_conversaciones, state.id})
   end
+  defp listar_notificaciones(state) do
+    Logger.info("[ws] listando notificaciones al loggearse... ")
+    NotificationService.listar_notificaciones(state.id)
+  end
+
 
   def websocket_info({:listar_conversaciones, user_id}, state) do
     Logger.info("[WS] Listando contactos para el usuario TUPLA #{state.id}")
@@ -175,7 +180,7 @@ end
   Cuando se recibe una notificación desde algun punto del sistema, se delega al handler la respuesta que se debe devolver
   """
   def websocket_info({:notificacion, tipo, notificacion}, state) do
-    Logger.info("[ws] Recibiendo notificacion...")
+    Logger.info("[ws] usuario #{state.usuario} Recibiendo notificacion...")
     IO.inspect({tipo, notificacion})
     NotificationHandler.handle_notification(tipo, notificacion, state)
   end
@@ -187,6 +192,7 @@ end
   # Cleanup cuando se cierra la conexión
   def terminate(_reason, _req, state) do
     if state.server_pid do
+      NotificationService.notificar(:saliendo_de_linea, %{receptor_id: state.id, nombre: state.usuario})
       SessionService.desloggear(state.id)
     end
 

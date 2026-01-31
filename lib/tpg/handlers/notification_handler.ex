@@ -50,7 +50,19 @@ defmodule Tpg.Handlers.NotificationHandler do
     }
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
-
+  def handle_notification(:saliendo_de_linea, %{contacto: emisor}, state) do
+    conversacion_id = "privado-#{emisor.receptor_id}"
+    respuesta = %{
+      tipo: "contacto_no_en_linea",
+      notificacion: %{
+        receptor_id: emisor.receptor_id,
+        nombre: emisor.nombre,
+        conversacion_id: conversacion_id
+      }
+    }
+    IO.inspect(respuesta)
+    {:reply, {:text, Jason.encode!(respuesta)}, state}
+  end
   def handle_notification(:contacto_nuevo, %{tipo: tipo, receptor_id: receptor_id, nombre: nombre}, state) do
     Logger.info("[notification handler] notificacion recibida")
     respuesta = %{

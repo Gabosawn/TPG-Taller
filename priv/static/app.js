@@ -141,10 +141,14 @@ function manejarMensaje(data) {
 			agregarMensaje('Notificacion:', data.mensaje);
 			break;
 		case 'notificacion_chat':
-			notificacion_punto_verde(data)
+			agregarNotificacion(data)
 			break;
 		case 'contacto_en_linea':
-			notificacion_punto_verde(data)
+			notificacion_punto_verde(true, data)
+			break;
+		case 'contacto_no_en_linea':
+			notificacion_punto_verde(false, data)
+			break;
 		case 'do_nothing':
 			break;
 
@@ -153,17 +157,25 @@ function manejarMensaje(data) {
 	}
 }
 
-function notificacion_punto_verde(data) {
+function notificacion_punto_verde(value, data) {
   const convId = data.notificacion.conversacion_id; // ejemplo: "privado-2"
   let conversacion = document.getElementById(convId);
 
   if (!conversacion) {
     console.warn("⚠️ No se encontró la conversacion, creando automáticamente...");
+	return;
   }
 
   if (conversacion) {
-    conversacion.classList.add("punto-verde");
-    console.log("✅ Punto verde agregado para", convId);
+	if (value) {
+		conversacion.classList.add("punto-verde");
+		console.log("✅ Punto verde agregado para", convId);
+		return;
+	} else {
+		conversacion.classList.remove("punto-verde");
+		console.log("✅ Punto verde removido para", convId);
+		return;
+	}
   }
 }
 
