@@ -31,3 +31,7 @@ cloud "External World" {
 
 @enduml
 ```
+
+## Testing 
+
+Para el framework de testing recurrir a: https://claude.ai/share/0b369e7a-2fc3-4120-9889-eed0f0080ffe . Contiene ejemplos, descripciones y links a documentacion dentro de sus guias.

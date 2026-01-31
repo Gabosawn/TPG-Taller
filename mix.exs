@@ -8,6 +8,7 @@ defmodule Tpg.MixProject do
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
+      elixirc_paths: elixirc_paths(Mix.env()),  # ← AGREGAR ESTA LÍNEA
       deps: deps()
     ]
   end
@@ -35,4 +36,7 @@ defmodule Tpg.MixProject do
       setup_db: [" ecto.create ", " ecto.migrate"]
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 end
