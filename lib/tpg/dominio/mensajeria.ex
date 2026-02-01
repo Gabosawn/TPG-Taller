@@ -4,8 +4,18 @@ defmodule Tpg.Dominio.Mensajeria do
   alias Tpg.Repo
   import Ecto.Query
   alias Tpg.Dominio.Mensajes.{Recibido, Mensaje, Enviado}
-
   alias Tpg.Dominio.Receptores.{Usuario, UsuariosGrupo}
+
+  def obtener_kv_user_ids_nombres(id_grupo) do
+    from(u in Tpg.Dominio.Receptores.Usuario,
+      join: ug in "usuarios_grupo",
+      on: ug.usuario_id == u.receptor_id,
+      where: ug.grupo_id == ^id_grupo,
+      select: {u.receptor_id, u.nombre}
+    )
+    |> Repo.all()
+    |> Enum.into(%{})
+  end
 
   @doc """
   Envia el mensaje del emisor al receptor marcandolo como 'ENVIADO'
@@ -77,6 +87,10 @@ defmodule Tpg.Dominio.Mensajeria do
       )
 
     Repo.all(mensajes_query)
+  end
+
+  def obtener_mensajes_estado_enviado(usuario_id) do
+    mensajes_por_usuario(usuario_id) ++ mensajes_por_grupo(usuario_id)
   end
 
   def mensajes_por_usuario(usuario_id) do

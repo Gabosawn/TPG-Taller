@@ -3,15 +3,15 @@ defmodule Tpg.Services.ChatService do
   alias Tpg.Dominio.Receptores
   alias Tpg.Runtime.{Room, PrivateRoom}
 
-  def enviar(tipo, emisor, receptor, msg) do
-    Logger.debug("Enviando mensaje de #{inspect(emisor)} a #{inspect(receptor)}: #{msg}")
+  def enviar(tipo, emisor, destinatario, msg) do
+    Logger.debug("Enviando mensaje de #{inspect(emisor)} a #{inspect(destinatario)}: #{msg}")
 
     case tipo do
       "grupo" ->
-        Room.agregar_mensaje(receptor, emisor, msg)
+        Room.agregar_mensaje(destinatario, emisor, msg)
 
       "privado" ->
-        PrivateRoom.agregar_mensaje(emisor, receptor, msg)
+        PrivateRoom.agregar_mensaje(emisor, destinatario, msg)
     end
 
     {:ok, "mensaje enviado"}
