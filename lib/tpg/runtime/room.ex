@@ -96,7 +96,7 @@ defmodule Tpg.Runtime.Room do
   def handle_call({:agregar_mensaje, emisor, contenido}, _from, state) do
     case Mensajeria.enviar_mensaje(state.group_id, emisor, contenido) do
       {:ok, mensaje} ->
-        nuevo_msg = %{id: mensaje.id, emisor: emisor, contenido: contenido, estado: mensaje.estado, fecha: mensaje.inserted_at}
+        nuevo_msg = %{id: mensaje.id, emisor: emisor, contenido: contenido, estado: mensaje.estado, nombre: mensaje.nombre_emisor, fecha: mensaje.inserted_at}
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
         # Notificar a todos los oyentes
         notificar_oyentes(new_state.listeners, mensaje, emisor, nil)

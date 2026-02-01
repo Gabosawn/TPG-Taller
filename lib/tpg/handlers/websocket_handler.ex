@@ -239,12 +239,10 @@ defmodule Tpg.WebSocketHandler do
         NotificationHandler.notificar(:error, "Tipo de chat desconocido: #{tipo}", state)
     end
 
-    kv_user_ids_nombres = Mensajeria.obtener_kv_user_ids_nombres(id_receptor)
-
     with {:ok, mensajes} <- SessionService.oir_chat(tipo, state.id, id_receptor, self()),
         {:ok, receptor} <- Receptores.obtener(tipo, id_receptor),
         {:ok, receptor} <- SessionService.agregar_ultima_conexion(receptor) do
-          NotificationHandler.handle_notification(tipo_atom, %{receptor: receptor, mensajes: mensajes, id_names: kv_user_ids_nombres}, state)
+          NotificationHandler.handle_notification(tipo_atom, %{receptor: receptor, mensajes: mensajes}, state)
     else
       {:ya_esta_escuchando, mensajes} ->
         {:ok, state}

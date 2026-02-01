@@ -21,7 +21,7 @@ defmodule Tpg.Handlers.NotificationHandler do
   #   {:reply, Jason.encode!(respuesta), state}
   # end
 
-  def handle_notification(:nuevo_mensaje_privado, %{emisor: emisor, mensaje: mensaje}, state) do
+  def handle_notification(:nuevo_mensaje, %{emisor: emisor, mensaje: mensaje}, state) do
 
     # state.id es el id del usuario receptor
     conversacion_id = "privado-#{emisor.receptor_id}"
@@ -109,27 +109,14 @@ defmodule Tpg.Handlers.NotificationHandler do
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
 
-  def handle_notification(:chat_abierto_privado, %{receptor: receptor, mensajes: mensajes, id_names: id_names}, state) do
+  def handle_notification(:chat_abierto, %{receptor: receptor, mensajes: mensajes}, state) do
     respuesta = %{
-      tipo: "chat_abierto_privado",
+      tipo: "chat_abierto",
       receptor: Map.take(receptor, [:receptor_id, :nombre, :ultima_conexion, :descripcion, :tipo, :en_linea]),
       mensajes: mensajes
     }
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
-
-  def handle_notification(:chat_abierto_grupo, %{receptor: receptor, mensajes: mensajes, id_names: id_names}, state) do
-    respuesta = %{
-      tipo: "chat_abierto_grupo",
-      receptor: Map.take(receptor, [:receptor_id, :nombre, :ultima_conexion, :descripcion, :tipo, :en_linea]),
-      mensajes: mensajes,
-      kv_user_ids_names: id_names,
-      user_ws_id: state.id
-    }
-
-    {:reply, {:text, Jason.encode!(respuesta)}, state}
-  end
-
 
   # Catch-all para notificaciones desconocidas
   def handle_notification(tipo, payload, state) do

@@ -20,7 +20,7 @@ defmodule Tpg.Dominio.Mensajeria do
   @doc """
   Envia el mensaje del emisor al receptor marcandolo como 'ENVIADO'
   """
-  @spec enviar_mensaje(reciever :: integer(), sender :: integer(), message :: string()) :: {:ok, %Mensaje{}} | {:error, any()}
+  @spec enviar_mensaje(reciever :: integer(), sender :: integer(), message :: string()) :: {:ok, %{}} | {:error, any()}
   def enviar_mensaje(reciever, sender, message) do
     Multi.new()
     |> Multi.insert(:mensaje, fn _ ->
@@ -40,7 +40,9 @@ defmodule Tpg.Dominio.Mensajeria do
     end)
     |> Repo.transaction()
     |> case do
-      {:ok, %{mensaje: mensaje}} -> {:ok, mensaje}
+      {:ok, %{mensaje: mensaje}} ->
+        usuario = Repo.get_by(Usuario, receptor_id: sender)
+        {:ok, Map.put(mensaje, :nombre_emisor, usuario.nombre)}
       {:error, _operation, changeset, _changes} -> {:error, changeset}
     end
   end
@@ -52,11 +54,14 @@ defmodule Tpg.Dominio.Mensajeria do
         on: receptor.mensaje_id == mensaje.id,
         join: emisor in Enviado,
         on: mensaje.id == emisor.mensaje_id,
+        join: usuario in Usuario,
+        on: usuario.receptor_id == emisor.usuario_id,
         where: receptor.receptor_id == ^grupo_id,
         select: %{
           id: mensaje.id,
           emisor: emisor.usuario_id,
           contenido: mensaje.contenido,
+          nombre: usuario.nombre,
           estado: mensaje.estado,
           fecha: mensaje.inserted_at
         },
