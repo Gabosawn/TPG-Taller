@@ -4,16 +4,24 @@ defmodule Tpg.Dominio.Mensajeria do
   import Ecto.Query
   alias Tpg.Dominio.Mensajes.{Recibido, Mensaje, Enviado}
 
-  @doc """
-  Envia el mensaje del emisor al receptor marcandolo como 'ENVIADO'
-  """
-  @spec enviar_mensaje(reciever :: integer(), sender :: integer(), message :: %Mensaje{}) :: {:ok, %Mensaje{}} | {:error, any()}
-  def enviar_mensaje(reciever, sender, message) do
-    IO.inspect(%{reciever: reciever, sender: sender, message: message})
 
+  def obtener_kv_user_ids_nombres(id_grupo) do
+
+    from(u in Tpg.Dominio.Receptores.Usuario,
+      join: ug in "usuarios_grupo",
+      on: ug.usuario_id == u.receptor_id,
+      where: ug.grupo_id == ^id_grupo,
+      select: {u.receptor_id, u.nombre}
+    )
+    |> Repo.all()
+    |> Enum.into(%{})
+  end
+
+  @spec enviar_mensaje(reciever :: integer(), sender :: integer(), message :: string()) :: {:ok, %Mensaje{}} | {:error, any()}
+  def enviar_mensaje(reciever, sender, message) do
     Multi.new()
     |> Multi.insert(:mensaje, fn _ ->
-      Mensaje.changeset(message)
+      Mensaje.changeset(%{contenido: message})
     end)
     |> Multi.insert(:enviado, fn %{mensaje: mensaje} ->
       Enviado.changeset(%{
@@ -82,7 +90,7 @@ defmodule Tpg.Dominio.Mensajeria do
     mensajes_por_usuario(usuario_id) ++ mensajes_por_grupo(usuario_id)
   end
 
-  defp mensajes_por_usuario(usuario_id) do
+  def mensajes_por_usuario(usuario_id) do
     from(receptor in Recibido,
       join: mensaje in Mensaje, on: receptor.mensaje_id == mensaje.id,
       join: emisor in Enviado, on: mensaje.id == emisor.mensaje_id,

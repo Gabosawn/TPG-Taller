@@ -17,7 +17,7 @@ defmodule Tpg.Services.NotificationService do
   destinatario :: integer() | String.t()
 ) :: {:ok, String.t()}
   def notificar_oyentes_de_mensaje(ws_pid, mensaje, emisor, destinatario) do
-    tipo_de_chat =
+    data =
       from(e in Enviado,
         join: r in Recibido,
         on: r.mensaje_id == e.mensaje_id,
@@ -25,8 +25,8 @@ defmodule Tpg.Services.NotificationService do
         preload: [:usuario, :mensaje]
       )
       |> Repo.one()
-    send(ws_pid, {:nuevo_mensaje, tipo_de_chat, emisor, destinatario})
-    send(ws_pid, {:notificar_mensaje_nuevo, tipo_de_chat})
+    send(ws_pid, {:nuevo_mensaje, data, emisor, destinatario})
+    send(ws_pid, {:notificar_mensaje_nuevo, data})
   end
 
   @doc """
