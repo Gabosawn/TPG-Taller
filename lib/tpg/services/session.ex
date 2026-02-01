@@ -111,21 +111,6 @@ defmodule Tpg.Services.SessionService do
     end
   end
 
-  def mostrar_notificaciones(mensajes, session_id, emisor_id, tipoChat) do
-    Logger.debug("[SESSION SERVICE] Mensajes a notificar #{inspect(mensajes)}")
-    with {:ok, pid} <- get_session_pid(session_id),
-         :ok <- GenServer.cast(pid, {:mostrar_notificaciones, mensajes, emisor_id, tipoChat}) do
-      {:ok, "[session service] notificaciones mostradas"}
-    else
-      {:error, _} ->
-        Logger.warning("[Session service] no hay sesion con que mostrar notificaciones")
-        {:error, "[session service] no hay sesion con que mostrar notificaciones"}
-
-      _ ->
-        {:error, "[session service] Error: no se pudieron mostrar notificaciones"}
-    end
-  end
-
   def oir_chat(tipo, user_id, group_id, ws_pid) do
     with {:ok, pid} <- get_session_pid(user_id),
          false <- GenServer.call(pid, {:esta_escuchando_canal, group_id}),

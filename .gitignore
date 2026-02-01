@@ -28,3 +28,5 @@ tpg-*.tar
 /.elixir_ls/
 
 /.volumes/
+
+.vscode/

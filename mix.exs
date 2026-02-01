@@ -4,7 +4,7 @@ defmodule Tpg.MixProject do
   def project do
     [
       app: :tpg,
-      version: "0.5.0",
+      version: "0.6.0",
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),

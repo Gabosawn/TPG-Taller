@@ -25,8 +25,8 @@ defmodule Tpg.Runtime.Room do
     GenServer.call(via_tuple(group_id), {:quitar_oyente, websocket_pid})
   end
 
-  def agregar_mensaje(group_id, de, contenido) do
-    GenServer.call(via_tuple(group_id), {:agregar_mensaje, de, contenido})
+  def agregar_mensaje(group_id, emisor, contenido) do
+    GenServer.call(via_tuple(group_id), {:agregar_mensaje, emisor, contenido})
   end
 
   def obtener_historial(group_id) do
@@ -41,15 +41,6 @@ defmodule Tpg.Runtime.Room do
     |> cargar_miembros()
     Logger.debug("[room] room inicializado: #{inspect(room)}")
     {:ok, room}
-  end
-
-  @impl true
-  def handle_call({:enviar_notificaciones, emisor}, _from, state) do
-    state.mensajes
-    |> Enum.filter(fn msg -> msg.emisor != emisor and msg.estado == "ENVIADO" end)
-    |> Tpg.Services.SessionService.mostrar_notificaciones(emisor, state.group_id, "grupo")
-    Logger.debug("[ROOM-GROUP] Notificaciones enviadas a #{emisor}")
-    {:reply, :ok, state}
   end
 
   @impl true
@@ -102,18 +93,18 @@ defmodule Tpg.Runtime.Room do
   end
 
   @impl true
-  def handle_call({:agregar_mensaje, de, contenido}, _from, state) do
-    case Mensajeria.enviar_mensaje(state.group_id, de, contenido) do
+  def handle_call({:agregar_mensaje, emisor, contenido}, _from, state) do
+    case Mensajeria.enviar_mensaje(state.group_id, emisor, contenido) do
       {:ok, mensaje} ->
-        nuevo_msg = %{id: mensaje.id, emisor: de, contenido: contenido, estado: mensaje.estado, fecha: mensaje.inserted_at}
+        nuevo_msg = %{id: mensaje.id, emisor: emisor, contenido: contenido, estado: mensaje.estado, fecha: mensaje.inserted_at}
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
         # Notificar a todos los oyentes
-        notificar_oyentes(new_state.listeners, mensaje)
+        notificar_oyentes(new_state.listeners, mensaje, emisor, nil)
         {:reply, {:ok, nuevo_msg}, new_state}
 
       {:error, motivo} ->
         Logger.alert(
-          "[room] Mensaje perdido: #{contenido}, de #{de}. Motivo: #{inspect(motivo)}"
+          "[room] Mensaje perdido: #{contenido}, de #{emisor}. Motivo: #{inspect(motivo)}"
         )
 
         {:reply, {:error, motivo}, state}
@@ -143,13 +134,13 @@ defmodule Tpg.Runtime.Room do
     %{state | miembros: Receptores.obtener_miembros(state.group_id)}
   end
 
-  defp notificar_oyentes(listeners, mensaje) do
+  defp notificar_oyentes(listeners, mensaje, emisor, _all) do
     Logger.info("[room] Notificando usuarios...")
     Enum.each(Map.keys(listeners), fn pid ->
       Logger.info("[room] Notificando usuario")
-      NotificationService.notificar_oyentes_de_mensaje(pid, mensaje)
+      NotificationService.notificar_oyentes_de_mensaje(pid, mensaje, emisor, nil)
     end)
-    # Enum.each(Map.keys(listeners), fn pid ->
+    # Enum.each(Map.keys(listeners), fn pid ->W
     #   Logger.info("[room] Notificando usuario")
     #   NotificationService.notificar_mensaje(pid, mensaje)
     # end)

@@ -1,0 +1,56 @@
+@startuml
+
+
+database "Repo" as Repo
+
+package "Services" {
+    component "ChatService" as ChatService {
+    }
+    component "SessionService" as SessionService {
+    }
+    component "NotificationService" as NotificationService {
+    }
+}
+
+package "Handlers" {
+    component "WebSocketHandler" as ws <<CowboyWebsocket>> {
+    }
+    [NotificationHandler]
+}
+
+ws --> ChatService
+ws --> SessionService
+ws --> NotificationService
+ws -> NotificationHandler
+
+package "Runtime" {
+    component "Session" as Session <<GenServer>> {
+        
+    }
+
+    component "Room" as Room <<GenServer>> {
+        
+    }
+    component "PrivateRoom" as PrivateRoom <<GenServer>> {
+        
+    }
+}
+
+ChatService --> Room
+ChatService --> PrivateRoom
+SessionService --> Session
+NotificationService --> Session
+Session -> ws 
+
+package "Dominio" {
+    [Mensajeria]
+    [Receptores]
+}
+
+Room --> Mensajeria
+PrivateRoom --> Mensajeria
+PrivateRoom --> Receptores
+
+Mensajeria --> Repo
+Receptores --> Repo
+@enduml

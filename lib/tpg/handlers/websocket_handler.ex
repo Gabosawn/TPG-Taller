@@ -5,6 +5,7 @@ defmodule Tpg.WebSocketHandler do
   alias Tpg.Services.SessionService
   alias Tpg.Services.NotificationService
   alias Tpg.Dominio.Receptores
+  alias Tpg.Dominio.Mensajeria
   alias Tpg.Handlers.NotificationHandler
 
   def init(req, _state) do
@@ -94,11 +95,27 @@ defmodule Tpg.WebSocketHandler do
   defp listar_contactos(state) do
     send(self(), {:listar_conversaciones, state.id})
   end
+
   defp listar_notificaciones(state) do
     Logger.info("[ws] listando notificaciones al loggearse... ")
-    NotificationService.listar_notificaciones(state.id)
+    send(self(), {:listar_notificaciones, state.id})
   end
 
+
+  def websocket_info({:listar_notificaciones, user_id}, state) do
+    Logger.info("[WS] Listando notificaciones para el usuario TUPLA #{state.id}")
+    Logger.info("[WS] Listando notificaciones para el usuario STATE #{state.id}")
+
+    notificaciones = NotificationService.listar_notificaciones(user_id)
+
+    respuesta =
+      Jason.encode!(%{
+        tipo: "notificaciones",
+        notificaciones: notificaciones
+      })
+
+    {:reply, {:text, respuesta}, state}
+  end
 
   def websocket_info({:listar_conversaciones, user_id}, state) do
     Logger.info("[WS] Listando contactos para el usuario TUPLA #{state.id}")
@@ -115,12 +132,22 @@ defmodule Tpg.WebSocketHandler do
     {:reply, {:text, respuesta}, state}
   end
 
-  def websocket_info({:nuevo_mensaje, mensaje}, state) do
+  def websocket_info({:nuevo_mensaje, mensaje, emisor, receptor}, state) do
+
+    tipo =
+      case receptor do
+        nil -> "mensaje_nuevo_grupo"
+        _ -> "mensaje_nuevo_privado"
+      end
+
     respuesta =
       Jason.encode!(%{
-        tipo: "mensaje_nuevo",
-        de: mensaje.usuario.receptor_id,
+        tipo: tipo,
+        emisor: emisor,
+        receptor: receptor,
         mensaje: mensaje.mensaje.contenido,
+        user_ws_id: state.id,
+        emisor_nombre: mensaje.usuario.nombre
       })
     {:reply, {:text, respuesta}, state}
   end
@@ -145,18 +172,6 @@ defmodule Tpg.WebSocketHandler do
     )
 
     {:no_reply, state}
-  end
-
-  def websocket_info({:mostrar_notificaciones, mensajes, emisor_id, tipoChat}, state) do
-    Logger.info("[WS] Se estan cargando notificaciones para el usuario #{state.id}:\n #{inspect(mensajes)}")
-    respuesta = Jason.encode!(%{
-      tipo: "notificaciones",
-      emisor_id: emisor_id,
-      tipo_chat: tipoChat,
-      mensajes: mensajes
-    })
-
-    {:reply, {:text, respuesta}, state}
   end
 
   def websocket_info({:mensaje_leido, mensaje}, state) do
@@ -214,10 +229,22 @@ defmodule Tpg.WebSocketHandler do
   end
 
   def manejar_abrir_chat(tipo, id_receptor, state) do
+
+    tipo_atom = case tipo do
+      "privado" ->
+          :chat_abierto_privado
+      "grupo" ->
+          :chat_abierto_grupo
+      _ ->
+        NotificationHandler.notificar(:error, "Tipo de chat desconocido: #{tipo}", state)
+    end
+
+    kv_user_ids_nombres = Mensajeria.obtener_kv_user_ids_nombres(id_receptor)
+
     with {:ok, mensajes} <- SessionService.oir_chat(tipo, state.id, id_receptor, self()),
         {:ok, receptor} <- Receptores.obtener(tipo, id_receptor),
         {:ok, receptor} <- SessionService.agregar_ultima_conexion(receptor) do
-          NotificationHandler.handle_notification(:chat_abierto, %{receptor: receptor, mensajes: mensajes}, state)
+          NotificationHandler.handle_notification(tipo_atom, %{receptor: receptor, mensajes: mensajes, id_names: kv_user_ids_nombres}, state)
     else
       {:ya_esta_escuchando, mensajes} ->
         {:ok, state}

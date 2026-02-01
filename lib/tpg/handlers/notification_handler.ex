@@ -109,13 +109,24 @@ defmodule Tpg.Handlers.NotificationHandler do
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
 
-  def handle_notification(:chat_abierto, %{receptor: receptor, mensajes: mensajes}, state) do
+  def handle_notification(:chat_abierto_privado, %{receptor: receptor, mensajes: mensajes, id_names: id_names}, state) do
     respuesta = %{
-      tipo: "chat_abierto",
+      tipo: "chat_abierto_privado",
       receptor: Map.take(receptor, [:receptor_id, :nombre, :ultima_conexion, :descripcion, :tipo, :en_linea]),
       mensajes: mensajes
     }
-    Logger.debug( IO.inspect(respuesta))
+    {:reply, {:text, Jason.encode!(respuesta)}, state}
+  end
+
+  def handle_notification(:chat_abierto_grupo, %{receptor: receptor, mensajes: mensajes, id_names: id_names}, state) do
+    respuesta = %{
+      tipo: "chat_abierto_grupo",
+      receptor: Map.take(receptor, [:receptor_id, :nombre, :ultima_conexion, :descripcion, :tipo, :en_linea]),
+      mensajes: mensajes,
+      kv_user_ids_names: id_names,
+      user_ws_id: state.id
+    }
+
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
 

@@ -34,9 +34,9 @@ defmodule Tpg.Runtime.PrivateRoom do
     GenServer.call(via_tuple(room_id), {:quitar_oyente, websocket_pid})
   end
 
-  def agregar_mensaje(usuario_1, usuario_2, contenido) do
-    room_id = normalize_room_id(usuario_1, usuario_2)
-    GenServer.call(via_tuple(room_id), {:agregar_mensaje, usuario_1, contenido})
+  def agregar_mensaje(emisor, destinatario, contenido) do
+    room_id = normalize_room_id(emisor, destinatario)
+    GenServer.call(via_tuple(room_id), {:agregar_mensaje, emisor, destinatario, contenido})
   end
 
   def obtener_historial(usuario_1, usuario_2) do
@@ -52,15 +52,6 @@ defmodule Tpg.Runtime.PrivateRoom do
     room = cargar_mensajes(usuarios)
     Logger.debug("[ROOM-PRIVATE] room inicializado: #{inspect(room)}")
     {:ok, room}
-  end
-
-  @impl true
-  def handle_call({:enviar_notificaciones, emisor}, _from, state) do
-    state.mensajes
-    |> Enum.filter(fn msg -> msg.emisor != emisor and msg.estado == "ENVIADO" end)
-    |> Tpg.Services.SessionService.mostrar_notificaciones(emisor, Enum.find(state.usuarios, fn u -> u != emisor end), "privado")
-    Logger.debug("[ROOM-PRIVATE] Notificaciones enviadas a #{emisor}")
-    {:reply, :ok, state}
   end
 
   @impl true
@@ -92,7 +83,8 @@ defmodule Tpg.Runtime.PrivateRoom do
   end
 
   @impl true
-  def handle_call({:agregar_mensaje, emisor, contenido}, _from, state) do
+
+  def handle_call({:agregar_mensaje, emisor, destinatario, contenido}, _from, state) do
     receptor = Enum.find(state.usuarios, fn usuario -> usuario != emisor end)
 
     case Mensajeria.enviar_mensaje(receptor, emisor, contenido) do
@@ -101,7 +93,7 @@ defmodule Tpg.Runtime.PrivateRoom do
         Logger.info("[ROOM-PRIVATE] Mensaje guardado: #{contenido}, de #{emisor}")
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
         # Notificar a todos los oyentes
-        notificar_oyentes(new_state.listeners, mensaje)
+        notificar_oyentes(new_state.listeners, mensaje, emisor, destinatario)
         {:reply, {:ok, nuevo_msg}, new_state}
 
       {:error, motivo} ->
@@ -139,12 +131,10 @@ defmodule Tpg.Runtime.PrivateRoom do
     %__MODULE__{usuarios: usuarios, mensajes: mensajes}
   end
 
-  defp notificar_oyentes(listeners, mensaje) do
-    Logger.info("[ROOM-PRIVATE] Notificando usuario_1, usuario_2...")
-
+  def notificar_oyentes(listeners, mensaje, emisor, destinatario) do
     Enum.each(Map.keys(listeners), fn pid ->
       Logger.info("[ROOM-PRIVATE] Notificando usuario")
-      NotificationService.notificar_oyentes_de_mensaje(pid, mensaje)
+      NotificationService.notificar_oyentes_de_mensaje(pid, mensaje, emisor, destinatario)
     end)
   end
 end

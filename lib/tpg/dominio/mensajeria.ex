@@ -1,10 +1,21 @@
 defmodule Tpg.Dominio.Mensajeria do
+  require Logger
   alias Ecto.Multi
   alias Tpg.Repo
   import Ecto.Query
   alias Tpg.Dominio.Mensajes.{Recibido, Mensaje, Enviado}
-
   alias Tpg.Dominio.Receptores.{Usuario, UsuariosGrupo}
+
+  def obtener_kv_user_ids_nombres(id_grupo) do
+    from(u in Tpg.Dominio.Receptores.Usuario,
+      join: ug in "usuarios_grupo",
+      on: ug.usuario_id == u.receptor_id,
+      where: ug.grupo_id == ^id_grupo,
+      select: {u.receptor_id, u.nombre}
+    )
+    |> Repo.all()
+    |> Enum.into(%{})
+  end
 
   @doc """
   Envia el mensaje del emisor al receptor marcandolo como 'ENVIADO'
@@ -79,14 +90,7 @@ defmodule Tpg.Dominio.Mensajeria do
   end
 
   def obtener_mensajes_estado_enviado(usuario_id) do
-    notificaciones_usuario = Tpg.Dominio.Mensajeria.mensajes_por_usuario(usuario_id)
-    |> Enum.group_by(&(&1.emisor))
-    |> IO.inspect()
-
-
-    notificaciones_grupos = Tpg.Dominio.Mensajeria.mensajes_por_grupo(usuario_id)
-    |> Enum.group_by(&(&1.receptor))
-    |> IO.inspect()
+    mensajes_por_usuario(usuario_id) ++ mensajes_por_grupo(usuario_id)
   end
 
   def mensajes_por_usuario(usuario_id) do
@@ -102,10 +106,8 @@ defmodule Tpg.Dominio.Mensajeria do
         contenido: mensaje.contenido,
         estado: mensaje.estado,
         fecha: mensaje.inserted_at
-      },
-      order_by: [desc: mensaje.inserted_at]
+      }
     ) |> Repo.all()
-    |> IO.inspect()
   end
 
   def mensajes_por_grupo(usuario_id) do
@@ -123,10 +125,8 @@ defmodule Tpg.Dominio.Mensajeria do
         contenido: mensaje.contenido,
         estado: mensaje.estado,
         fecha: mensaje.inserted_at
-      },
-      order_by: [desc: mensaje.inserted_at]
+      }
     ) |> Repo.all()
-    |> IO.inspect()
   end
 
   def actualizar_estado_mensaje(estado, mensaje_id) do

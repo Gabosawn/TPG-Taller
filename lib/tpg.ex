@@ -28,12 +28,10 @@ defmodule Tpg do
          ) do
       {:ok, pid} ->
         Logger.info("[tpg] Canal #{id_grupo} creado exitosamente")
-        GenServer.call(pid, {:enviar_notificaciones, emisor})
         {:ok, pid}
 
       {:error, {:already_started, pid}} ->
         Logger.info("[tpg] Canal #{id_grupo} ya estaba activo")
-        GenServer.call(pid, {:enviar_notificaciones, emisor})
         {:ok, pid}
 
       {:error, reason} ->
@@ -49,12 +47,10 @@ defmodule Tpg do
          ) do
       {:ok, pid} ->
         Logger.info("[tpg] Canal #{inspect({contacto, emisor})} creado exitosamente")
-        GenServer.call(pid, {:enviar_notificaciones, emisor})
         {:ok, pid}
 
       {:error, {:already_started, pid}} ->
         Logger.info("[tpg] Canal #{inspect({contacto, emisor})} ya estaba activo")
-        GenServer.call(pid, {:enviar_notificaciones, emisor})
         {:ok, pid}
 
       {:error, reason} ->
