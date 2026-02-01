@@ -54,26 +54,44 @@ De la misma manera se puede ejecutar el servidor dentro de un contenedor de dock
 
 ### WebSocket API
 
-**Connection:** `ws://localhost:4000/ws?usuario=nombre_usuario`
+**Connection:** `ws://localhost:4000/ws`
+
+#### Connection Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `operacion` | Yes | `crear` (register) or `conectar` (login) |
+| `usuario` | Yes | Username |
+| `contrasenia` | Yes | Password |
+
+**Example:** `ws://localhost:4000/ws?operacion=conectar&usuario=juan&contrasenia=123456`
 
 #### Client Actions
 
 | Action | Payload | Description |
 |--------|---------|-------------|
-| `enviar` | `{"accion": "enviar", "para": "destinatario", "mensaje": "texto"}` | Send message to user |
-| `leer_historial` | `{"accion": "leer_historial"}` | Get message history |
-| `listar_usuarios` | `{"accion": "listar_usuarios"}` | List active users |
-
+| `enviar` | `{"accion": "enviar", "tipo": "privado"/"grupo", "para": "id", "mensaje": "texto"}` | Envia mensaje a usuario o grupo |
+| `abrir_chat` | `{"accion": "abrir_chat", "tipo": "privado"/"grupo", "receptor_id": "id"}` | Abre un chat y consigue su historial |
+| `crear_grupo` | `{"accion": "crear_grupo", "nombre": "nombre_grupo", "miembros": ["id1", "id2"]}` | Crea un nuevo grupo |
+| `agregar_contacto` | `{"accion": "agregar_contacto", "nombre_usuario": "usuario"}` | Agrega un usuario como contacto |
 #### Server Events
 
-| Event Type | When | Payload Example |
-|------------|------|-----------------|
-| `sistema` | On connection | `{"tipo": "sistema", "mensaje": "Conectado como juan", "timestamp": "..."}` |
-| `mensaje_nuevo` | New message received | `{"tipo": "mensaje_nuevo", "de": "maria", "mensaje": "hola", "timestamp": "..."}` |
-| `confirmacion` | Message sent | `{"tipo": "confirmacion", "mensaje": "Mensaje enviado a pedro"}` |
-| `historial` | History requested | `{"tipo": "historial", "mensajes": [...]}` |
-| `usuarios_activos` | Users list requested | `{"tipo": "usuarios_activos", "usuarios": ["juan", "maria"]}` |
-| `error` | Any error | `{"tipo": "error", "mensaje": "Usuario no encontrado"}` |
+| Tipo de Evento | Cuándo | Ejemplo de Payload |
+|----------------|--------|-------------------|
+| `bienvenida` | Al conectarse exitosamente | `{"tipo": "bienvenida", "mensaje": "Conectado como juan", "timestamp": "..."}` |
+| `mensaje_nuevo_privado` | Mensaje privado recibido | `{"tipo": "mensaje_nuevo_privado", "user_ws_id": "1", "emisor": "2", "receptor": "1", "mensaje": {...}}` |
+| `mensaje_nuevo_grupo` | Mensaje de grupo recibido | `{"tipo": "mensaje_nuevo_grupo", "user_ws_id": "1", "emisor": "2", "receptor": "3", "mensaje": {...}, "emisor_nombre": "maria"}` |
+| `chat_abierto_privado` | Chat privado abierto | `{"tipo": "chat_abierto_privado", "receptor": {...}, "mensajes": [...]}` |
+| `chat_abierto_grupo` | Chat de grupo abierto | `{"tipo": "chat_abierto_grupo", "receptor": {...}, "mensajes": [...], "kv_user_ids_names": {...}, "user_ws_id": "1"}` |
+| `contactos` | Lista de contactos | `{"tipo": "contactos", "conversaciones": [{"tipo": "privado", "id": "2", "nombre": "maria"}]}` |
+| `notificaciones` | Lista de notificaciones | `{"tipo": "notificaciones", "notificaciones": [...]}` |
+| `contacto_nuevo` | Nuevo contacto agregado | `{"tipo": "contacto_nuevo", "contacto": {"tipo_contacto": "privado", "receptor_id": "2", "nombre": "pedro"}}` |
+| `grupo_creado` | Grupo creado | `{"tipo": "grupo_creado", "grupo": "nombre_grupo"}` |
+| `contacto_en_linea` | Contacto se conecta | `{"tipo": "contacto_en_linea", "notificacion": {"conversacion_id": "privado-2"}}` |
+| `contacto_no_en_linea` | Contacto se desconecta | `{"tipo": "contacto_no_en_linea", "notificacion": {"conversacion_id": "privado-2"}}` |
+| `notificacion_bandeja` | Nueva notificación | `{"tipo": "notificacion_bandeja", "notificacion": {...}}` |
+| `error` | Cualquier error | `{"tipo": "error", "mensaje": "Usuario no encontrado"}` |
+| `sistema` | Mensaje del sistema | `{"tipo": "sistema", "mensaje": "Sistema actualizado"}` |
 
 ## Puertos
 - Aplicación: http://localhost:4000
