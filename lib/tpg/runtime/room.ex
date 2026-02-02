@@ -99,7 +99,7 @@ defmodule Tpg.Runtime.Room do
         nuevo_msg = %{id: mensaje.id, emisor: emisor, nombre: mensaje.nombre_emisor, contenido: contenido, estado: mensaje.estado, fecha: mensaje.inserted_at}
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
         # Notificar a todos los oyentes
-        GenServer.cast(self(), {:mensaje, mensaje})
+        GenServer.cast(self(), {:mensaje, nuevo_msg})
         {:reply, {:ok, nuevo_msg}, new_state}
 
       {:error, motivo} ->

@@ -21,7 +21,7 @@ defmodule Tpg.Handlers.NotificationHandler do
   #   {:reply, Jason.encode!(respuesta), state}
   # end
 
-  def handle_notification(:nuevo_mensaje_privado, %{emisor: emisor, mensaje: mensaje}, state) do
+  def handle_notification(:nuevo_mensaje, %{emisor: emisor, mensaje: mensaje}, state) do
 
     # state.id es el id del usuario receptor
     conversacion_id = "privado-#{emisor.receptor_id}"
@@ -91,7 +91,6 @@ defmodule Tpg.Handlers.NotificationHandler do
         conversacion_id: "privado-#{contacto.receptor_id}"
       },
     }
-    Logger.debug( IO.inspect(respuesta))
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
 
@@ -105,7 +104,6 @@ defmodule Tpg.Handlers.NotificationHandler do
         conversacion_id: "grupo-#{grupo.id}"
       }
     }
-    Logger.debug( IO.inspect(respuesta))
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
 

@@ -93,7 +93,7 @@ defmodule Tpg.Runtime.PrivateRoom do
         Logger.info("[ROOM-PRIVATE] Mensaje guardado: #{contenido}, de #{emisor}")
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
         # Notificar a todos los oyentes
-        GenServer.cast(self(), {:mensaje, mensaje})
+        GenServer.cast(self(), {:mensaje, nuevo_msg})
         {:reply, {:ok, nuevo_msg}, new_state}
 
       {:error, motivo} ->
