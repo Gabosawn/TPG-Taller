@@ -287,7 +287,7 @@ function abrirChat(tipo, receptorId) {
 }
 
 function mostrarChat(chat, mensajes, receptor_id) {
-	chatActual = {tipo: chat.tipo, id: chat.receptor_id, id_usuario_cliente: receptor_id};
+	chatActual = {tipo: chat.tipo, nombre: chat.nombre, id: chat.receptor_id, id_usuario_cliente: receptor_id};
 
 	// Remover clase active de todos los chats
 	document.querySelectorAll('.chat-item').forEach(item => {
@@ -298,7 +298,6 @@ function mostrarChat(chat, mensajes, receptor_id) {
 	const chatItemId = `${chat.tipo}-${chat.receptor_id}`
 	const esContacto = !!document.getElementById(chatItemId);
 	if (!esContacto) {
-		agregarConversacion(chatActual.tipo, chat.receptor_id, `No agendado: ${chat.nombre}`);
 		setChatInputBloqueado(!esContacto, usuario.nombre);
 	} else {
 		document.getElementById(chatItemId).classList.add('active');
