@@ -97,7 +97,8 @@ defmodule Tpg.Services.NotificationService do
     mensaje = %{contacto: contacto, por: usuario_id}
     case enviar_notificacion(usuario_id, :agregado_como_contacto, mensaje) do
       {:ok, mensaje} ->
-        NotificationService.enviar_notificacion_si_id_esta_en_linea(:contacto_en_linea, %{contacto: %{receptor_id: agendado.contacto.contacto_id, nombre: ""}}, agendado.contacto.contacto_id, state.id)
+        enviar_notificacion_si_id_esta_en_linea(:contacto_en_linea, %{contacto: %{receptor_id: contacto.receptor_id, nombre: contacto.nombre}}, contacto.receptor_id, usuario_id)
+        enviar_notificacion_si_id_esta_en_linea(:contacto_en_linea, %{contacto: %{receptor_id: usuario_id, nombre: ""}}, usuario_id, contacto.receptor_id)
         {:ok, mensaje}
       {:error, mensaje} ->
         {:error, mensaje}
@@ -142,7 +143,11 @@ defmodule Tpg.Services.NotificationService do
   end
   @spec enviar_notificacion_si_id_esta_en_linea( operacion:: atom(), mensaje:: %{}, id_a_validar:: integer(), id_objetivo:: integer()) :: {:ok, any()} | {:error, String.t()}
   defp enviar_notificacion_si_id_esta_en_linea(operacion, mensaje, id_a_validar, id_objetivo) do
-    enviar_notificacion(id_objetivo, operacion, mensaje)
+    with {:ok, _} <-  SessionService.get_session_pid(id_a_validar) do
+        enviar_notificacion(id_objetivo, operacion, mensaje)
+        Logger.info("[notification service] id_validado y notificacion enviada")
+        {:ok, "[notification service] usuario validado y notificacion enviada"}
+    end
   end
   @doc """
   Notifica a un los contactos de un usuario que este saliendo de 'en_linea'
