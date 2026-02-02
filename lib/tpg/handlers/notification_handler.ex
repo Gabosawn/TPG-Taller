@@ -21,9 +21,9 @@ defmodule Tpg.Handlers.NotificationHandler do
   def handle_notification(:notificacion_bandeja, %{emisor: emisor, mensaje: mensaje}, state) do
 
     # state.id es el id del usuario receptor
-    conversacion_id = "privado-#{emisor.receptor_id}"
+    conversacion_id = "privado-#{emisor.emisor}"
     respuesta = %{
-      tipo: "notificacion_chat",
+      tipo: "notificacion_bandeja",
       notificacion: %{
         receptor_id: emisor.emisor,
         nombre: emisor.nombre,
