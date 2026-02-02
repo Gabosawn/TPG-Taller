@@ -17,6 +17,18 @@ defmodule Tpg.Dominio.Receptores do
     )
   end
 
+  def marcar_ultimo_mensaje_visto(mensaje, usuario_id, grupo_id) do
+    case Repo.get_by(UsuariosGrupo, usuario_id: usuario_id, grupo_id: grupo_id) do
+      nil -> nil
+      grupo ->
+        grupo
+        |> change()
+        |> put_change(:ultimo_mensaje_leido, mensaje.id)
+        |> Repo.update()
+    end
+
+  end
+
   def obtener_usuario(attrs) do
     case Repo.get_by(Usuario,
            nombre: attrs.nombre,

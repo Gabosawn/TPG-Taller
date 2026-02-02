@@ -50,24 +50,14 @@ defmodule Tpg.Services.ChatService do
       Receptores.get_grupo_ids_by_usuario(id_usuario)
   end
 
-  def agregar_oyente(tipo, user_id, reciever_id, ws_pid) do
+  def mostrar_mensajes(tipo, usuario_id, receptor_id) do
     case tipo do
       "grupo" ->
-        Logger.info("[session service] oyente para grupo #{reciever_id}")
-        Tuple.insert_at(Room.agregar_oyente(reciever_id, ws_pid), 0, :ok)
+        Tuple.insert_at(Room.mostrar_mensajes(usuario_id, receptor_id), 0, :ok)
 
       "privado" ->
-        Logger.info("[session service] oyente para chat privado #{inspect(reciever_id)}")
-
-        Tuple.insert_at(
-          PrivateRoom.agregar_oyente(user_id, reciever_id, ws_pid),
-          0,
-          :ok
-        )
+        Tuple.insert_at(PrivateRoom.mostrar_mensajes(usuario_id, receptor_id), 0, :ok)
     end
   end
 
-  def quitar_oyente(chat_pid, ws_pid) do
-    GenServer.call(chat_pid, {:quitar_oyente, ws_pid})
-  end
 end

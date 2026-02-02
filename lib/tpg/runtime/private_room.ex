@@ -4,7 +4,7 @@ defmodule Tpg.Runtime.PrivateRoom do
   alias Tpg.Dominio.Mensajeria
   alias Tpg.Services.NotificationService
 
-  defstruct listeners: %{}, usuarios: [], mensajes: []
+  defstruct usuarios: [], mensajes: []
 
   # Client API
   defp normalize_room_id(usuario_1, usuario_2) when usuario_1 < usuario_2 do
@@ -24,14 +24,9 @@ defmodule Tpg.Runtime.PrivateRoom do
     {:via, Registry, {Tpg.RoomRegistry, room_id}}
   end
 
-  def agregar_oyente(usuario_1, usuario_2, websocket_pid) do
-    room_id = normalize_room_id(usuario_1, usuario_2)
-    GenServer.call(via_tuple(room_id), {:agregar_oyente, websocket_pid})
-  end
-
-  def quitar_oyente(usuario_1, usuario_2, websocket_pid) do
-    room_id = normalize_room_id(usuario_1, usuario_2)
-    GenServer.call(via_tuple(room_id), {:quitar_oyente, websocket_pid})
+  def mostrar_mensajes(usuario_sesion, usuario_chat) do
+    room_id = normalize_room_id(usuario_sesion, usuario_chat)
+    GenServer.call(via_tuple(room_id), {:mostrar_mensajes, usuario_chat})
   end
 
   def agregar_mensaje(emisor, destinatario, contenido) do
@@ -55,35 +50,15 @@ defmodule Tpg.Runtime.PrivateRoom do
   end
 
   @impl true
-  def handle_call({:agregar_oyente, websocket_pid}, _from, state) do
-    {new_listeners, mensajes_respuesta} =
-      if Map.has_key?(state.listeners, websocket_pid) do
-        {state.listeners, state.mensajes}
-      else
-        monitor_ref = Process.monitor(websocket_pid)
-        {Map.put(state.listeners, websocket_pid, monitor_ref), state.mensajes}
-      end
-    new_state = %{state | listeners: new_listeners}
-    {:reply, {mensajes_respuesta, self()}, new_state}
+  def handle_call({:mostrar_mensajes, usuario_chat}, _from, state) do
+    state.mensajes
+    |> Enum.filter(fn msg -> msg.estado == "ENTREGADO" && msg.emisor == usuario_chat end)
+    |> Mensajeria.marcar_mensajes_como_leidos()
+
+    {:reply, {state.mensajes, self()}, state}
   end
 
   @impl true
-  def handle_call({:quitar_oyente, websocket_pid}, _from, state) do
-    # Demonitorear y eliminar el oyente
-    new_listeners =
-      case Map.pop(state.listeners, websocket_pid) do
-        {nil, listeners} ->
-          listeners
-        {monitor_ref, listeners} ->
-          Process.demonitor(monitor_ref, [:flush])
-          listeners
-      end
-    new_state = %{state | listeners: new_listeners}
-    {:reply, :ok, new_state}
-  end
-
-  @impl true
-
   def handle_call({:agregar_mensaje, emisor, contenido}, _from, state) do
     receptor = Enum.find(state.usuarios, fn usuario -> usuario != emisor end)
 
@@ -108,13 +83,6 @@ defmodule Tpg.Runtime.PrivateRoom do
   @impl true
   def handle_call(:obtener_historial, _from, state) do
     {:reply, Enum.reverse(state.mensajes), state}
-  end
-
-  @impl true
-  def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
-    Logger.debug("[ROOM-PRIVATE] Oyente desconectado: #{inspect(pid)}")
-    new_state = %{state | listeners: Map.delete(state.listeners, pid)}
-    {:noreply, new_state}
   end
 
   # Private Functions

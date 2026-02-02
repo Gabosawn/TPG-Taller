@@ -17,7 +17,7 @@ defmodule Tpg.Runtime.Session do
 
   def handle_call({:registrar_websocket, pid}, _from, state) do
     Process.monitor(pid)
-    nuevo_state = agregar_oyente(state, pid)
+    nuevo_state = %{state | websocket_pids: [pid]}
     Logger.info("[session] Websocket PID=#{inspect(pid)} asociado a Usuario=#{state.usuario}")
     {:reply, :ok, nuevo_state}
   end
@@ -28,11 +28,6 @@ defmodule Tpg.Runtime.Session do
     if state.chat_pid do
       Logger.info("[session] quitando oyente #{inspect(state.chat_pid)}")
       ws_pid = Enum.at(state.websocket_pids, 0)
-
-      if ws_pid && Process.alive?(ws_pid) do
-        ChatService.quitar_oyente(state.chat_pid, ws_pid)
-        Logger.info("[session] oyente quitado #{inspect(state.chat_pid)}")
-      end
     end
 
     state = %{state | chat_pid: chat_pid}
@@ -62,16 +57,8 @@ defmodule Tpg.Runtime.Session do
     Logger.info("WebSocket PID=#{inspect(pid)} desconectado de Usuario=#{state.usuario}")
     nuevos_ws = List.delete(state.websocket_pids, pid)
 
-    if state.chat_pid do
-      ChatService.quitar_oyente(state.chat_pid, pid)
-    end
-    SessionService.desloggear(state.usuario)
+    :global.unregister_name(state.usuario)
     {:noreply, %{state | websocket_pids: nuevos_ws}}
-  end
-
-  defp agregar_oyente(state, websocket_pid) do
-    # actualmente solo se puede relacionar un websocket con una sola sesion
-    %{state | websocket_pids: [websocket_pid]}
   end
 
   @spec handle_call({:notificar, tipo :: atom(), mensaje:: %{}}, from::pid() , state :: map()) :: {:reply, {:ok | :error, String.t()}}

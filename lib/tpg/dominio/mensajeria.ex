@@ -175,4 +175,22 @@ defmodule Tpg.Dominio.Mensajeria do
     |> Ecto.Changeset.change(%{estado: estado})
     |> Repo.update()
   end
+
+  def marcar_mensajes_como_leidos(mensajes) do
+    Multi.new()
+    |> Multi.run(:actualizar_estado, fn _repo, _changes ->
+      ids = Enum.map(mensajes, & &1.id)
+      case ids do
+        [] -> {:ok, {0, nil}}
+        _ ->
+          update_query = from(m in Mensaje, where: m.id in ^ids)
+          {:ok, Repo.update_all(update_query, set: [estado: "VISTO", updated_at: DateTime.utc_now()])}
+      end
+    end)
+    |> Repo.transaction()
+    |> case do
+      {:ok, _results} -> :ok
+      {:error, _op, reason, _changes} -> raise reason
+    end
+  end
 end

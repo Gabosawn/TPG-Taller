@@ -13,10 +13,16 @@ defmodule Tpg.Dominio.Receptores.UsuariosGrupo do
       foreign_key: :grupo_id,
       references: :receptor_id,
       primary_key: true
+
+    belongs_to :ultimo_mensaje_leido_id, Tpg.Dominio.Mensajes.Mensaje,
+      foreign_key: :ultimo_mensaje_leido
+
+    belongs_to :ultimo_mensaje_recibido_id, Tpg.Dominio.Mensajes.Mensaje,
+      foreign_key: :ultimo_mensaje_recibido
   end
 
   def changeset(attrs) do
-    cast(%Tpg.Dominio.Receptores.UsuariosGrupo{}, attrs, [:usuario_id, :grupo_id])
+    cast(%Tpg.Dominio.Receptores.UsuariosGrupo{}, attrs, [:usuario_id, :grupo_id, :ultimo_mensaje_leido, :ultimo_mensaje_recibido])
     |> validate_required([:usuario_id, :grupo_id], message: "El campo es obligatorio")
   end
 

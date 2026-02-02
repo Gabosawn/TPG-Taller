@@ -5,7 +5,7 @@ defmodule Tpg.Runtime.Room do
   alias Tpg.Dominio.Mensajeria
   alias Tpg.Dominio.Receptores
 
-  defstruct listeners: %{}, group_id: nil, mensajes: [], miembros: []
+  defstruct group_id: nil, mensajes: [], miembros: []
 
   # Client API
 
@@ -17,12 +17,9 @@ defmodule Tpg.Runtime.Room do
     {:via, Registry, {Tpg.RoomRegistry, group_id}}
   end
 
-  def agregar_oyente(group_id, websocket_pid) do
-    GenServer.call(via_tuple(group_id), {:agregar_oyente, websocket_pid})
-  end
-
-  def quitar_oyente(group_id, websocket_pid) do
-    GenServer.call(via_tuple(group_id), {:quitar_oyente, websocket_pid})
+  def mostrar_mensajes(usuario_sesion, usuario_chat) do
+    Logger.info("[ROOM] [MOSTRAR MENSAJES] Usuario sesión: #{inspect(usuario_sesion)}, Usuario chat: #{inspect(usuario_chat)}")
+    GenServer.call(via_tuple(usuario_chat), {:mostrar_mensajes, usuario_sesion})
   end
 
   def agregar_mensaje(emisor, group_id, contenido) do
@@ -44,52 +41,15 @@ defmodule Tpg.Runtime.Room do
   end
 
   @impl true
-  def handle_call({:agregar_oyente, websocket_pid}, _from, state) do
-    {new_listeners, mensajes_respuesta} =
-      if Map.has_key?(state.listeners, websocket_pid) do
-        Logger.debug(
-          "[room] Oyente #{inspect(websocket_pid)} ya existe en sala #{state.group_id}"
-        )
-
-        {state.listeners, state.mensajes}
-      else
-        Logger.debug(
-          "[room] Oyente #{inspect(websocket_pid)} agregado a la sala #{state.group_id}"
-        )
-
-        monitor_ref = Process.monitor(websocket_pid)
-        {Map.put(state.listeners, websocket_pid, monitor_ref), state.mensajes}
-      end
-
-    new_state = %{state | listeners: new_listeners}
-    {:reply, {mensajes_respuesta, self()}, new_state}
-  end
-
-  @impl true
-  def handle_call({:quitar_oyente, websocket_pid}, _from, state) do
-    # Demonitorear y eliminar el oyente
-    new_listeners =
-      case Map.pop(state.listeners, websocket_pid) do
-        {nil, listeners} ->
-          Logger.debug(
-            "[room] Oyente #{inspect(websocket_pid)} no estaba en sala #{state.group_id}"
-          )
-
-          listeners
-
-        {monitor_ref, listeners} ->
-          Process.demonitor(monitor_ref, [:flush])
-
-          Logger.debug(
-            "[room] Oyente #{inspect(websocket_pid)} eliminado de sala #{state.group_id}"
-          )
-
-          listeners
-      end
-
-    Logger.debug("[room] Cantidad oyentes: #{map_size(new_listeners)}, Sala: #{state.group_id}")
-    new_state = %{state | listeners: new_listeners}
-    {:reply, :ok, new_state}
+  def handle_call({:mostrar_mensajes, usuario_sesion}, _from, state) do
+    state.mensajes
+    |> Enum.filter(fn msg -> msg.estado == "ENTREGADO" && msg.emisor != usuario_sesion end)
+    |> List.last()
+    |> case do
+      nil -> :ok
+      msg -> Receptores.marcar_ultimo_mensaje_visto(msg, usuario_sesion, state.group_id)
+    end
+    {:reply, {state.mensajes, self()}, state}
   end
 
   @impl true
@@ -114,13 +74,6 @@ defmodule Tpg.Runtime.Room do
   @impl true
   def handle_call(:obtener_historial, _from, state) do
     {:reply, Enum.reverse(state.mensajes), state}
-  end
-
-  @impl true
-  def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
-    Logger.debug("[room] Oyente #{inspect(pid)} desconectado de sala #{state.group_id}")
-    new_listeners = Map.delete(state.listeners, pid)
-    {:noreply, %{state | listeners: new_listeners}}
   end
 
   # Private Functions
