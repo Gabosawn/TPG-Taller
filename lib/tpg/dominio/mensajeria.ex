@@ -89,44 +89,80 @@ defmodule Tpg.Dominio.Mensajeria do
     Repo.all(mensajes_query)
   end
 
-  def obtener_mensajes_estado_enviado(usuario_id) do
-    mensajes_por_usuario(usuario_id) ++ mensajes_por_grupo(usuario_id)
-  end
-
   def mensajes_por_usuario(usuario_id) do
-    from(receptor in Recibido,
-      join: mensaje in Mensaje, on: receptor.mensaje_id == mensaje.id,
-      join: emisor in Enviado, on: mensaje.id == emisor.mensaje_id,
-      join: usuario in Usuario, on: emisor.usuario_id == usuario.receptor_id,
-      where: receptor.receptor_id == ^usuario_id,
-      select: %{
-        id: mensaje.id,
-        emisor: emisor.usuario_id,
-        emisor_nombre: usuario.nombre,
-        contenido: mensaje.contenido,
-        estado: mensaje.estado,
-        fecha: mensaje.inserted_at
-      }
-    ) |> Repo.all()
+    mensajes_query =
+      from(receptor in Recibido,
+        join: mensaje in Mensaje, on: receptor.mensaje_id == mensaje.id,
+        join: emisor in Enviado, on: mensaje.id == emisor.mensaje_id,
+        join: usuario in Usuario, on: emisor.usuario_id == usuario.receptor_id,
+        where: receptor.receptor_id == ^usuario_id,
+        where: mensaje.estado == "ENVIADO",
+        select: %{
+          id: mensaje.id,
+          emisor: emisor.usuario_id,
+          emisor_nombre: usuario.nombre,
+          contenido: mensaje.contenido,
+          estado: mensaje.estado,
+          fecha: mensaje.inserted_at
+        }
+      )
+
+    Multi.new()
+    |> Multi.all(:mensajes, mensajes_query)
+    |> Multi.run(:actualizar_estado, fn _repo, %{mensajes: mensajes} ->
+      ids = Enum.map(mensajes, & &1.id)
+
+      case ids do
+        [] -> {:ok, {0, nil}}
+        _ ->
+          update_query = from(m in Mensaje, where: m.id in ^ids)
+          {:ok, Repo.update_all(update_query, set: [estado: "ENTREGADO", updated_at: DateTime.utc_now()])}
+      end
+    end)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{mensajes: mensajes}} -> mensajes
+      {:error, _op, reason, _changes} -> raise reason
+    end
   end
 
   def mensajes_por_grupo(usuario_id) do
-    from(usuario in UsuariosGrupo,
-      join: receptor in Recibido, on: usuario.grupo_id == receptor.receptor_id,
-      join: mensaje in Mensaje, on: receptor.mensaje_id == mensaje.id,
-      join: emisor in Enviado, on: mensaje.id == emisor.mensaje_id,
-      join: emisor_usuario in Usuario, on: emisor.usuario_id == emisor_usuario.receptor_id,
-      where: usuario.usuario_id == ^usuario_id,
-      select: %{
-        id: mensaje.id,
-        receptor: receptor.receptor_id,
-        emisor: emisor.usuario_id,
-        emisor_nombre: emisor_usuario.nombre,
-        contenido: mensaje.contenido,
-        estado: mensaje.estado,
-        fecha: mensaje.inserted_at
-      }
-    ) |> Repo.all()
+    mensajes_query =
+      from(usuario in UsuariosGrupo,
+        join: receptor in Recibido, on: usuario.grupo_id == receptor.receptor_id,
+        join: mensaje in Mensaje, on: receptor.mensaje_id == mensaje.id,
+        join: emisor in Enviado, on: mensaje.id == emisor.mensaje_id,
+        join: emisor_usuario in Usuario, on: emisor.usuario_id == emisor_usuario.receptor_id,
+        where: usuario.usuario_id == ^usuario_id,
+        where: mensaje.estado == "ENVIADO",
+        select: %{
+          id: mensaje.id,
+          receptor: receptor.receptor_id,
+          emisor: emisor.usuario_id,
+          emisor_nombre: emisor_usuario.nombre,
+          contenido: mensaje.contenido,
+          estado: mensaje.estado,
+          fecha: mensaje.inserted_at
+        }
+      )
+
+    Multi.new()
+    |> Multi.all(:mensajes, mensajes_query)
+    |> Multi.run(:actualizar_estado, fn _repo, %{mensajes: mensajes} ->
+      ids = Enum.map(mensajes, & &1.id)
+
+      case ids do
+        [] -> {:ok, {0, nil}}
+        _ ->
+          update_query = from(m in Mensaje, where: m.id in ^ids)
+          {:ok, Repo.update_all(update_query, set: [estado: "ENTREGADO", updated_at: DateTime.utc_now()])}
+      end
+    end)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{mensajes: mensajes}} -> mensajes
+      {:error, _op, reason, _changes} -> raise reason
+    end
   end
 
   def actualizar_estado_mensaje(estado, mensaje_id) do
