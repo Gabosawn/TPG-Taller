@@ -5,23 +5,20 @@ defmodule Tpg.Handlers.NotificationHandler do
   """
   require Logger
 
-  @doc """
-  Notifica al cliente que tiene un contacto nuevo con el que puede comunicarse
-  """
-  # def handle_notification(:contacto_agregado, %{contacto: contacto, por: remitente_id}, state) do
-  #
-  #   respuesta = %{
-  #     tipo: "contacto_agregado",
-  #     contacto: %{
-  #       receptor_id: contacto.receptor_id,
-  #       nombre: contacto.nombre
-  #     },
-  #   }
+  def handle_notification(:mensaje_nuevo, %{emisor: emisor, mensaje: mensaje }, state) do
+    respuesta = %{
+      tipo: "mensaje_nuevo",
+      mensaje: %{
+        emisor: emisor.id_receptor,
+        emisor_nombre: emisor.nombre,
+        contenido: mensaje.contenido,
+        fecha: mensaje.fecha
+      }
+    }
+    {:reply, {:text, Jason.encode!(respuesta)}, state}
+  end
 
-  #   {:reply, Jason.encode!(respuesta), state}
-  # end
-
-  def handle_notification(:nuevo_mensaje, %{emisor: emisor, mensaje: mensaje}, state) do
+  def handle_notification(:notificacion_bandeja, %{emisor: emisor, mensaje: mensaje}, state) do
 
     # state.id es el id del usuario receptor
     conversacion_id = "privado-#{emisor.receptor_id}"
@@ -30,7 +27,8 @@ defmodule Tpg.Handlers.NotificationHandler do
       notificacion: %{
         receptor_id: emisor.receptor_id,
         nombre: emisor.nombre,
-        conversacion_id: conversacion_id
+        conversacion_id: conversacion_id,
+        mensaje: mensaje.contenido
       }
     }
 
@@ -107,31 +105,21 @@ defmodule Tpg.Handlers.NotificationHandler do
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
 
-  def handle_notification(:chat_abierto_privado, %{receptor: receptor, mensajes: mensajes, id_names: id_names}, state) do
-    respuesta = %{
-      tipo: "chat_abierto_privado",
-      receptor: Map.take(receptor, [:receptor_id, :nombre, :ultima_conexion, :descripcion, :tipo, :en_linea]),
-      mensajes: mensajes
-    }
-    {:reply, {:text, Jason.encode!(respuesta)}, state}
-  end
+  def handle_notification(:chat_abierto, %{receptor: receptor, mensajes: mensajes}, state) do
 
-  def handle_notification(:chat_abierto_grupo, %{receptor: receptor, mensajes: mensajes, id_names: id_names}, state) do
     respuesta = %{
-      tipo: "chat_abierto_grupo",
-      receptor: Map.take(receptor, [:receptor_id, :nombre, :ultima_conexion, :descripcion, :tipo, :en_linea]),
+      tipo: "chat_abierto",
+      chat: Map.take(receptor, [:receptor_id, :nombre, :ultima_conexion, :descripcion, :tipo, :en_linea]),
       mensajes: mensajes,
-      kv_user_ids_names: id_names,
-      user_ws_id: state.id
+      receptor: state.id,
     }
-
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
-
 
   # Catch-all para notificaciones desconocidas
   def handle_notification(tipo, payload, state) do
     Logger.warning("[NotificationHandler] Notificación no manejada: #{inspect(tipo)}")
+    IO.inspect(payload)
     {:ok, state}
   end
 

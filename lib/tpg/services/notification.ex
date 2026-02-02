@@ -1,9 +1,8 @@
 defmodule Tpg.Services.NotificationService do
   require Logger
   alias Tpg.Repo
-  alias Tpg.Dominio.Mensajes.{Recibido, Enviado, Mensaje}
+  alias Tpg.Dominio.Mensajes.Enviado
   alias Tpg.Dominio.Receptores
-  alias Tpg.Dominio.Receptores.Usuario
   alias Tpg.Dominio.Mensajeria
   alias Tpg.Services.SessionService
   import Ecto.Query
@@ -30,14 +29,14 @@ defmodule Tpg.Services.NotificationService do
   end
 
   # Para notificar a un cliente en linea que una de sus conversaciones tiene un mensaje
-  @spec notificar_mensaje_en_bandeja(pid :: pid, mensaje :: String.t()) :: nil
+  @spec notificar_mensaje_en_bandeja(id_usuario ::integer(), contexto::map()) :: nil
   defp notificar_mensaje_en_bandeja(id_usuario, contexto) do
     SessionService.notificar_mensaje(id_usuario, :notificacion_bandeja, contexto)
   end
   # Para notificar a un cliente que el chat que esta utilizando tiene un nuevo mensaje
   @spec notificar_mensaje_con_push(id_usuario:: integer(), contexto:: map()) :: nil
   defp notificar_mensaje_con_push(id_usuario, contexto) do
-    SessionService.notificar_mensaje(id_usuario, :nuevo_mensaje, contexto)
+    SessionService.notificar_mensaje(id_usuario, :mensaje_nuevo, contexto)
   end
 
   @doc """
@@ -51,7 +50,7 @@ defmodule Tpg.Services.NotificationService do
   @doc """
   Para marcar como leido un mensaje
   """
-  @spec marcar_leido(user_id :: integer(), mensaje_id :: integer()) :: {:ok, String.t()}
+  @spec marcar_leido(user_id :: integer(), mensaje_id :: integer()) :: {:ok, any()}
   def marcar_leido(user_id, mensaje_id) do
     Logger.info("[notification] marcando como leido el mensaje #{mensaje_id} por el usuario #{user_id}")
     Mensajeria.actualizar_estado_mensaje("VISTO", mensaje_id)

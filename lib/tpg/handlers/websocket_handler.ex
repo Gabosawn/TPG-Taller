@@ -132,40 +132,6 @@ defmodule Tpg.WebSocketHandler do
     {:reply, {:text, respuesta}, state}
   end
 
-  def websocket_info({:nuevo_mensaje, mensaje, emisor, receptor}, state) do
-
-    tipo =
-      case receptor do
-        nil -> "mensaje_nuevo_grupo"
-        _ -> "mensaje_nuevo_privado"
-      end
-
-    respuesta =
-      Jason.encode!(%{
-        tipo: tipo,
-        emisor: emisor,
-        receptor: receptor,
-        mensaje: mensaje.mensaje.contenido,
-        user_ws_id: state.id,
-        emisor_nombre: mensaje.usuario.nombre
-      })
-    {:reply, {:text, respuesta}, state}
-  end
-
-  def websocket_info({:notificar_mensaje_recibido, _mensaje}, state) do
-    Logger.info(
-      "[ws] Recibiendo mensaje desde la sesion... Agregando a Bandeja de notificaciones"
-    )
-
-    {:no_reply, state}
-  end
-
-  def websocket_info({:mensaje_leido, mensaje}, state) do
-    Logger.info("[ws] Un mensaje de los enviados fué leido")
-    IO.inspect(mensaje)
-    {:ok, state}
-  end
-
   def websocket_info({:DOWN, _ref, :process, _pid, _reason}, state) do
     respuesta =
       Jason.encode!(%{
@@ -181,7 +147,6 @@ defmodule Tpg.WebSocketHandler do
   """
   def websocket_info({:notificacion, tipo, notificacion}, state) do
     Logger.info("[ws] usuario #{state.usuario} Recibiendo notificacion...")
-    IO.inspect({tipo, notificacion})
     NotificationHandler.handle_notification(tipo, notificacion, state)
   end
 
@@ -216,21 +181,19 @@ defmodule Tpg.WebSocketHandler do
 
   def manejar_abrir_chat(tipo, id_receptor, state) do
 
-    tipo_atom = case tipo do
-      "privado" ->
-          :chat_abierto_privado
-      "grupo" ->
-          :chat_abierto_grupo
-      _ ->
-        NotificationHandler.notificar(:error, "Tipo de chat desconocido: #{tipo}", state)
-    end
-
     kv_user_ids_nombres = Mensajeria.obtener_kv_user_ids_nombres(id_receptor)
 
     with {:ok, mensajes} <- SessionService.oir_chat(tipo, state.id, id_receptor, self()),
         {:ok, receptor} <- Receptores.obtener(tipo, id_receptor),
         {:ok, receptor} <- SessionService.agregar_ultima_conexion(receptor) do
-          NotificationHandler.handle_notification(tipo_atom, %{receptor: receptor, mensajes: mensajes, id_names: kv_user_ids_nombres}, state)
+          NotificationHandler.handle_notification(:chat_abierto,
+          %{
+            receptor: receptor,
+            mensajes: mensajes,
+            tipo_de_chat: tipo,
+            kv_user_ids_names: kv_user_ids_nombres
+            },
+             state)
     else
       {:ya_esta_escuchando, mensajes} ->
         {:ok, state}

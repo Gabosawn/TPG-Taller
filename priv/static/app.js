@@ -119,11 +119,8 @@ function manejarMensaje(data) {
 		case 'contactos':
 			listar_contactos(data.conversaciones);
 			break;
-		case 'mensaje_nuevo_privado':
-			mostrarMensajePrivado(data.user_ws_id, data.emisor, data.receptor, data.mensaje);
-			break;
-		case 'mensaje_nuevo_grupo':
-			mostrarMensajeGrupo(data.user_ws_id, data.emisor, data.receptor, data.mensaje, data.emisor_nombre);
+		case 'mensaje_nuevo':
+			mostrarMensaje(data);
 			break;
 		case 'usuarios_activos':
 			agregarMensajePrivado('sistema', '👥 Usuarios: ' + data.usuarios.join(', '));
@@ -140,11 +137,8 @@ function manejarMensaje(data) {
 		case 'grupo_creado':
 			agregarMensajePrivado('sistema', `✅ Grupo "${data.grupo}" creado con éxito.`);
 			break;
-		case 'chat_abierto_privado':
-			mostrarChatPrivado(data.receptor, data.mensajes);
-			break;
-		case 'chat_abierto_grupo':
-			mostrarChatGrupo(data.receptor, data.mensajes, data.kv_user_ids_names, data.user_ws_id); //REVISAR
+		case 'chat_abierto':
+			mostrarChat(data.chat, data.mensajes, data.receptor);
 			break;
 		case 'error':
 			agregarMensajePrivado('error', '❌ ' + data.mensaje);
@@ -168,7 +162,23 @@ function manejarMensaje(data) {
 			agregarMensajePrivado('sistema', JSON.stringify(data));
 	}
 }
-
+function agregarMensajePrivado(tipo, texto) {
+	const div = document.createElement('div');
+	div.className = 'mensaje ' + tipo;
+	
+	const contenido = document.createElement('span');
+	contenido.textContent = texto;
+	
+	const timestamp = document.createElement('small');
+	timestamp.className = 'timestamp';
+	timestamp.textContent = fecha ? new Date(fecha).toLocaleTimeString() : new Date().toLocaleTimeString();
+	
+	div.appendChild(contenido);
+	div.appendChild(timestamp);
+	
+	document.getElementById('mensajes').appendChild(div);
+	div.scrollIntoView();
+}
 function mensajeDeSistema(mensaje) {
 	console.log('Notificacion del sistema:', mensaje);
 }
@@ -243,7 +253,6 @@ function listar_contactos(conversaciones) {
 }
 
 function abrirChat(tipo, receptorId, nombreReceptor) {
-
 	// Enviar solicitud para abrir el chat
 	const payload = {
 		accion: 'abrir_chat',
@@ -254,18 +263,8 @@ function abrirChat(tipo, receptorId, nombreReceptor) {
 	ws.send(JSON.stringify(payload));
 }
 
-function mostrarMensajePrivado(user_ws_id, emisor_id, receptor_id, mensaje) {
-	console.log('Mostrando mensaje privado: ', mensaje, "del emisor: ", emisor_id, " al receptor: ",receptor_id);
-	agregarMensajePrivado(user_ws_id == emisor_id ? 'enviado' : 'recibido', mensaje, mensaje.fecha);
-}
-
-function mostrarMensajeGrupo(user_ws_id, emisor_id, receptor_id, mensaje, nombre_emisor) {
-	console.log('Mostrando mensaje de grupo: ', mensaje, "del emisor: ", emisor_id, " al receptor: ",receptor_id);
-	agregarMensajeGrupo(user_ws_id == emisor_id ? 'enviado' : 'recibido', mensaje, mensaje.fecha, nombre_emisor);
-}
-
-function mostrarChatPrivado(usuario, mensajes) {
-	chatActual = {tipo: usuario.tipo, id: usuario.receptor_id};
+function mostrarChat(chat, mensajes, receptor_id) {
+	chatActual = {tipo: chat.tipo, id: chat.receptor_id, id_usuario_cliente: receptor_id};
 
 	// Remover clase active de todos los chats
 	document.querySelectorAll('.chat-item').forEach(item => {
@@ -273,17 +272,17 @@ function mostrarChatPrivado(usuario, mensajes) {
 	});
 	
 	// Agregar clase active al chat seleccionado
-	document.getElementById(`${usuario.tipo}-${usuario.receptor_id}`).classList.add('active');
+	document.getElementById(`${chat.tipo}-${chat.receptor_id}`).classList.add('active');
 	
 	// Actualizar el header del chat
-	document.getElementById('nombre-chat-actual').textContent = usuario.nombre;
+	document.getElementById('nombre-chat-actual').textContent = chat.nombre; 
 
 	// Mostrar última conexión
 	const ultimaConexionEl = document.getElementById('ultima-conexion');
-	if (usuario.en_linea == 1) {
+	if (chat.en_linea == 1) {
 		ultimaConexionEl.textContent = 'En linea';
 	} else if (ultimaConexionEl) {
-		ultimaConexionEl.textContent = formatearUltimaConexion(usuario.ultima_conexion);
+		ultimaConexionEl.textContent = formatearUltimaConexion(chat.ultima_conexion);
 	}
 	
 	const mensajesDiv = document.getElementById('mensajes');
@@ -292,50 +291,10 @@ function mostrarChatPrivado(usuario, mensajes) {
 	if (mensajes && mensajes.length > 0) {
 		// Invertir el orden de los mensajes para mostrar el último primero
 		mensajes.reverse().forEach(m => {
-			agregarMensajePrivado(m.emisor == usuario.receptor_id ? 'recibido' : 'enviado', m.contenido, m.fecha);
+			mostrarMensaje(m);
 		});
 	} else {
 		agregarMensajePrivado('sistema', 'No hay mensajes en esta conversación');
-	}
-}
-function mostrarChatGrupo(grupo, mensajes, kv_user_ids_names, user_ws_id) {
-	chatActual = { tipo: 'grupo', id: grupo.receptor_id };
-
-	document.querySelectorAll('.chat-item').forEach(item => {
-		item.classList.remove('active');
-	});
-
-	document.getElementById(`grupo-${grupo.receptor_id}`).classList.add('active');
-
-	document.getElementById('nombre-chat-actual').textContent = grupo.nombre ?? 'Grupo desconocido';
-
-	const ultimaConexionEl = document.getElementById('ultima-conexion');
-	if (ultimaConexionEl) {
-		ultimaConexionEl.textContent = '';
-	}
-
-	const mensajesDiv = document.getElementById('mensajes');
-	mensajesDiv.innerHTML = '';
-
-	if (mensajes && mensajes.length > 0) {
-		mensajes.reverse().forEach(m => {
-			const tipo = m.emisor === user_ws_id ? 'enviado' : 'recibido';
-			const nombreEmisor = kv_user_ids_names[m.emisor] ?? 'Desconocido';
-			
-			agregarMensajeGrupo(
-				tipo,
-				m.contenido,
-				m.fecha,
-				nombreEmisor
-			);
-		});
-	} else {
-		agregarMensajeGrupo(
-			'sistema',
-			'No hay mensajes en este grupo',
-			null,
-			''
-		);
 	}
 }
 
@@ -432,46 +391,28 @@ function agregarUsuario() {
   }
 }
 
-function agregarMensajePrivado(tipo, texto, fecha) {
-	console.log(`Agregando mensaje de tipo "${tipo}": ${texto}`);
+function mostrarMensaje(data) {
+	tipo = chatActual.id_usuario_cliente == data.emisor ? 'enviado' : 'recibido';
 	const div = document.createElement('div');
 	div.className = 'mensaje ' + tipo;
+	if (chatActual.tipo == 'grupo' && tipo == 'recibido') {
+		const emisor = document.createElement('strong');
+		emisor.className = 'emisor';
+		emisor.textContent = data.nombre;
+		div.appendChild(emisor);
+	}
 	
 	const contenido = document.createElement('span');
-	contenido.textContent = texto;
+	contenido.textContent = data.contenido;
 	
 	const timestamp = document.createElement('small');
 	timestamp.className = 'timestamp';
-	timestamp.textContent = fecha ? new Date(fecha).toLocaleTimeString() : new Date().toLocaleTimeString();
+	timestamp.textContent = data.fecha ? new Date(data.fecha).toLocaleTimeString() : new Date().toLocaleTimeString();
 	
 	div.appendChild(contenido);
 	div.appendChild(timestamp);
 	
-	document.getElementById('mensajes').appendChild(div);
-	div.scrollIntoView();
-}
-
-function agregarMensajeGrupo(tipo, texto, fecha, emisor_nombre) {
-
-	const div = document.createElement('div');
-	div.className = 'mensaje ' + tipo;
-
-	const emisor = document.createElement('strong');
-	emisor.className = 'emisor';
-	emisor.textContent = emisor_nombre;
-
-	const contenido = document.createElement('span');
-	contenido.textContent = texto;
-
-	const timestamp = document.createElement('small');
-	timestamp.className = 'timestamp';
-	timestamp.textContent = fecha
-		? new Date(fecha).toLocaleTimeString()
-		: new Date().toLocaleTimeString();
-
-	div.appendChild(emisor);
-	div.appendChild(contenido);
-	div.appendChild(timestamp);
+	
 
 	document.getElementById('mensajes').appendChild(div);
 	div.scrollIntoView();

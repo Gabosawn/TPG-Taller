@@ -25,7 +25,7 @@ defmodule Tpg.Runtime.Room do
     GenServer.call(via_tuple(group_id), {:quitar_oyente, websocket_pid})
   end
 
-  def agregar_mensaje(group_id, emisor, contenido) do
+  def agregar_mensaje(emisor, group_id, contenido) do
     GenServer.call(via_tuple(group_id), {:agregar_mensaje, emisor, contenido})
   end
 

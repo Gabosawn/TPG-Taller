@@ -96,7 +96,7 @@ defmodule Tpg.Services.SessionService do
     end
   end
 
-  @spec notificar_mensaje(id_usuario:: integer(), operacion:: atom(), contexto:: Map.t())  :: nil
+  @spec notificar_mensaje(id_usuario:: integer(), operacion:: atom(), contexto:: Map)  :: nil
   def notificar_mensaje(id_usuario, operacion, contexto) do
     with {:ok, pid} <- get_session_pid(id_usuario),
       {:ok, _} <- GenServer.call(pid, {:notificar, operacion, contexto}) do
@@ -121,6 +121,14 @@ defmodule Tpg.Services.SessionService do
     end
   end
 
+  @doc """
+  Agrega como listener de una conversacion al usuario en base a su ID. Devuelve el historial de chats de esa conversacion.
+  Tipo: ":chat_abierto_privado" o ":chat_abierto_grupo"
+  user_id: id de usuario insertandose en la conversacion
+  group_id: id de la conversacion a la insertarse
+  ws_pid: pid del oyente que busca insertarse
+  """
+  @spec oir_chat(tipo:: atom(), user_id :: integer(), group_id:: integer(), ws_pid::pid) :: {:ok, [%{}]} | {:ya_esta_escuchando | :error, String.t()}
   def oir_chat(tipo, user_id, group_id, ws_pid) do
     with {:ok, pid} <- get_session_pid(user_id),
          false <- GenServer.call(pid, {:esta_escuchando_canal, group_id}),
