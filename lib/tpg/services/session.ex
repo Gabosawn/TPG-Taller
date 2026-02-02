@@ -94,6 +94,13 @@ defmodule Tpg.Services.SessionService do
     end
   end
 
+  @spec notificar_mensaje(id_usuario:: integer(), operacion:: atom(), contexto:: Map.t())  :: nil
+  def notificar_mensaje(id_usuario, operacion, contexto) do
+    with {:ok, pid} <- get_session_pid(id_usuario) do
+      GenServer.call(pid, {:notificar, operacion, contexto})
+    end
+  end
+
   def registrar_cliente(session_id, client_pid) do
     with {:ok, pid} <- get_session_pid(session_id),
          :ok <- GenServer.call(pid, {:registrar_websocket, client_pid}) do
@@ -152,6 +159,28 @@ defmodule Tpg.Services.SessionService do
 
       pid ->
         {:ok, pid}
+    end
+  end
+
+  @doc """
+  Devuelve true si el usuario está en linea, false si no.
+  """
+  @spec en_linea?(usuario_id::integer()) :: boolean()
+  def en_linea?(usuario_id) do
+    case get_session_pid(usuario_id) do
+      {:ok, _} -> true
+      _ -> false
+    end
+  end
+  @doc """
+  Devuelve true si el usuario está escuchando por ese canal, sino false.
+  """
+  @spec esta_escuchando?(usuario_id::integer(), chat_pid::pid()) :: boolean() | :error
+  def esta_escuchando?(usuario_id, chat_pid) do
+    case get_session_pid(usuario_id) do
+      {:ok, pid} ->
+        GenServer.call(pid, {:esta_escuchando_canal, chat_pid})
+      _ -> :error
     end
   end
 end

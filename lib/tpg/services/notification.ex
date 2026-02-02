@@ -1,40 +1,42 @@
 defmodule Tpg.Services.NotificationService do
   require Logger
-  alias ElixirSense.Log
   alias Tpg.Repo
   alias Tpg.Dominio.Mensajes.{Recibido, Enviado, Mensaje}
   alias Tpg.Dominio.Receptores
   alias Tpg.Dominio.Receptores.Usuario
   alias Tpg.Services.SessionService
   import Ecto.Query
-  @doc """
-  Para notificar a un cliente que el chat que esta utilizando tiene un nuevo mensaje
-  """
-  @spec notificar_oyentes_de_mensaje(
-  pid(),
-  %Mensaje{},
-  emisor :: integer() | String.t(),
-  destinatario :: integer() | String.t()
-) :: {:ok, String.t()}
-  def notificar_oyentes_de_mensaje(ws_pid, mensaje, emisor, destinatario) do
-    data =
-      from(e in Enviado,
-        join: r in Recibido,
-        on: r.mensaje_id == e.mensaje_id,
-        where: e.mensaje_id == ^mensaje.id,
-        preload: [:usuario, :mensaje]
-      )
-      |> Repo.one()
-    send(ws_pid, {:nuevo_mensaje, data, emisor, destinatario})
-    send(ws_pid, {:notificar_mensaje_nuevo, data})
-  end
 
   @doc """
-  Para notificar a un cliente en linea que una de sus conversaciones tiene un mensaje
+  Notifica a un usuario o grupo de usuarios 'en_linea' sobre un nuevo mensaje
   """
-  @spec notificar_mensaje_en_bandeja(pid :: pid, mensaje :: String.t()) :: {:ok, String.t()} # | {:error, term()}
-  def notificar_mensaje_en_bandeja(ws_pid, mensaje) do
-    send(ws_pid, {:notificar_mensaje_recibido, mensaje})
+  @spec notificar(:mensaje, contexto:: %{usuarios: [integer()], mensaje: %{}, chat_pid: pid()}) :: nil
+  def notificar(:mensaje, contexto) do
+    Enum.each(contexto.usuarios, fn usuario ->
+      if SessionService.en_linea?(usuario) do
+        spawn(fn  ->
+          notificar_mensaje(usuario, contexto, contexto.chat_pid)
+        end)
+      end
+    end)
+  end
+  defp notificar_mensaje(id_usuario, contexto, chat_pid) do
+    Logger.debug("[notification] notificando a usuario #{id_usuario} el mensaje: #{contexto.mensaje.contenido}")
+    case SessionService.esta_escuchando?(id_usuario, chat_pid) do
+      true -> notificar_mensaje_en_bandeja(id_usuario, contexto)
+      false -> notificar_mensaje_con_push(id_usuario, contexto)
+    end
+  end
+
+  # Para notificar a un cliente en linea que una de sus conversaciones tiene un mensaje
+  @spec notificar_mensaje_en_bandeja(pid :: pid, mensaje :: String.t()) :: nil
+  defp notificar_mensaje_en_bandeja(id_usuario, contexto) do
+    SessionService.notificar_mensaje(id_usuario, :notificacion_bandeja, contexto)
+  end
+  # Para notificar a un cliente que el chat que esta utilizando tiene un nuevo mensaje
+  @spec notificar_mensaje_con_push(id_usuario:: integer(), contexto:: map()) :: nil
+  defp notificar_mensaje_con_push(id_usuario, contexto) do
+    SessionService.notificar_mensaje(id_usuario, :nuevo_mensaje_privado, contexto)
   end
 
 
@@ -126,7 +128,6 @@ defmodule Tpg.Services.NotificationService do
   """
   @spec notificar(:en_linea, contexto :: %{receptor_id: integer(), nombre: String.t()}) :: {:ok, any()} | {:error, String.t()}
   def notificar(:en_linea, contexto) do
-    mensaje = %{contacto: contexto}
     with contactos <- Receptores.obtener_contactos_agenda(contexto.receptor_id) do
       Enum.each(contactos, fn contacto ->
         Logger.info("[notification service] enviando notificacion a #{contacto.id}")
@@ -154,7 +155,6 @@ defmodule Tpg.Services.NotificationService do
   """
   @spec notificar(:saliendo_de_linea, contexto :: %{receptor_id: integer(), nombre: String.t()}) :: {:ok, any()} | {:error, String.t()}
   def notificar(:saliendo_de_linea, contexto) do
-    mensaje = %{contacto: contexto}
     with contactos <- Receptores.obtener_contactos_agenda(contexto.receptor_id) do
       Enum.each(contactos, fn contacto ->
         enviar_notificacion_si_id_esta_en_linea(:saliendo_de_linea, %{contacto: %{receptor_id: contexto.receptor_id, nombre: contexto.nombre}}, contacto.id, contacto.id)

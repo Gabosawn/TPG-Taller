@@ -1,0 +1,36 @@
+@startuml
+skinparam componentStyle uml2
+
+package "Capa de Interfaz (Cowboy)" {
+  [Client Browser] as CB
+}
+
+package "Capa de Orquestación (OTP)" {
+  component [SessionSupervisor] as SS <<DynamicSupervisor>>
+  component [UserSession] as US <<GenServer>>
+  component [Registry] as Reg <<Registry>>
+  component [NotificationService] as NS <<Functional Service>>
+}
+
+database "Persistencia" {
+  [PostgreSQL] as DB
+}
+
+' Relaciones y Multiplicidades
+CB "1..*" -- "1" [WebSocket Handler] : Conexión Bidireccional
+[WebSocket Handler] "1" -- "1" US : Propietario de ws_pid
+SS "1" *-- "0..*" US : Supervisa ciclo de vida
+Reg "1" -- "0..*" US : Mapea user_id -> PID
+NS ..> US : Envía cast()
+US ..> DB : Ecto.Repo (CRUD)
+
+note right of CB
+  Cada cliente tiene su propio
+  proceso WebSocket independiente.
+end note
+
+note right of US
+  Estado: %{user_id, socket_pid, listeners}
+ 
+end note
+@enduml

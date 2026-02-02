@@ -1,7 +1,11 @@
 defmodule Tpg.Runtime.Session do
   use GenServer
   require Logger
+  alias Tpg.Services.SessionService
+  alias Plug.Session
   alias Tpg.Services.ChatService
+
+  defstruct [:usuario, :chat_pid, :websocket_pid ]
 
   def start_link(usuario) do
     GenServer.start_link(__MODULE__, usuario, name: {:global, usuario})
@@ -61,7 +65,7 @@ defmodule Tpg.Runtime.Session do
     if state.chat_pid do
       ChatService.quitar_oyente(state.chat_pid, pid)
     end
-
+    SessionService.desloggear(state.usuario)
     {:noreply, %{state | websocket_pids: nuevos_ws}}
   end
 
@@ -70,8 +74,8 @@ defmodule Tpg.Runtime.Session do
     %{state | websocket_pids: [websocket_pid]}
   end
 
-  @spec handle_call({:notificar, tipo :: atom(), mensaje::Map}, any, state :: map()) :: {:noreply, map()}
-  def handle_call({:notificar, tipo, mensaje}, _, state) do
+  @spec handle_call({:notificar, tipo :: atom(), mensaje:: %{}}, from::pid() , state :: map()) :: {:reply, {:ok | :error, String.t()}}
+  def handle_call({:notificar, tipo, mensaje}, _from, state) do
     Logger.info("[session] recibiendo llamado de notificacion...")
     ws_pid = List.first(state.websocket_pids)
 

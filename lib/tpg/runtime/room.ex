@@ -96,10 +96,10 @@ defmodule Tpg.Runtime.Room do
   def handle_call({:agregar_mensaje, emisor, contenido}, _from, state) do
     case Mensajeria.enviar_mensaje(state.group_id, emisor, contenido) do
       {:ok, mensaje} ->
-        nuevo_msg = %{id: mensaje.id, emisor: emisor, contenido: contenido, estado: mensaje.estado, fecha: mensaje.inserted_at}
+        nuevo_msg = %{id: mensaje.id, emisor: emisor, nombre: mensaje.nombre_emisor, contenido: contenido, estado: mensaje.estado, fecha: mensaje.inserted_at}
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
         # Notificar a todos los oyentes
-        notificar_oyentes(new_state.listeners, mensaje, emisor, nil)
+        GenServer.cast(self(), {:mensaje, mensaje})
         {:reply, {:ok, nuevo_msg}, new_state}
 
       {:error, motivo} ->
@@ -134,15 +134,10 @@ defmodule Tpg.Runtime.Room do
     %{state | miembros: Receptores.obtener_miembros(state.group_id)}
   end
 
-  defp notificar_oyentes(listeners, mensaje, emisor, _all) do
+  def handle_cast({:mensaje, mensaje}, state) do
     Logger.info("[room] Notificando usuarios...")
-    Enum.each(Map.keys(listeners), fn pid ->
-      Logger.info("[room] Notificando usuario")
-      NotificationService.notificar_oyentes_de_mensaje(pid, mensaje, emisor, nil)
-    end)
-    # Enum.each(Map.keys(listeners), fn pid ->W
-    #   Logger.info("[room] Notificando usuario")
-    #   NotificationService.notificar_mensaje(pid, mensaje)
-    # end)
+    contexto = %{usuarios: state.miembros, mensaje: mensaje, chat_pid: self()}
+    NotificationService.notificar(:mensaje, contexto)
+    {:noreply, state}
   end
 end

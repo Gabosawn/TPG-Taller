@@ -93,7 +93,7 @@ defmodule Tpg.Runtime.PrivateRoom do
         Logger.info("[ROOM-PRIVATE] Mensaje guardado: #{contenido}, de #{emisor}")
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
         # Notificar a todos los oyentes
-        notificar_oyentes(new_state.listeners, mensaje, emisor, destinatario)
+        GenServer.cast(self(), {:mensaje, mensaje})
         {:reply, {:ok, nuevo_msg}, new_state}
 
       {:error, motivo} ->
@@ -131,10 +131,10 @@ defmodule Tpg.Runtime.PrivateRoom do
     %__MODULE__{usuarios: usuarios, mensajes: mensajes}
   end
 
-  def notificar_oyentes(listeners, mensaje, emisor, destinatario) do
-    Enum.each(Map.keys(listeners), fn pid ->
-      Logger.info("[ROOM-PRIVATE] Notificando usuario")
-      NotificationService.notificar_oyentes_de_mensaje(pid, mensaje, emisor, destinatario)
-    end)
+  @impl true
+  def handle_cast({:mensaje, mensaje}, state) do
+    contexto = %{usuarios: state.usuarios, mensaje: mensaje, chat_pid: self()}
+    NotificationService.notificar(:mensaje, contexto)
+    {:noreply, state}
   end
 end
