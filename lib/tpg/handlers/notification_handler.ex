@@ -9,8 +9,8 @@ defmodule Tpg.Handlers.NotificationHandler do
     respuesta = %{
       tipo: "mensaje_nuevo",
       mensaje: %{
-        emisor: emisor.id_receptor,
-        emisor_nombre: emisor.nombre,
+        emisor: emisor.emisor,
+        nombre: emisor.nombre,
         contenido: mensaje.contenido,
         fecha: mensaje.fecha
       }
@@ -25,7 +25,7 @@ defmodule Tpg.Handlers.NotificationHandler do
     respuesta = %{
       tipo: "notificacion_chat",
       notificacion: %{
-        receptor_id: emisor.receptor_id,
+        receptor_id: emisor.emisor,
         nombre: emisor.nombre,
         conversacion_id: conversacion_id,
         mensaje: mensaje.contenido

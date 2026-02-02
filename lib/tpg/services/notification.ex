@@ -22,6 +22,10 @@ defmodule Tpg.Services.NotificationService do
   end
   defp notificar_mensaje(id_usuario, contexto, chat_pid) do
     Logger.debug("[notification] notificando a usuario #{id_usuario} el mensaje: #{contexto.mensaje.contenido}")
+    emisor = Map.take(contexto.mensaje, [:emisor, :nombre])
+    mensaje = Map.take(contexto.mensaje, [:contenido, :fecha, :id])
+    contexto = %{contexto | mensaje: %{emisor: emisor, mensaje: mensaje}}
+    IO.inspect(contexto)
     case SessionService.esta_escuchando?(id_usuario, chat_pid) do
       true -> notificar_mensaje_con_push(id_usuario, contexto)
       false -> notificar_mensaje_en_bandeja(id_usuario, contexto)
@@ -31,12 +35,12 @@ defmodule Tpg.Services.NotificationService do
   # Para notificar a un cliente en linea que una de sus conversaciones tiene un mensaje
   @spec notificar_mensaje_en_bandeja(id_usuario ::integer(), contexto::map()) :: nil
   defp notificar_mensaje_en_bandeja(id_usuario, contexto) do
-    SessionService.notificar_mensaje(id_usuario, :notificacion_bandeja, contexto)
+    SessionService.notificar_mensaje(id_usuario, :notificacion_bandeja, contexto.mensaje)
   end
   # Para notificar a un cliente que el chat que esta utilizando tiene un nuevo mensaje
   @spec notificar_mensaje_con_push(id_usuario:: integer(), contexto:: map()) :: nil
   defp notificar_mensaje_con_push(id_usuario, contexto) do
-    SessionService.notificar_mensaje(id_usuario, :mensaje_nuevo, contexto)
+    SessionService.notificar_mensaje(id_usuario, :mensaje_nuevo, contexto.mensaje)
   end
 
   @doc """

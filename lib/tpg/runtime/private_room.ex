@@ -36,7 +36,7 @@ defmodule Tpg.Runtime.PrivateRoom do
 
   def agregar_mensaje(emisor, destinatario, contenido) do
     room_id = normalize_room_id(emisor, destinatario)
-    GenServer.call(via_tuple(room_id), {:agregar_mensaje, emisor, destinatario, contenido})
+    GenServer.call(via_tuple(room_id), {:agregar_mensaje, emisor, contenido})
   end
 
   def obtener_historial(usuario_1, usuario_2) do

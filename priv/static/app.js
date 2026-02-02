@@ -120,7 +120,7 @@ function manejarMensaje(data) {
 			listar_contactos(data.conversaciones);
 			break;
 		case 'mensaje_nuevo':
-			mostrarMensaje(data);
+			mostrarMensaje(data.mensaje);
 			break;
 		case 'usuarios_activos':
 			agregarMensajePrivado('sistema', '👥 Usuarios: ' + data.usuarios.join(', '));
@@ -171,7 +171,7 @@ function agregarMensajePrivado(tipo, texto) {
 	
 	const timestamp = document.createElement('small');
 	timestamp.className = 'timestamp';
-	timestamp.textContent = fecha ? new Date(fecha).toLocaleTimeString() : new Date().toLocaleTimeString();
+	timestamp.textContent = new Date().toLocaleTimeString();
 	
 	div.appendChild(contenido);
 	div.appendChild(timestamp);
