@@ -4,6 +4,8 @@ defmodule Tpg.Services.SessionService do
   """
 
   require Logger
+  alias Tpg.Services.NotificationService
+  alias Tpg.Handlers.NotificationHandler
   alias Tpg.Dominio.Receptores
   alias Tpg.Dominio.Receptores.Agendado
   alias Tpg.Services.ChatService
@@ -96,8 +98,9 @@ defmodule Tpg.Services.SessionService do
 
   @spec notificar_mensaje(id_usuario:: integer(), operacion:: atom(), contexto:: Map.t())  :: nil
   def notificar_mensaje(id_usuario, operacion, contexto) do
-    with {:ok, pid} <- get_session_pid(id_usuario) do
-      GenServer.call(pid, {:notificar, operacion, contexto})
+    with {:ok, pid} <- get_session_pid(id_usuario),
+      {:ok, _} <- GenServer.call(pid, {:notificar, operacion, contexto}) do
+        NotificationService.marcar_entregado(contexto.mensaje, id_usuario)
     end
   end
 

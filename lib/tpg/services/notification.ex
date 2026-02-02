@@ -4,6 +4,7 @@ defmodule Tpg.Services.NotificationService do
   alias Tpg.Dominio.Mensajes.{Recibido, Enviado, Mensaje}
   alias Tpg.Dominio.Receptores
   alias Tpg.Dominio.Receptores.Usuario
+  alias Tpg.Dominio.Mensajeria
   alias Tpg.Services.SessionService
   import Ecto.Query
 
@@ -39,14 +40,21 @@ defmodule Tpg.Services.NotificationService do
     SessionService.notificar_mensaje(id_usuario, :nuevo_mensaje, contexto)
   end
 
-
+  @doc """
+  Para marcar como entregado un mensaje
+  """
+  @spec marcar_entregado(mensaje:: %{}, id_usuario :: integer()) :: {:ok, String.t()}
+  def marcar_entregado(mensaje, id_usuario) do
+    Logger.info("[notification] marcando como entregado el mensaje #{mensaje.id} por el usuario #{id_usuario}")
+    Mensajeria.actualizar_estado_mensaje("ENTREGADO",mensaje.id)
+  end
   @doc """
   Para marcar como leido un mensaje
   """
   @spec marcar_leido(user_id :: integer(), mensaje_id :: integer()) :: {:ok, String.t()}
   def marcar_leido(user_id, mensaje_id) do
     Logger.info("[notification] marcando como leido el mensaje #{mensaje_id} por el usuario #{user_id}")
-    Tpg.Dominio.Mensajeria.actualizar_estado_mensaje("VISTO", mensaje_id)
+    Mensajeria.actualizar_estado_mensaje("VISTO", mensaje_id)
 
     # |> case do
       # {1, _} ->

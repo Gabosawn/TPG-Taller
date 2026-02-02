@@ -152,20 +152,6 @@ defmodule Tpg.WebSocketHandler do
     {:reply, {:text, respuesta}, state}
   end
 
-  def websocket_info({:notificar_mensaje_nuevo, mensaje}, state) do
-    Logger.info("Enviando notificacion de PUNTO VERDE")
-    # FALTA SEPARAR EN PRIVADOS Y GRUPOS
-    NotificationHandler.handle_notification(
-      :nuevo_mensaje_privado,
-      %{
-        emisor: mensaje.usuario,
-        mensaje: mensaje.mensaje.contenido
-      },
-      state
-    )
-  end
-
-
   def websocket_info({:notificar_mensaje_recibido, _mensaje}, state) do
     Logger.info(
       "[ws] Recibiendo mensaje desde la sesion... Agregando a Bandeja de notificaciones"
