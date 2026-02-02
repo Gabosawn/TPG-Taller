@@ -119,7 +119,7 @@ function manejarMensaje(data) {
 		case 'contactos':
 			listar_contactos(data.conversaciones);
 			break;
-		case 'mensaje_nuevo_privado':
+		case 'mensaje_nuevo':
 			mostrarMensajePrivado(data.user_ws_id, data.emisor, data.receptor, data.mensaje);
 			break;
 		case 'mensaje_nuevo_grupo':
@@ -140,12 +140,12 @@ function manejarMensaje(data) {
 		case 'grupo_creado':
 			agregarMensajePrivado('sistema', `✅ Grupo "${data.grupo}" creado con éxito.`);
 			break;
-		case 'chat_abierto_privado':
-			mostrarChatPrivado(data.receptor, data.mensajes);
+		case 'chat_abierto':
+			mostrarChat(data.receptor, data.mensajes, data.tipo_de_chat, data.user_ws_id, data.kv_user_ids_names);
 			break;
-		case 'chat_abierto_grupo':
-			mostrarChatGrupo(data.receptor, data.mensajes, data.kv_user_ids_names, data.user_ws_id); //REVISAR
-			break;
+		//case 'chat_abierto_grupo':
+		//	mostrarChatGrupo(data.receptor, data.mensajes, data.kv_user_ids_names, data.user_ws_id); //REVISAR
+		//	break;
 		case 'error':
 			agregarMensajePrivado('error', '❌ ' + data.mensaje);
 			break;
@@ -264,8 +264,8 @@ function mostrarMensajeGrupo(user_ws_id, emisor_id, receptor_id, mensaje, nombre
 	agregarMensajeGrupo(user_ws_id == emisor_id ? 'enviado' : 'recibido', mensaje, mensaje.fecha, nombre_emisor);
 }
 
-function mostrarChatPrivado(usuario, mensajes) {
-	chatActual = {tipo: usuario.tipo, id: usuario.receptor_id};
+function mostrarChat(receptor, mensajes, tipo_de_chat, user_ws_id, kv_user_ids_names) {
+	chatActual = {tipo: receptor.tipo, id: receptor.receptor_id};
 
 	// Remover clase active de todos los chats
 	document.querySelectorAll('.chat-item').forEach(item => {
@@ -273,50 +273,35 @@ function mostrarChatPrivado(usuario, mensajes) {
 	});
 	
 	// Agregar clase active al chat seleccionado
-	document.getElementById(`${usuario.tipo}-${usuario.receptor_id}`).classList.add('active');
+	document.getElementById(`${receptor.tipo}-${receptor.receptor_id}`).classList.add('active');
 	
 	// Actualizar el header del chat
-	document.getElementById('nombre-chat-actual').textContent = usuario.nombre;
+	document.getElementById('nombre-chat-actual').textContent = receptor.nombre; 
 
 	// Mostrar última conexión
 	const ultimaConexionEl = document.getElementById('ultima-conexion');
-	if (usuario.en_linea == 1) {
+	if (receptor.en_linea == 1) {
 		ultimaConexionEl.textContent = 'En linea';
 	} else if (ultimaConexionEl) {
-		ultimaConexionEl.textContent = formatearUltimaConexion(usuario.ultima_conexion);
+		ultimaConexionEl.textContent = formatearUltimaConexion(receptor.ultima_conexion);
 	}
 	
 	const mensajesDiv = document.getElementById('mensajes');
 	mensajesDiv.innerHTML = '';
 
-	if (mensajes && mensajes.length > 0) {
-		// Invertir el orden de los mensajes para mostrar el último primero
-		mensajes.reverse().forEach(m => {
-			agregarMensajePrivado(m.emisor == usuario.receptor_id ? 'recibido' : 'enviado', m.contenido, m.fecha);
-		});
-	} else {
-		agregarMensajePrivado('sistema', 'No hay mensajes en esta conversación');
+	switch (tipo_de_chat) {
+  		case 'privado':
+  		  mostrarChatPrivado( mensajes, user_ws_id);
+  		  break;
+  		case 'grupo':
+  		  mostrarChatGrupo(mensajes, kv_user_ids_names, user_ws_id);
+  		  break;
+  		default:
+  		  console.error('Error al abrir chat: ', receptor.nombre);
 	}
 }
-function mostrarChatGrupo(grupo, mensajes, kv_user_ids_names, user_ws_id) {
-	chatActual = { tipo: 'grupo', id: grupo.receptor_id };
 
-	document.querySelectorAll('.chat-item').forEach(item => {
-		item.classList.remove('active');
-	});
-
-	document.getElementById(`grupo-${grupo.receptor_id}`).classList.add('active');
-
-	document.getElementById('nombre-chat-actual').textContent = grupo.nombre ?? 'Grupo desconocido';
-
-	const ultimaConexionEl = document.getElementById('ultima-conexion');
-	if (ultimaConexionEl) {
-		ultimaConexionEl.textContent = '';
-	}
-
-	const mensajesDiv = document.getElementById('mensajes');
-	mensajesDiv.innerHTML = '';
-
+function mostrarChatGrupo(mensajes, kv_user_ids_names, user_ws_id) {
 	if (mensajes && mensajes.length > 0) {
 		mensajes.reverse().forEach(m => {
 			const tipo = m.emisor === user_ws_id ? 'enviado' : 'recibido';
@@ -336,6 +321,17 @@ function mostrarChatGrupo(grupo, mensajes, kv_user_ids_names, user_ws_id) {
 			null,
 			''
 		);
+	}
+}
+
+function mostrarChatPrivado(mensajes, user_ws_id) {
+	if (mensajes && mensajes.length > 0) {
+		// Invertir el orden de los mensajes para mostrar el último primero
+		mensajes.reverse().forEach(m => {
+			agregarMensajePrivado(user_ws_id == m.emisor ? 'enviado' : 'recibido', m.contenido, m.fecha);
+		});
+	} else {
+		agregarMensajePrivado('sistema', 'No hay mensajes en esta conversación');
 	}
 }
 

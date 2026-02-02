@@ -230,19 +230,19 @@ defmodule Tpg.WebSocketHandler do
 
   def manejar_abrir_chat(tipo, id_receptor, state) do
 
-    tipo_atom = case tipo do
-      "privado" ->
-          :chat_abierto_privado
-      "grupo" ->
-          :chat_abierto_grupo
-      _ ->
-        NotificationHandler.notificar(:error, "Tipo de chat desconocido: #{tipo}", state)
-    end
+    kv_user_ids_nombres = Mensajeria.obtener_kv_user_ids_nombres(id_receptor)
 
     with {:ok, mensajes} <- SessionService.oir_chat(tipo, state.id, id_receptor, self()),
         {:ok, receptor} <- Receptores.obtener(tipo, id_receptor),
         {:ok, receptor} <- SessionService.agregar_ultima_conexion(receptor) do
-          NotificationHandler.handle_notification(tipo_atom, %{receptor: receptor, mensajes: mensajes}, state)
+          NotificationHandler.handle_notification(:chat_abierto,
+          %{
+            receptor: receptor,
+            mensajes: mensajes,
+            tipo_de_chat: tipo,
+            kv_user_ids_names: kv_user_ids_nombres
+            },
+             state)
     else
       {:ya_esta_escuchando, mensajes} ->
         {:ok, state}

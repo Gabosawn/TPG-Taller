@@ -109,11 +109,15 @@ defmodule Tpg.Handlers.NotificationHandler do
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
 
-  def handle_notification(:chat_abierto, %{receptor: receptor, mensajes: mensajes}, state) do
+  def handle_notification(:chat_abierto, %{receptor: receptor, mensajes: mensajes, tipo_de_chat: tipo, kv_user_ids_names: kv_user_ids_names}, state) do
+
     respuesta = %{
       tipo: "chat_abierto",
       receptor: Map.take(receptor, [:receptor_id, :nombre, :ultima_conexion, :descripcion, :tipo, :en_linea]),
-      mensajes: mensajes
+      mensajes: mensajes,
+      tipo_de_chat: tipo,
+      user_ws_id: state.id,
+      kv_user_ids_names: kv_user_ids_names
     }
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
