@@ -88,6 +88,7 @@ defmodule Tpg.Services.SessionService do
   def agendar(user_id, nombre_usuario) do
     case Receptores.agregar_contacto(user_id, nombre_usuario) do
       {:ok, res} ->
+        Tpg.habilitar_canales(user_id)
         Logger.info("[session] usuario #{nombre_usuario} agendado correctamente por #{user_id}")
         {:ok, res}
       {:error, motivo} ->

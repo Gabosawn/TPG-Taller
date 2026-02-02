@@ -2,6 +2,28 @@
 let ws = null;
 let chatActual = null
 
+function setChatInputBloqueado(bloqueado, nombreContacto = '') {
+	const chatInput = document.getElementById('chat-input-container');
+	const bloqueadoEl = document.getElementById('chat-bloqueado');
+	const bloqueadoTexto = document.getElementById('chat-bloqueado-texto');
+
+	if (!chatInput || !bloqueadoEl) {
+		return;
+	}
+
+	if (bloqueado) {
+		chatInput.style.display = 'none';
+		bloqueadoEl.style.display = '';
+		if (bloqueadoTexto) {
+			const nombre = nombreContacto ? `a ${nombreContacto}` : 'al contacto';
+			bloqueadoTexto.textContent = `Agrega ${nombre} para poder enviar mensajes.`;
+		}
+	} else {
+		bloqueadoEl.style.display = 'none';
+		chatInput.style.display = '';
+	}
+}
+
 function setSidebarView(view) {
 	const chats = document.getElementById('chats-usuario');
 	const notificaciones = document.getElementById('notificaciones-usuario');
@@ -87,13 +109,14 @@ function conectar() {
 	};
 
 	ws.onclose = () => {
-		desconectar()
 		document.getElementById('lista-notificaciones').innerHTML = '';
 		document.getElementById('lista-conversaciones').innerHTML = '';
 		document.getElementById('mensajes').innerHTML = '';
 		document.getElementById('nombre-chat-actual').textContent = 'Selecciona un chat';
 		document.getElementById('ultima-conexion').textContent = '';
+		document.getElementById('usuarios-checkbox').innerHTML = '';
 		chatActual = null;
+		desconectar()
 	};
 }
 
@@ -129,7 +152,9 @@ function manejarMensaje(data) {
 			agregarMensajePrivado('sistema', '✓ ' + data.mensaje);
 			break;
 		case 'contacto_nuevo':
+			activarChatInput();
 			agregarConversacion(data.contacto.tipo_contacto, data.contacto.receptor_id, data.contacto.nombre);
+			agregarListaCrearGrupo(data.contacto.tipo_contacto, data.contacto.receptor_id, data.contacto.nombre);
 			break;
 		case 'notificacion_bandeja':
 			agregarNotificacion(data.notificacion);
@@ -217,11 +242,13 @@ function agregarConversacion(tipo, id, nombre) {
 	li.id = `${tipo}-${id}`;
 	li.textContent = nombre;
 	li.className = 'chat-item';
-	li.onclick = () => abrirChat(tipo, id, nombre);
+	li.onclick = () => abrirChat(tipo, id);
 	lista.appendChild(li);
 }
 
-function agregarListaCrearGrupo(checkboxContainer, tipo, id, nombre) {
+function agregarListaCrearGrupo(tipo, id, nombre) {
+	const checkboxContainer = document.getElementById('usuarios-checkbox');
+	
 	if (tipo !== "privado") { return; }
 	const checkboxDiv = document.createElement('div');
 	checkboxDiv.className = 'checkbox-item';
@@ -241,18 +268,14 @@ function agregarListaCrearGrupo(checkboxContainer, tipo, id, nombre) {
 }
 
 function listar_contactos(conversaciones) {
-	const lista = document.getElementById('lista-conversaciones');
-	lista.innerHTML = '';
-	const checkboxContainer = document.getElementById('usuarios-checkbox');
-	checkboxContainer.innerHTML = ''
-
 	conversaciones.forEach(conversacion => {
 		agregarConversacion(conversacion.tipo, conversacion.id, conversacion.nombre);
-		agregarListaCrearGrupo(checkboxContainer, conversacion.tipo, conversacion.id, conversacion.nombre);
+		agregarListaCrearGrupo(conversacion.tipo, conversacion.id, conversacion.nombre);
 	});
 }
 
-function abrirChat(tipo, receptorId, nombreReceptor) {
+function abrirChat(tipo, receptorId) {
+
 	// Enviar solicitud para abrir el chat
 	const payload = {
 		accion: 'abrir_chat',
@@ -272,7 +295,14 @@ function mostrarChat(chat, mensajes, receptor_id) {
 	});
 	
 	// Agregar clase active al chat seleccionado
-	document.getElementById(`${chat.tipo}-${chat.receptor_id}`).classList.add('active');
+	const chatItemId = `${chat.tipo}-${chat.receptor_id}`
+	const esContacto = !!document.getElementById(chatItemId);
+	if (!esContacto) {
+		agregarConversacion(chatActual.tipo, chat.receptor_id, `No agendado: ${chat.nombre}`);
+		setChatInputBloqueado(!esContacto, usuario.nombre);
+	} else {
+		document.getElementById(chatItemId).classList.add('active');
+	}
 	
 	// Actualizar el header del chat
 	document.getElementById('nombre-chat-actual').textContent = chat.nombre; 
@@ -284,6 +314,7 @@ function mostrarChat(chat, mensajes, receptor_id) {
 	} else if (ultimaConexionEl) {
 		ultimaConexionEl.textContent = formatearUltimaConexion(chat.ultima_conexion);
 	}
+
 	
 	const mensajesDiv = document.getElementById('mensajes');
 	mensajesDiv.innerHTML = '';
@@ -371,24 +402,42 @@ function crearGrupo() {
 	checkboxes.forEach(cb => cb.checked = false);
 }
 
-function agregarUsuario() {
-  const nombreUsuario = document.getElementById('nombre-usuario').value.trim();
-  if (!nombreUsuario) {
-    alert('Por favor ingresa un nombre de usuario');
-    return;
-  }
-  const payload = JSON.stringify({
-    accion: "agregar_contacto",
-    nombre_usuario: nombreUsuario
-  });
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(payload);
-    // Limpiar el input y cerrar el modal
-    document.getElementById('nombre-usuario').value = '';
-    closeModal();
-  } else {
-    alert('No hay conexión con el servidor');
-  }
+function agregarPorModal() {
+	const nombreUsuario = document.getElementById('nombre-usuario').value.trim();
+	if (!nombreUsuario) {
+		alert('Por favor ingresa un nombre de usuario');
+		return;
+	}
+	const payload = JSON.stringify({
+		accion: "agregar_contacto",
+		nombre_usuario: nombreUsuario
+	});
+	if (ws && ws.readyState === WebSocket.OPEN) {
+		ws.send(payload);
+		// Limpiar el input y cerrar el modal
+		document.getElementById('nombre-usuario').value = '';
+		closeModal();
+	} else {
+		alert('No hay conexión con el servidor');
+	}
+}
+
+function agregarPorChat() {
+	const payload = JSON.stringify({
+		accion: "agregar_contacto",
+		nombre_usuario: chatActual.nombre
+	});
+
+	ws.send(payload);
+}
+
+function agregarUsuario(origen) {
+	if (origen === 'modal') {
+		agregarPorModal();
+	} else if (origen === 'chat') {
+		console.log("Agregando usuario desde chat actual:", chatActual);
+		agregarPorChat();
+	}
 }
 
 function mostrarMensaje(data) {
@@ -477,7 +526,7 @@ function agregarNotificacion(notificacion) {
 	li.className = 'notif-card';
 	const header = document.createElement('div');
 	header.className = 'notif-header';
-	li.onclick = () => abrirChat(tipoChat, receptorId, nombre_contacto);
+	li.onclick = () => abrirChat(tipoChat, receptorId);
 
 	header.innerHTML = `
 		<span>${nombre_contacto}</span><span>${cantidad}</span>
@@ -512,4 +561,18 @@ function agregarNotificacion(notificacion) {
 	}
 
 	bandeja.appendChild(li);
+}
+
+function activarChatInput() {
+	const chatInput = document.getElementById('chat-input-container');
+
+	if (!chatInput) {
+		return;
+	}
+
+	if (chatInput.style.display !== 'none') {
+		return;
+	}
+
+	setChatInputBloqueado(false);
 }

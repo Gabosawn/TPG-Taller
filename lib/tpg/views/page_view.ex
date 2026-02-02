@@ -45,10 +45,16 @@ defmodule Tpg.Views.PageView do
 
           <div id="mensajes"></div>
 
-          <div class="chat-input">
+          <div id="chat-bloqueado" class="chat-bloqueado" style="display:none;">
+            <span id="chat-bloqueado-texto">Agrega el contacto para poder enviar mensajes.</span>
+            <button onclick="agregarUsuario('chat')">Agregar contacto</button>
+          </div>
+
+          <div id="chat-input-container" class="chat-input">
             <input type="text" id="mensaje" placeholder="Escribe un mensaje..." />
             <button onclick="enviarMensaje()">Enviar</button>
           </div>
+
         </div>
       </div>
 
@@ -74,7 +80,7 @@ defmodule Tpg.Views.PageView do
         <div class="agregar-contacto" style="display:none;">
           <h3>Agregar Contacto</h3>
           <input type="text" id="nombre-usuario" placeholder="Nombre de Usuario" />
-          <button onclick="agregarUsuario()">Agendar Contacto</button>
+          <button onclick="agregarUsuario('modal')">Agendar Contacto</button>
         </div>
       </div>
 

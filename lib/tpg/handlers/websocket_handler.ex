@@ -1,6 +1,7 @@
 defmodule Tpg.WebSocketHandler do
   @behaviour :cowboy_websocket
   require Logger
+  alias ElixirSense.Log
   alias Tpg.Services.ChatService
   alias Tpg.Services.SessionService
   alias Tpg.Services.NotificationService
@@ -56,6 +57,7 @@ defmodule Tpg.WebSocketHandler do
   def websocket_handle({:text, json}, state) do
     case Jason.decode(json) do
       {:ok, %{"accion" => "agregar_contacto", "nombre_usuario" => nombre}} ->
+        Logger.debug("[WS HANDLER] agregando contacto #{nombre}...")
         manejar_agregar_usuario(state, nombre)
 
       {:ok, %{"accion" => "abrir_chat", "tipo" => tipo, "receptor_id" => id}} ->

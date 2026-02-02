@@ -49,6 +49,7 @@ defmodule Tpg.Dominio.Receptores do
   def agregar_contacto(id_usuario, nombre_usuario) do
     with {:ok, usuario} <- validar_usuario_existe(id_usuario),
          {:ok, contacto} <- validar_contacto_existe(nombre_usuario),
+         {:ok, contacto} <- validar_no_es_si_mismo(id_usuario, contacto),
          {:ok, contacto} <- insertar_contacto(id_usuario, contacto.receptor_id) do
       {:ok, %{usuario: usuario, contacto: contacto}}
     else
@@ -60,6 +61,9 @@ defmodule Tpg.Dominio.Receptores do
 
       {:error, :contacto_no_existe} ->
         {:error, "El usuario '#{nombre_usuario}' no existe"}
+
+      {:error, :es_si_mismo} ->
+        {:error, "No puede agendarse a si mismo"}
 
       error ->
         error
@@ -77,6 +81,14 @@ defmodule Tpg.Dominio.Receptores do
     case Repo.get_by(Usuario, nombre: nombre_usuario) do
       nil -> {:error, :contacto_no_existe}
       contacto -> {:ok, contacto}
+    end
+  end
+
+  defp validar_no_es_si_mismo(id_usuario, contacto) do
+    if id_usuario == contacto.receptor_id do
+      {:error, :es_si_mismo}
+    else
+      {:ok, contacto}
     end
   end
 

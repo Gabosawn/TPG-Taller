@@ -34,7 +34,8 @@ defmodule Tpg.MixProject do
   defp aliases do
     [
       setup_db: [" ecto.create ", " ecto.migrate"],
-      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"]
+      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
+      reset_db: ["ecto.rollback --all", "ecto.migrate --quiet"]
     ]
   end
 

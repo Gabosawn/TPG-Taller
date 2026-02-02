@@ -110,6 +110,8 @@ defmodule Tpg.Services.NotificationService do
     mensaje = %{contacto: contacto, por: usuario_id}
     case enviar_notificacion(usuario_id, :agregado_como_contacto, mensaje) do
       {:ok, mensaje} ->
+        enviar_notificacion_si_id_esta_en_linea(:contacto_en_linea, %{contacto: %{receptor_id: contacto.receptor_id, nombre: contacto.nombre}}, contacto.receptor_id, usuario_id)
+        enviar_notificacion_si_id_esta_en_linea(:contacto_en_linea, %{contacto: %{receptor_id: usuario_id, nombre: ""}}, usuario_id, contacto.receptor_id)
         {:ok, mensaje}
       {:error, mensaje} ->
         {:error, mensaje}
