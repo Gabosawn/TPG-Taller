@@ -26,7 +26,14 @@ defmodule Tpg.Services.NotificationService do
         preload: [:usuario, :mensaje]
       )
       |> Repo.one()
-    send(ws_pid, {:notificacion, :nuevo_mensaje, %{data: data, emisor: emisor, destinatario: destinatario, tipo_chat: tipo_chat}})
+    send(ws_pid, {:notificacion, :nuevo_mensaje,
+                 %{
+                  mensaje: data.mensaje.contenido,
+                  emisor: emisor,
+                  emisor_nombre: data.usuario.nombre,
+                  destinatario: destinatario,
+                  tipo_chat: tipo_chat
+                  }})
   end
 
   @doc """

@@ -8,7 +8,7 @@ defmodule Tpg.Services.ChatService do
 
     case tipo do
       "grupo" ->
-        Room.agregar_mensaje(destinatario, emisor, msg)
+        Room.agregar_mensaje(emisor, destinatario, msg)
 
       "privado" ->
         PrivateRoom.agregar_mensaje(emisor, destinatario, msg)

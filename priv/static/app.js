@@ -120,10 +120,7 @@ function manejarMensaje(data) {
 			listar_contactos(data.conversaciones);
 			break;
 		case 'mensaje_nuevo':
-			mostrarMensajePrivado(data.user_ws_id, data.emisor, data.receptor, data.mensaje);
-			break;
-		case 'mensaje_nuevo_grupo':
-			mostrarMensajeGrupo(data.user_ws_id, data.emisor, data.receptor, data.mensaje, data.emisor_nombre);
+			mostrarMensaje(data);
 			break;
 		case 'usuarios_activos':
 			agregarMensajePrivado('sistema', '👥 Usuarios: ' + data.usuarios.join(', '));
@@ -423,6 +420,20 @@ function agregarUsuario() {
   } else {
     alert('No hay conexión con el servidor');
   }
+}
+
+function mostrarMensaje(data) {
+	tipo = data.user_ws_id == data.emisor ? 'enviado' : 'recibido';
+	switch (data.tipo_chat) {
+		case 'privado':
+			agregarMensajePrivado(tipo, data.mensaje, data.fecha);
+			break;
+		case 'grupo':
+			agregarMensajeGrupo(tipo, data.mensaje, data.fecha, data.emisor_nombre);
+			break;
+		default:
+			console.error('Tipo de chat desconocido:', data.tipo_chat);
+	}
 }
 
 function agregarMensajePrivado(tipo, texto, fecha) {

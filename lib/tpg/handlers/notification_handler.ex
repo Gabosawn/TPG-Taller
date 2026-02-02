@@ -21,7 +21,28 @@ defmodule Tpg.Handlers.NotificationHandler do
   #   {:reply, Jason.encode!(respuesta), state}
   # end
 
-  def handle_notification(:nuevo_mensaje, %{emisor: emisor, mensaje: mensaje}, state) do
+
+  def handle_notification(:nuevo_mensaje,
+    %{mensaje: mensaje,
+      emisor: emisor,
+      emisor_nombre: emisor_nombre,
+      destinatario: destinatario,
+      tipo_chat: tipo_chat
+      },
+      state) do
+    respuesta = %{
+        tipo: "mensaje_nuevo",
+        mensaje: mensaje,
+        emisor: emisor,
+        emisor_nombre: emisor_nombre,
+        destinatario: destinatario,
+        tipo_chat: tipo_chat,
+        user_ws_id: state.id
+      }
+    {:reply, {:text, Jason.encode!(respuesta)}, state}
+  end
+
+  def handle_notification(:nuevo_mensaje_notificacion, %{emisor: emisor, mensaje: mensaje}, state) do
 
     # state.id es el id del usuario receptor
     conversacion_id = "privado-#{emisor.receptor_id}"
