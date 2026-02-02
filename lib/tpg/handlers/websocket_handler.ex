@@ -195,7 +195,6 @@ defmodule Tpg.WebSocketHandler do
   """
   def websocket_info({:notificacion, tipo, notificacion}, state) do
     Logger.info("[ws] usuario #{state.usuario} Recibiendo notificacion...")
-    IO.inspect({tipo, notificacion})
     NotificationHandler.handle_notification(tipo, notificacion, state)
   end
 

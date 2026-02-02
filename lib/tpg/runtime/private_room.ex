@@ -134,7 +134,7 @@ defmodule Tpg.Runtime.PrivateRoom do
   def notificar_oyentes(listeners, mensaje, emisor, destinatario) do
     Enum.each(Map.keys(listeners), fn pid ->
       Logger.info("[ROOM-PRIVATE] Notificando usuario")
-      NotificationService.notificar_oyentes_de_mensaje(pid, mensaje, emisor, destinatario)
+      NotificationService.notificar_oyentes_de_mensaje(pid, mensaje, emisor, destinatario, "privado")
     end)
   end
 end

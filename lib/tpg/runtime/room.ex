@@ -99,7 +99,7 @@ defmodule Tpg.Runtime.Room do
         nuevo_msg = %{id: mensaje.id, emisor: emisor, contenido: contenido, estado: mensaje.estado, nombre: mensaje.nombre_emisor, fecha: mensaje.inserted_at}
         new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
         # Notificar a todos los oyentes
-        notificar_oyentes(new_state.listeners, mensaje, emisor, nil)
+        notificar_oyentes(new_state.listeners, mensaje, emisor)
         {:reply, {:ok, nuevo_msg}, new_state}
 
       {:error, motivo} ->
@@ -134,11 +134,11 @@ defmodule Tpg.Runtime.Room do
     %{state | miembros: Receptores.obtener_miembros(state.group_id)}
   end
 
-  defp notificar_oyentes(listeners, mensaje, emisor, _all) do
+  defp notificar_oyentes(listeners, mensaje, emisor) do
     Logger.info("[room] Notificando usuarios...")
     Enum.each(Map.keys(listeners), fn pid ->
       Logger.info("[room] Notificando usuario")
-      NotificationService.notificar_oyentes_de_mensaje(pid, mensaje, emisor, nil)
+      NotificationService.notificar_oyentes_de_mensaje(pid, mensaje, emisor, nil, "grupo")
     end)
     # Enum.each(Map.keys(listeners), fn pid ->W
     #   Logger.info("[room] Notificando usuario")

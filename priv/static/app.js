@@ -143,9 +143,6 @@ function manejarMensaje(data) {
 		case 'chat_abierto':
 			mostrarChat(data.receptor, data.mensajes, data.tipo_de_chat, data.user_ws_id, data.kv_user_ids_names);
 			break;
-		//case 'chat_abierto_grupo':
-		//	mostrarChatGrupo(data.receptor, data.mensajes, data.kv_user_ids_names, data.user_ws_id); //REVISAR
-		//	break;
 		case 'error':
 			agregarMensajePrivado('error', '❌ ' + data.mensaje);
 			break;
