@@ -20,7 +20,7 @@ defmodule Tpg.Dominio.Mensajeria do
   @doc """
   Envia el mensaje del emisor al receptor marcandolo como 'ENVIADO'
   """
-  @spec enviar_mensaje(reciever :: integer(), sender :: integer(), message :: string()) :: {:ok, %{}} | {:error, any()}
+  @spec enviar_mensaje(reciever :: integer(), sender :: integer(), message :: String.t()) :: {:ok, %{}} | {:error, any()}
   def enviar_mensaje(reciever, sender, message) do
     Multi.new()
     |> Multi.insert(:mensaje, fn _ ->

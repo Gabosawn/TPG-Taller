@@ -79,7 +79,7 @@ defmodule Tpg.Handlers.NotificationHandler do
   @doc """
   Notifica al cliente que fué agregado como contacto por alguien
   """
-  def handle_notification(:agregado_como_contacto, %{contacto: contacto, por: remitente_id}, state) do
+  def handle_notification(:agregado_como_contacto, %{contacto: contacto}, state) do
     Logger.info("[notification handler] notificacion recibida")
     respuesta = %{
       tipo: "notificacion_bandeja",

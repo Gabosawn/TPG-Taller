@@ -1,11 +1,11 @@
 defmodule Tpg.WebSocketHandler do
   @behaviour :cowboy_websocket
   require Logger
+  alias Tpg.Dominio.Dto.WebSocket
   alias Tpg.Services.ChatService
   alias Tpg.Services.SessionService
   alias Tpg.Services.NotificationService
   alias Tpg.Dominio.Receptores
-  alias Tpg.Dominio.Mensajeria
   alias Tpg.Handlers.NotificationHandler
 
   def init(req, _state) do
@@ -37,7 +37,7 @@ defmodule Tpg.WebSocketHandler do
         Logger.info("[WS] cliente registrado con la sesion #{inspect(self())}")
         NotificationHandler.notificar(:bienvenida, nombre, state)
       else
-        {:error, {:already_started, pid}} ->
+        {:error, {:already_started, _}} ->
           {_tipo, frame, new_state} = NotificationHandler.notificar(:error, "Usuario #{nombre} ya está conectado", state)
           send(self(), :cerrar_conexion)
           {:reply, frame, new_state}
@@ -48,10 +48,7 @@ defmodule Tpg.WebSocketHandler do
           {:reply, frame, new_state}
         end
   end
-  def websocket_info(:cerrar_conexion, state) do
-    Logger.info("[WS] Cerrando conexión por error de autenticación")
-    {:stop, state}
-  end
+
   # Manejar mensajes entrantes del cliente
   def websocket_handle({:text, json}, state) do
     case Jason.decode(json) do
@@ -129,7 +126,10 @@ defmodule Tpg.WebSocketHandler do
 
     {:reply, {:text, respuesta}, state}
   end
-
+  def websocket_info(:cerrar_conexion, state) do
+    Logger.info("[WS] Cerrando conexión por error de autenticación")
+    {:stop, state}
+  end
   def websocket_info({:DOWN, _ref, :process, _pid, _reason}, state) do
     respuesta =
       Jason.encode!(%{
@@ -177,6 +177,7 @@ defmodule Tpg.WebSocketHandler do
     end
   end
 
+  @spec manejar_abrir_chat(String.t(), non_neg_integer(), WebSocket.t()) :: {:reply, {:text, String.t()}, WebSocket.t()} | {:ok, WebSocket.t()}
   def manejar_abrir_chat(tipo, id_receptor, state) do
 
     with {:ok, mensajes} <- SessionService.oir_chat(tipo, state.id, id_receptor, self()),
@@ -190,7 +191,7 @@ defmodule Tpg.WebSocketHandler do
             },
              state)
     else
-      {:ya_esta_escuchando, mensajes} ->
+      {:ya_esta_escuchando, _mensajes} ->
         {:ok, state}
       _ ->
         NotificationHandler.handle_notification(:error, "Error abriendo chat" , state)

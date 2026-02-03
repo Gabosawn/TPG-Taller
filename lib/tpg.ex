@@ -9,7 +9,7 @@ defmodule Tpg do
     Receptores.get_grupo_ids_by_usuario(id_emisor)
     |> Enum.each(fn grupo ->
       Logger.info("[tpg] habilitando grupo id #{grupo.id}")
-      crear_canal_grupal(grupo.id, id_emisor)
+      crear_canal_grupal(grupo.id)
     end)
 
     Receptores.obtener_contactos_agenda(id_emisor)
@@ -21,7 +21,7 @@ defmodule Tpg do
     {:ok, %{id: id_emisor}}
   end
 
-  defp crear_canal_grupal(id_grupo, emisor) do
+  defp crear_canal_grupal(id_grupo) do
     case DynamicSupervisor.start_child(
            Tpg.DynamicSupervisor,
            {Room, id_grupo}

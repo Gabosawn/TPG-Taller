@@ -1,12 +1,10 @@
 defmodule Tpg.Services.SessionService do
-  """
+  @moduledoc """
   Session Services module
   """
 
   require Logger
-  alias Tpg.Services.SessionService
   alias Tpg.Services.NotificationService
-  alias Tpg.Handlers.NotificationHandler
   alias Tpg.Dominio.Receptores
   alias Tpg.Dominio.Receptores.Agendado
   alias Tpg.Services.ChatService

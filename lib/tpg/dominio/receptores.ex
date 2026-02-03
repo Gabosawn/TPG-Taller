@@ -221,12 +221,11 @@ defmodule Tpg.Dominio.Receptores do
 
   @spec obtener_miembros(group_id:: integer()) :: [integer()]
   def obtener_miembros(group_id) do
-  query =
-    from(ug in UsuariosGrupo,
-      join: u in Usuario, on: ug.usuario_id == u.receptor_id,
-      where: ug.grupo_id == ^group_id,
-      select: u.receptor_id
-    )
+  from(ug in UsuariosGrupo,
+    join: u in Usuario, on: ug.usuario_id == u.receptor_id,
+    where: ug.grupo_id == ^group_id,
+    select: u.receptor_id
+  )
   |> Tpg.Repo.all()
   end
 
@@ -244,6 +243,7 @@ defmodule Tpg.Dominio.Receptores do
 
   # --------------------- Receptores ---------------------
 
+  @spec obtener(String.t(), integer()) :: {:error, :no_encontrado} | {:ok, any()}
   def obtener(tipo, receptor_id) do
     resultado = case tipo do
       "grupo" ->
