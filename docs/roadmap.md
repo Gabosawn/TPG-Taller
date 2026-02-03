@@ -18,11 +18,11 @@ Ejemplo:
 2. Caso A (Maria Online): El Registry devuelve el PID de Maria. El proceso de Juan hace un GenServer.cast(pid_maria, {:nuevo_mensaje, msg}). Maria recibe el mensaje en su terminal instantáneamente.
 3. Caso B (Maria Offline): El Registry devuelve []. El proceso de Juan solo escribe en la DB. Cuando Maria ejecute su V0.4 al loguearse más tarde, verá ese mensaje.
 
-**V0.7**: Utilizando Ecto actualizar el estado de los mensajes a 'leido' cuando un proceso receptor envia una confirmacion al usuario emisor de que recibió su mensaje.
-**V0.7.1**: Usuario-Usuario.
-**V0.7.2**: Grupos.
+**V0.7**: Utilizando Ecto se deben poder loggear un usuario por su ID de postgres y obtener el historial de los ultimos 10 mensajes que recibió recuperando su estado antes de su desconexion (simulada por un cierre de iex o GenServer.stop) (recuperacion de mensajes y bandeja de entrada)
 
-**V0.8**: Utilizando Ecto se deben poder loggear un usuario por su ID de postgres y obtener el historial de los ultimos 10 mensajes que recibió recuperando su estado antes de su desconexion (simulada por un cierre de iex o GenServer.stop) (recuperacion de mensajes y bandeja de entrada)
+**V0.8**: Utilizando Ecto actualizar el estado de los mensajes a 'leido' cuando un proceso receptor envia una confirmacion al usuario emisor de que recibió su mensaje.
+**V0.8.1**: Usuario-Usuario.
+**V0.8.2**: Grupos.
 
 **V0.9**: Utilizando DynamicSupervisor automatizar el ciclo de vida de los procesos de usuarios (para levantar procesos bajo demanda y luego de un tiempo que hibernen) hayando los PID's de los procesos en un Registry usando como clave el ID del usuario en la base de datos.
 
