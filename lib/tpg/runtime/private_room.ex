@@ -24,6 +24,7 @@ defmodule Tpg.Runtime.PrivateRoom do
     {:via, Registry, {Tpg.RoomRegistry, room_id}}
   end
 
+  @spec mostrar_mensajes(usuario_sesion:: integer(), usuario_chat:: integer()) :: {[], pid()}
   def mostrar_mensajes(usuario_sesion, usuario_chat) do
     room_id = normalize_room_id(usuario_sesion, usuario_chat)
     GenServer.call(via_tuple(room_id), {:mostrar_mensajes, usuario_chat})

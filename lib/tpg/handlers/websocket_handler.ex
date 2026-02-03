@@ -1,7 +1,6 @@
 defmodule Tpg.WebSocketHandler do
   @behaviour :cowboy_websocket
   require Logger
-  alias ElixirSense.Log
   alias Tpg.Services.ChatService
   alias Tpg.Services.SessionService
   alias Tpg.Services.NotificationService
@@ -180,8 +179,6 @@ defmodule Tpg.WebSocketHandler do
 
   def manejar_abrir_chat(tipo, id_receptor, state) do
 
-    kv_user_ids_nombres = Mensajeria.obtener_kv_user_ids_nombres(id_receptor)
-
     with {:ok, mensajes} <- SessionService.oir_chat(tipo, state.id, id_receptor, self()),
         {:ok, receptor} <- Receptores.obtener(tipo, id_receptor),
         {:ok, receptor} <- SessionService.agregar_ultima_conexion(receptor) do
@@ -190,7 +187,6 @@ defmodule Tpg.WebSocketHandler do
             receptor: receptor,
             mensajes: mensajes,
             tipo_de_chat: tipo,
-            kv_user_ids_names: kv_user_ids_nombres
             },
              state)
     else
