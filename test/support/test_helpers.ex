@@ -28,7 +28,7 @@ defmodule Tpg.TestHelpers do
   """
   def create_random_user() do
     timestamp = System.monotonic_time(:microsecond)
-    nombre = "user_#{timestamp}"
+    nombre = "user#{timestamp}"
     create_test_user(nombre, @valid_password)
   end
 
