@@ -17,7 +17,7 @@ defmodule Tpg.Dominio.Receptores do
     )
   end
 
-  def marcar_ultimo_mensaje_visto(mensaje, usuario_id, grupo_id) do
+  def marcar_mensaje_visto(mensaje, usuario_id, grupo_id) do
     case Repo.get_by(UsuariosGrupo, usuario_id: usuario_id, grupo_id: grupo_id) do
       nil -> nil
       grupo ->
@@ -26,7 +26,39 @@ defmodule Tpg.Dominio.Receptores do
         |> put_change(:ultimo_mensaje_leido, mensaje.id)
         |> Repo.update()
     end
+  end
 
+  def marcar_mensaje_entregado(mensaje, usuario_id, grupo_id) do
+    IO.inspect(mensaje, label: "Mensaje en marcar_mensaje_entregado")
+    case Repo.get_by(UsuariosGrupo, usuario_id: usuario_id, grupo_id: grupo_id) do
+      nil -> nil
+      grupo ->
+        grupo
+        |> change()
+        |> put_change(:ultimo_mensaje_recibido, mensaje.id)
+        |> Repo.update()
+    end
+  end
+
+
+  def buscar_mensaje_comun_usuarios(grupo_id) do
+    from(usuario in UsuariosGrupo,
+        where: usuario.grupo_id == ^grupo_id,
+        select: %{
+          usuario_id: usuario.usuario_id,
+          ultimo_mensaje_leido: usuario.ultimo_mensaje_leido,
+          ultimo_mensaje_recibido: usuario.ultimo_mensaje_recibido
+        }
+      )
+    |> Repo.all()
+    |> Enum.reduce(0, fn usuario, acc ->
+      case acc do
+        0 ->
+          usuario.ultimo_mensaje_leido
+        _ ->
+          min(acc, usuario.ultimo_mensaje_leido)
+      end
+    end)
   end
 
   def obtener_usuario(attrs) do

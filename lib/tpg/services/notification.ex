@@ -10,37 +10,33 @@ defmodule Tpg.Services.NotificationService do
   @doc """
   Notifica a un usuario o grupo de usuarios 'en_linea' sobre un nuevo mensaje
   """
-  @spec notificar(:mensaje, contexto:: %{usuarios: [integer()], mensaje: %{}, chat_pid: pid()}) :: nil
+  @spec notificar(:mensaje, contexto:: %{usuarios: [integer()], mensaje: %{}, chat_pid: pid(), emisor: integer(), tipo: String.t(), receptor: integer()}) :: nil
   def notificar(:mensaje, contexto) do
     Enum.each(contexto.usuarios, fn usuario ->
       if SessionService.en_linea?(usuario) do
         spawn(fn  ->
-          notificar_mensaje(usuario, contexto, contexto.chat_pid)
+          notificar_mensaje(usuario, contexto)
         end)
       end
     end)
   end
-  defp notificar_mensaje(id_usuario, contexto, chat_pid) do
-    Logger.debug("[notification] notificando a usuario #{id_usuario} el mensaje: #{contexto.mensaje.contenido}")
-    emisor = Map.take(contexto.mensaje, [:emisor, :nombre])
-    mensaje = Map.take(contexto.mensaje, [:contenido, :fecha, :id])
-    contexto = %{contexto | mensaje: %{emisor: emisor, mensaje: mensaje}}
-    IO.inspect(contexto)
-    case SessionService.esta_escuchando?(id_usuario, chat_pid) do
-      true -> notificar_mensaje_con_push(id_usuario, contexto)
-      false -> notificar_mensaje_en_bandeja(id_usuario, contexto)
+
+  defp notificar_mensaje(id_usuario, contexto) do
+    case SessionService.esta_escuchando?(id_usuario, contexto.chat_pid) do
+      true -> notificar_mensaje_con_push(id_usuario, contexto.mensaje, contexto.emisor, contexto.receptor, contexto.tipo)
+      false -> notificar_mensaje_en_bandeja(id_usuario, contexto.mensaje, contexto.emisor, contexto.receptor, contexto.tipo)
     end
   end
 
   # Para notificar a un cliente en linea que una de sus conversaciones tiene un mensaje
-  @spec notificar_mensaje_en_bandeja(id_usuario ::integer(), contexto::map()) :: nil
-  defp notificar_mensaje_en_bandeja(id_usuario, contexto) do
-    SessionService.notificar_mensaje(id_usuario, :notificacion_bandeja, contexto.mensaje)
+  @spec notificar_mensaje_en_bandeja(id_usuario ::integer(), mensaje::map(), emisor:: integer(), receptor:: integer(), tipo:: String.t()) :: nil
+  defp notificar_mensaje_en_bandeja(id_usuario, mensaje, emisor, receptor, tipo) do
+    SessionService.notificar_mensaje(id_usuario, :notificacion_bandeja, mensaje, emisor, receptor, tipo)
   end
   # Para notificar a un cliente que el chat que esta utilizando tiene un nuevo mensaje
-  @spec notificar_mensaje_con_push(id_usuario:: integer(), contexto:: map()) :: nil
-  defp notificar_mensaje_con_push(id_usuario, contexto) do
-    SessionService.notificar_mensaje(id_usuario, :mensaje_nuevo, contexto.mensaje)
+  @spec notificar_mensaje_con_push(id_usuario:: integer(), mensaje:: map(), emisor:: integer(), receptor:: integer(), tipo:: String.t()) :: nil
+  defp notificar_mensaje_con_push(id_usuario, mensaje, emisor, receptor, tipo) do
+    SessionService.notificar_mensaje(id_usuario, :mensaje_nuevo, mensaje, emisor, receptor, tipo)
   end
 
   @doc """
@@ -183,30 +179,17 @@ defmodule Tpg.Services.NotificationService do
 
   @spec listar_notificaciones(id_usuario::integer()) :: any()
   def listar_notificaciones(id_usuario) do
-    usuarios =
-      Tpg.Dominio.Mensajeria.mensajes_por_usuario(id_usuario)
-      |> Enum.group_by(&(&1.emisor))
-      |> Map.to_list()
-      |> Enum.map(fn {k, v} ->
-        %{receptor_id: k, tipo: "privado", mensajes: v}
-      end)
+    Logger.info("[NOTIFICATION SERVICE] Listando notificaciones para el usuario #{id_usuario}...")
 
-    grupos =
-      Tpg.Dominio.Mensajeria.mensajes_por_grupo(id_usuario)
-      |> Enum.group_by(&(&1.receptor))
-      |> Map.to_list()
-      |> Enum.map(fn {k, v} ->
-        %{
-          receptor_id: k,
-          tipo: "grupo",
-          mensajes: Enum.map(v, &Map.delete(&1, :receptor))
-        }
-      end)
-      |> Enum.concat(usuarios)
-      |> Enum.sort_by(fn %{mensajes: mensajes} ->
-        mensajes
-        |> Enum.max_by(& &1.fecha, fn -> %{fecha: ~N[0000-01-01 00:00:00]} end)
-        |> Map.get(:fecha)
-      end, :desc)
+    usuarios = Tpg.Dominio.Mensajeria.mensajes_por_usuario(id_usuario)
+    Logger.info("[NOTIFICATION SERVICE] Mensajes por usuario obtenidos: #{inspect(usuarios)}")
+
+    Tpg.Dominio.Mensajeria.mensajes_por_grupo(id_usuario)
+    |> Enum.concat(usuarios)
+    |> Enum.sort_by(fn %{mensajes: mensajes} ->
+      mensajes
+      |> Enum.max_by(& &1.fecha, fn -> %{fecha: ~N[0000-01-01 00:00:00]} end)
+      |> Map.get(:fecha)
+    end, :desc)
   end
 end

@@ -4,6 +4,7 @@ defmodule Tpg.Services.SessionService do
   """
 
   require Logger
+  alias Tpg.Services.SessionService
   alias Tpg.Services.NotificationService
   alias Tpg.Handlers.NotificationHandler
   alias Tpg.Dominio.Receptores
@@ -97,11 +98,26 @@ defmodule Tpg.Services.SessionService do
     end
   end
 
-  @spec notificar_mensaje(id_usuario:: integer(), operacion:: atom(), contexto:: Map)  :: nil
-  def notificar_mensaje(id_usuario, operacion, contexto) do
+  @spec notificar_mensaje(id_usuario:: integer(), operacion:: atom(), mensaje:: Map, emisor:: integer(), receptor:: integer(), tipo:: String.t())  :: nil
+  def notificar_mensaje(id_usuario, operacion, mensaje, emisor, receptor, tipo) do
     with {:ok, pid} <- get_session_pid(id_usuario),
-      {:ok, _} <- GenServer.call(pid, {:notificar, operacion, contexto}) do
-        NotificationService.marcar_entregado(contexto.mensaje, id_usuario)
+      {:ok, _} <- GenServer.call(pid, {:notificar, operacion, mensaje}) do
+        if id_usuario != emisor do
+          case {operacion, tipo} do
+            {:notificacion_bandeja, "privado"} ->
+              NotificationService.marcar_entregado(mensaje, id_usuario)
+
+            {:notificacion_bandeja, "grupo"} ->
+              Receptores.marcar_mensaje_entregado(mensaje, id_usuario, receptor)
+
+            {:mensaje_nuevo, "privado"} ->
+              NotificationService.marcar_leido(id_usuario, mensaje.id)
+
+            {:mensaje_nuevo, "grupo"} ->
+              Receptores.marcar_mensaje_entregado(mensaje, id_usuario, receptor)
+              Receptores.marcar_mensaje_visto(mensaje, id_usuario, receptor)
+          end
+        end
     end
   end
 

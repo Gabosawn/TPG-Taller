@@ -4,7 +4,7 @@ defmodule Tpg.Dominio.Mensajes.Mensaje do
 
   schema "mensajes" do
     field :contenido, :string
-    field :estado, :string
+    field :estado, :string, default: "ENVIADO"
     timestamps()
   end
 

@@ -64,12 +64,11 @@ defmodule Tpg.Runtime.PrivateRoom do
 
     case Mensajeria.enviar_mensaje(receptor, emisor, contenido) do
       {:ok, mensaje} ->
-        nuevo_msg = %{id: mensaje.id, emisor: emisor, nombre: mensaje.nombre_emisor, contenido: contenido, estado: mensaje.estado, fecha: mensaje.inserted_at}
         Logger.info("[ROOM-PRIVATE] Mensaje guardado: #{contenido}, de #{emisor}")
-        new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
+        new_state = %{state | mensajes: [mensaje | state.mensajes]}
         # Notificar a todos los oyentes
-        GenServer.cast(self(), {:mensaje, nuevo_msg})
-        {:reply, {:ok, nuevo_msg}, new_state}
+        GenServer.cast(self(), {:mensaje, mensaje, emisor, receptor})
+        {:reply, {:ok, mensaje}, new_state}
 
       {:error, motivo} ->
         Logger.alert(
@@ -100,8 +99,8 @@ defmodule Tpg.Runtime.PrivateRoom do
   end
 
   @impl true
-  def handle_cast({:mensaje, mensaje}, state) do
-    contexto = %{usuarios: state.usuarios, mensaje: mensaje, chat_pid: self()}
+  def handle_cast({:mensaje, mensaje, emisor, receptor}, state) do
+    contexto = %{usuarios: state.usuarios, mensaje: mensaje, chat_pid: self(), emisor: emisor, tipo: "privado", receptor: receptor}
     NotificationService.notificar(:mensaje, contexto)
     {:noreply, state}
   end
