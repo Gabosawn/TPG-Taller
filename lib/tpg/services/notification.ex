@@ -49,42 +49,10 @@ defmodule Tpg.Services.NotificationService do
   @spec marcar_entregado(mensaje:: %{}, id_usuario :: integer()) :: {:ok, String.t()}
   def marcar_entregado(mensaje, id_usuario) do
     Logger.info("[notification] marcando como entregado el mensaje #{mensaje.id} por el usuario #{id_usuario}")
-    Mensajeria.actualizar_estado_mensaje("ENTREGADO",mensaje.id)
-  end
-  @doc """
-  Para marcar como leido un mensaje
-  """
-  @spec marcar_leido(user_id :: integer(), mensaje_id :: integer()) :: {:ok, any()}
-  def marcar_leido(user_id, mensaje_id) do
-    Logger.info("[notification] marcando como leido el mensaje #{mensaje_id} por el usuario #{user_id}")
-    Mensajeria.actualizar_estado_mensaje("VISTO", mensaje_id)
-
-    # |> case do
-      # {1, _} ->
-        # Notificar al emisor (opcional)
-    notificar_emisor_lectura(mensaje_id, user_id)
-    {:ok, "mensaje marcado como leido"}
-
-      # {0, _} ->
-        # {:error, :evento_no_encontrado}
-    # end
-  end
-
-  @spec notificar_emisor_lectura(mensaje_id :: %Enviado{}, lector_id::integer()) :: term()
-  defp notificar_emisor_lectura(mensaje_id, lector_id) do
-    emisor_id = from(e in Enviado,
-      where: e.mensaje_id == ^mensaje_id,
-      select: e.usuario_id)
-      |> Repo.one()
-    case lector_id == emisor_id do
-      true ->
-        Logger.info("[notification] notificacion de lectura emitida por su enviador")
-        {:ok, "[notificacion] mismo usuario no lee su propio mensaje"}
-      false ->
-        {:ok, emisor_pid} = SessionService.get_session_pid(emisor_id)
-        GenServer.cast(emisor_pid, {:mensaje_leido, mensaje_id})
-        Logger.info("[notification] notificacion de lectura enviada a su emisor")
+    if mensaje.emisor == id_usuario do
+      {:pass, "No se puede marcar como entregado un mensaje desde el mismo emisor"}
     end
+    Mensajeria.actualizar_estado_mensaje("ENTREGADO",mensaje.id)
   end
 
   @spec enviar_notificacion(usuario_id::integer(), mensaje:: atom(), notificacion:: map()) ::  {:ok, any()} | {:pass | :error, any()}
