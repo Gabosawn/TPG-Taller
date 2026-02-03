@@ -104,9 +104,6 @@ defmodule Tpg.WebSocketHandler do
 
 
   def websocket_info({:listar_notificaciones, user_id}, state) do
-    Logger.info("[WS] Listando notificaciones para el usuario TUPLA #{state.id}")
-    Logger.info("[WS] Listando notificaciones para el usuario STATE #{state.id}")
-
     notificaciones = NotificationService.listar_notificaciones(user_id)
 
     respuesta =

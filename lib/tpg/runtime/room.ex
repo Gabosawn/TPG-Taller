@@ -47,7 +47,7 @@ defmodule Tpg.Runtime.Room do
     |> List.last()
     |> case do
       nil -> :ok
-      msg -> Receptores.marcar_ultimo_mensaje_visto(msg, usuario_sesion, state.group_id)
+      msg -> Receptores.marcar_mensaje_visto(msg, usuario_sesion, state.group_id)
     end
     {:reply, {state.mensajes, self()}, state}
   end
@@ -56,11 +56,13 @@ defmodule Tpg.Runtime.Room do
   def handle_call({:agregar_mensaje, emisor, contenido}, _from, state) do
     case Mensajeria.enviar_mensaje(state.group_id, emisor, contenido) do
       {:ok, mensaje} ->
-        nuevo_msg = %{id: mensaje.id, emisor: emisor, nombre: mensaje.nombre_emisor, contenido: contenido, estado: mensaje.estado, fecha: mensaje.inserted_at}
-        new_state = %{state | mensajes: [nuevo_msg | state.mensajes]}
-        # Notificar a todos los oyentes
-        GenServer.cast(self(), {:mensaje, nuevo_msg})
-        {:reply, {:ok, nuevo_msg}, new_state}
+        Logger.info("[ROOM] Mensaje guardado: #{contenido}, de #{emisor} con estado #{mensaje.estado}")
+
+        new_state = %{state | mensajes: [mensaje | state.mensajes]}
+        GenServer.cast(self(), {:mensaje, mensaje, emisor, state.group_id})
+        Receptores.marcar_mensaje_visto(mensaje, emisor, state.group_id)
+        Receptores.marcar_mensaje_entregado(mensaje, emisor, state.group_id)
+        {:reply, {:ok, mensaje}, new_state}
 
       {:error, motivo} ->
         Logger.alert(
@@ -87,9 +89,9 @@ defmodule Tpg.Runtime.Room do
     %{state | miembros: Receptores.obtener_miembros(state.group_id)}
   end
 
-  def handle_cast({:mensaje, mensaje}, state) do
+  def handle_cast({:mensaje, mensaje, emisor, group_id}, state) do
     Logger.info("[room] Notificando usuarios...")
-    contexto = %{usuarios: state.miembros, mensaje: mensaje, chat_pid: self()}
+    contexto = %{usuarios: state.miembros, mensaje: mensaje, chat_pid: self(), emisor: emisor, tipo: "grupo", receptor: group_id}
     NotificationService.notificar(:mensaje, contexto)
     {:noreply, state}
   end

@@ -5,12 +5,12 @@ defmodule Tpg.Handlers.NotificationHandler do
   """
   require Logger
 
-  def handle_notification(:mensaje_nuevo, %{emisor: emisor, mensaje: mensaje }, state) do
+  def handle_notification(:mensaje_nuevo, mensaje, state) do
     respuesta = %{
       tipo: "mensaje_nuevo",
       mensaje: %{
-        emisor: emisor.emisor,
-        nombre: emisor.nombre,
+        emisor: mensaje.emisor,
+        nombre: mensaje.nombre,
         contenido: mensaje.contenido,
         fecha: mensaje.fecha
       }
@@ -18,15 +18,15 @@ defmodule Tpg.Handlers.NotificationHandler do
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
 
-  def handle_notification(:notificacion_bandeja, %{emisor: emisor, mensaje: mensaje}, state) do
+  def handle_notification(:notificacion_bandeja, mensaje, state) do
 
     # state.id es el id del usuario receptor
-    conversacion_id = "privado-#{emisor.emisor}"
+    conversacion_id = "privado-#{mensaje.emisor}"
     respuesta = %{
       tipo: "notificacion_bandeja",
       notificacion: %{
-        receptor_id: emisor.emisor,
-        nombre: emisor.nombre,
+        receptor_id: mensaje.emisor,
+        nombre: mensaje.nombre,
         conversacion_id: conversacion_id,
         mensaje: mensaje.contenido
       }

@@ -131,7 +131,6 @@ function desconectar() {
 }
 
 function manejarMensaje(data) {
-	console.log("WS mensaje recibido:", data);
 	switch (data.tipo) {
 		case 'bienvenida':
 			autorizar_usuario(data)
@@ -204,6 +203,7 @@ function agregarMensajePrivado(tipo, texto) {
 	document.getElementById('mensajes').appendChild(div);
 	div.scrollIntoView();
 }
+
 function mensajeDeSistema(mensaje) {
 	console.log('Notificacion del sistema:', mensaje);
 }
@@ -220,11 +220,9 @@ function notificacion_punto_verde(value, data) {
   if (conversacion) {
 	if (value) {
 		conversacion.classList.add("punto-verde");
-		console.log("✅ Punto verde agregado para", convId);
 		return;
 	} else {
 		conversacion.classList.remove("punto-verde");
-		console.log("✅ Punto verde removido para", convId);
 		return;
 	}
   }
@@ -369,6 +367,8 @@ function enviarMensaje() {
 		mensaje: mensaje
 	};
 
+	console.log("Enviando mensaje:", payload);
+	
 	ws.send(JSON.stringify(payload));
 	document.getElementById('mensaje').value = '';
 }
@@ -434,12 +434,12 @@ function agregarUsuario(origen) {
 	if (origen === 'modal') {
 		agregarPorModal();
 	} else if (origen === 'chat') {
-		console.log("Agregando usuario desde chat actual:", chatActual);
 		agregarPorChat();
 	}
 }
 
 function mostrarMensaje(data) {
+	console.log("Mostrando mensaje:", data);
 	tipo = chatActual.id_usuario_cliente == data.emisor ? 'enviado' : 'recibido';
 	const div = document.createElement('div');
 	div.className = 'mensaje ' + tipo;
@@ -470,9 +470,6 @@ function listar_notificaciones(notificaciones) {
 	const lista = document.getElementById('lista-notificaciones');
 
 	if (notificaciones.length === 0) { return; }
-
-	console.log("Listando notificaciones...");
-	console.log(notificaciones);	
 
 	notificaciones.forEach(notificacion => {
 		agregarNotificacion(notificacion);
