@@ -10,11 +10,11 @@ defmodule Tpg.TestHelpers do
 
   # Contraseña válida que cumple requisitos (si es que los hay)
   @valid_password "Password123!"
-
+  @valid_username "joaquin123"
   @doc """
   Crea un usuario de prueba con contraseña válida
   """
-  def create_test_user(nombre, contrasenia \\ @valid_password) do
+  def create_test_user(nombre \\ @valid_username, contrasenia \\ @valid_password) do
     attrs = %{
       nombre: nombre,
       contrasenia: contrasenia

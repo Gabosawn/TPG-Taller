@@ -8,8 +8,8 @@ defmodule Tpg.SanityTest do
   end
 
   test "TestHelpers funciona correctamente" do
-    {:ok, user} = create_test_user("test_user_#{:rand.uniform(9999)}", "password")
-    assert user.nombre =~ "test_user"
+    {:ok, user} = create_test_user("testuser#{:rand.uniform(9999)}", "Password@1")
+    assert user.nombre =~ "testuser"
   end
 
   test "WebSocket mock funciona" do
