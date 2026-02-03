@@ -28,11 +28,12 @@ Ejemplo:
 
 **V1.0**: Utilizando la informacion de la sala abierta en el navegador, permitir al usuario hacer una busqueda de un mensaje en el historial del chat. Mostrar todos los miensajes coincidentes ( o al menos 10) con la informacion de Quien lo envió y a que hora.
 
+**V1.0.1** Teniendo la version que se puede entregar, generar suites de pruebas que permitan asegurar el funcionamiento de las funcionalidades de la aplicación para que pueda continuarse su desarrollo de manera segura.
 
 
 | **Capa**              |      **Responsabilidad**                |        **Componente Elixir**
 |-----------------------|-----------------------------------------|------------------------------
-| Identidad             | Autenticación y Tokens                  | LoginService
+| Identidad             | Autenticación y Tokens                  | LoginService o SessionService
 | Localización          | Encontrar procesos por ID               | Registry
 | Ciclo de Vida         | Crear/Matar procesos de chat            | DynamicSupervisor
 | Estado Vivo           | Lógica de usuario y sala en RAM         | GenServer
