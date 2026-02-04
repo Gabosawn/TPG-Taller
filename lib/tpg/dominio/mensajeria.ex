@@ -78,27 +78,26 @@ defmodule Tpg.Dominio.Mensajeria do
     query
   end
 
-  def obtener_mensajes_usuarios(user_1, user_2) do
-    mensajes_query =
-      from(mensaje in Mensaje,
-        join: receptor in Recibido,
-        on: mensaje.id == receptor.mensaje_id,
-        join: emisor in Enviado,
-        on: mensaje.id == emisor.mensaje_id,
-        where:
-          (receptor.receptor_id == ^user_1 and emisor.usuario_id == ^user_2) or
-            (receptor.receptor_id == ^user_2 and emisor.usuario_id == ^user_1),
-        select: %Tpg.Dominio.Dto.Mensaje{
-          id: mensaje.id,
-          emisor: emisor.usuario_id,
-          contenido: mensaje.contenido,
-          estado: mensaje.estado,
-          fecha: mensaje.inserted_at
-        },
-        order_by: [desc: mensaje.inserted_at]
-      )
+  defp query_conversacion_privada(user_1, user_2) do
+    from m in Mensaje,
+      join: r in Recibido, on: r.mensaje_id == m.id,
+      join: e in Enviado, on: e.mensaje_id == m.id,
+      where:
+        (r.receptor_id == ^user_1 and e.usuario_id == ^user_2) or
+        (r.receptor_id == ^user_2 and e.usuario_id == ^user_1)
+  end
 
-    Repo.all(mensajes_query)
+  def obtener_mensajes_usuarios(user_1, user_2) do
+    query_conversacion_privada(user_1, user_2)
+    |> order_by([m], desc: m.inserted_at)
+    |> select([m, _r, e], %Tpg.Dominio.Dto.Mensaje{
+      id: m.id,
+      emisor: e.usuario_id,
+      contenido: m.contenido,
+      estado: m.estado,
+      fecha: m.inserted_at
+    })
+    |> Repo.all()
   end
 
   def mensajes_por_usuario(usuario_id) do
@@ -159,27 +158,20 @@ defmodule Tpg.Dominio.Mensajeria do
     end
   end
 
-  def buscar_mensajes_privados(emisor_id, receptor_id, query_text) do
-    mensajes_query =
-      from m in Mensaje,
-        join: r in Recibido, on: r.mensaje_id == m.id,
-        join: e in Enviado, on: e.mensaje_id == m.id,
-        join: u in Usuario, on: e.usuario_id == u.receptor_id,
-        where:
-          (r.receptor_id == ^receptor_id and e.usuario_id == ^emisor_id) or
-          (r.receptor_id == ^emisor_id and e.usuario_id == ^receptor_id),
-        where: ilike(m.contenido, ^"%#{query_text}%"),
-        order_by: [asc: m.inserted_at],
-        select: %{
-          contenido: m.contenido,
-          emisor_nombre: u.nombre,
-          inserted_at: m.inserted_at
-        }
-
-    Repo.all(mensajes_query)
+  defp buscar_mensajes_privados(emisor_id, receptor_id, query_text) do
+    query_conversacion_privada(emisor_id, receptor_id)
+    |> join(:inner, [m, _r, e], u in Usuario, on: e.usuario_id == u.receptor_id)
+    |> where([m], ilike(m.contenido, ^"%#{query_text}%"))
+    |> order_by([m], asc: m.inserted_at)
+    |> select([m, _r, _e, u], %{
+      contenido: m.contenido,
+      emisor_nombre: u.nombre,
+      inserted_at: m.inserted_at
+    })
+    |> Repo.all()
   end
 
-  def buscar_mensajes_grupo(grupo_id, query_text) do
+  defp buscar_mensajes_grupo(grupo_id, query_text) do
     mensajes_query =
       from m in Mensaje,
         join: r in Recibido, on: r.mensaje_id == m.id,
