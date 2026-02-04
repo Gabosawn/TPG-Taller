@@ -211,6 +211,15 @@ defmodule Tpg.Dominio.Mensajeria do
       end)
       {:ok, :done}
     end)
+    #|> Multi.run(:marcar_mensaje_entregado, fn _repo, %{agrupar: agrupados} ->
+    #  Enum.each(agrupados, fn grupo ->
+    #    [_vistos, recibido] = Tpg.Dominio.Receptores.buscar_mensaje_comun_usuarios(grupo.receptor_id)
+    #    Enum.filter(grupo.mensajes, fn msg ->
+    #      msg.id <= recibido and msg.estado == "ENVIADO"
+    #    end) |> marcar_mensajes("ENTREGADO")
+    #  end)
+    #  {:ok, :done}
+    #end)
     |> Repo.transaction()
     |> case do
       {:ok, %{agrupar: agrupados}} -> agrupados
@@ -224,7 +233,7 @@ defmodule Tpg.Dominio.Mensajeria do
     |> Repo.update()
   end
 
-  def marcar_mensajes_como_leidos(mensajes) do
+  def marcar_mensajes(mensajes, estado) do
     Multi.new()
     |> Multi.run(:actualizar_estado, fn _repo, _changes ->
       ids = Enum.map(mensajes, & &1.id)
@@ -232,7 +241,7 @@ defmodule Tpg.Dominio.Mensajeria do
         [] -> {:ok, {0, nil}}
         _ ->
           update_query = from(m in Mensaje, where: m.id in ^ids)
-          {:ok, Repo.update_all(update_query, set: [estado: "VISTO", updated_at: DateTime.utc_now()])}
+          {:ok, Repo.update_all(update_query, set: [estado: estado, updated_at: DateTime.utc_now()])}
       end
     end)
     |> Repo.transaction()

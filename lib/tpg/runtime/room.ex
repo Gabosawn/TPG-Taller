@@ -22,6 +22,10 @@ defmodule Tpg.Runtime.Room do
     GenServer.call(via_tuple(usuario_chat), {:mostrar_mensajes, usuario_sesion})
   end
 
+  def actualizar_estado_mensaje(estado, mensajes_ids, id_usuario, id_emisor) do
+    GenServer.call(via_tuple(id_emisor), {:actualizar_estado_mensaje, estado, mensajes_ids})
+  end
+
   def agregar_mensaje(emisor, group_id, contenido) do
     GenServer.call(via_tuple(group_id), {:agregar_mensaje, emisor, contenido})
   end
@@ -41,15 +45,27 @@ defmodule Tpg.Runtime.Room do
   end
 
   @impl true
+  def handle_call({:actualizar_estado_mensaje, estado, mensajes_ids}, _from, state) do
+    new_state = actualizar_estado_mensajes(state, estado, mensajes_ids)
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
   def handle_call({:mostrar_mensajes, usuario_sesion}, _from, state) do
     state.mensajes
-    |> Enum.filter(fn msg -> msg.estado == "ENTREGADO" && msg.emisor != usuario_sesion end)
-    |> List.last()
+    |> Enum.max_by(& &1.id, fn -> nil end)
     |> case do
       nil -> :ok
-      msg -> Receptores.marcar_mensaje_visto(msg, usuario_sesion, state.group_id)
+      ultimo -> Receptores.marcar_mensaje_visto(ultimo, usuario_sesion, state.group_id)
     end
-    {:reply, {state.mensajes, self()}, state}
+
+    mensajes = Enum.filter(state.mensajes, fn msg ->
+      msg.emisor != usuario_sesion and msg.estado == "ENTREGADO"
+    end)
+
+    new_state = actualizar_estado_mensajes(state, "VISTO", Enum.map(mensajes, & &1.id))
+
+    {:reply, {new_state.mensajes, self()}, new_state}
   end
 
   @impl true
@@ -94,5 +110,46 @@ defmodule Tpg.Runtime.Room do
     contexto = %{usuarios: state.miembros, mensaje: mensaje, chat_pid: self(), emisor: emisor, tipo: "grupo", receptor: group_id}
     NotificationService.notificar(:mensaje, contexto)
     {:noreply, state}
+  end
+
+  defp actualizar_estado_mensajes(state, estado, mensajes_ids) do
+    IO.inspect(state.mensajes, label: "[ROOM] Mensaje antes de:")
+    [vistos, recibido] = Tpg.Dominio.Receptores.buscar_mensaje_comun_usuarios(state.group_id)
+
+    ids_set = MapSet.new(mensajes_ids)
+
+    new_mensajes =
+      case estado do
+        "ENTREGADO" ->
+          Enum.filter(state.mensajes, fn msg ->
+            MapSet.member?(ids_set, msg.id) and msg.id <= recibido and msg.estado == "ENVIADO"
+          end)
+          |> Tpg.Dominio.Mensajeria.marcar_mensajes("ENTREGADO")
+
+          Enum.map(state.mensajes, fn msg ->
+            if MapSet.member?(ids_set, msg.id) and msg.id <= recibido do
+              %{msg | estado: estado}
+            else
+              msg
+            end
+          end)
+
+        "VISTO" ->
+          Enum.filter(state.mensajes, fn msg ->
+            MapSet.member?(ids_set, msg.id) and msg.id <= vistos and msg.estado == "ENTREGADO"
+          end)
+          |> Tpg.Dominio.Mensajeria.marcar_mensajes("VISTO")
+
+          Enum.map(state.mensajes, fn msg ->
+            if MapSet.member?(ids_set, msg.id) and msg.id <= vistos do
+              %{msg | estado: estado}
+            else
+              msg
+            end
+          end)
+      end
+
+    IO.inspect(new_mensajes, label: "[ROOM] Mensaje despues de:")
+    %{state | mensajes: new_mensajes}
   end
 end

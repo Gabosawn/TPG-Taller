@@ -105,17 +105,27 @@ defmodule Tpg.Services.SessionService do
         if id_usuario != emisor do
           case {operacion, tipo} do
             {:notificacion_bandeja, "privado"} ->
-              NotificationService.marcar_entregado(mensaje, id_usuario)
+              if id_usuario != emisor do
+                NotificationService.marcar_entregado(mensaje, id_usuario)
+                Tpg.Runtime.PrivateRoom.actualizar_estado_mensaje("ENTREGADO", [mensaje.id], id_usuario, emisor)
+              end
 
             {:notificacion_bandeja, "grupo"} ->
               Receptores.marcar_mensaje_entregado(mensaje, id_usuario, receptor)
+              Tpg.Runtime.Room.actualizar_estado_mensaje("ENTREGADO", [mensaje.id], id_usuario, receptor)
+              #NECESITO VERIFICAR OTRA VEZ SI EL MENSAJE EN SI LO MARCO COMO ENTREGADO
 
             {:mensaje_nuevo, "privado"} ->
-              NotificationService.marcar_leido(id_usuario, mensaje.id)
+              if id_usuario != emisor do
+                NotificationService.marcar_visto(mensaje, id_usuario)
+                Tpg.Runtime.PrivateRoom.actualizar_estado_mensaje("VISTO", [mensaje.id], id_usuario, emisor)
+              end
 
             {:mensaje_nuevo, "grupo"} ->
               Receptores.marcar_mensaje_entregado(mensaje, id_usuario, receptor)
+              Tpg.Runtime.Room.actualizar_estado_mensaje("ENTREGADO", [mensaje.id], id_usuario, receptor)
               Receptores.marcar_mensaje_visto(mensaje, id_usuario, receptor)
+              Tpg.Runtime.Room.actualizar_estado_mensaje("VISTO", [mensaje.id], id_usuario, receptor)
           end
         end
     end
