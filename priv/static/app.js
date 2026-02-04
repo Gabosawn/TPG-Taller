@@ -179,6 +179,9 @@ function manejarMensaje(data) {
 		case 'contacto_no_en_linea':
 			notificacion_punto_verde(false, data)
 			break;
+		case 'mensajes_buscados':
+			mostrarMensajesBuscados(data.mensajes);
+			break;
 		case 'do_nothing':
 			break;
 
@@ -186,6 +189,52 @@ function manejarMensaje(data) {
 			agregarMensajePrivado('sistema', JSON.stringify(data));
 	}
 }
+
+function mostrarMensajesBuscados(mensajes) {
+	
+	const existente = document.querySelector('.panel-buscados');
+	if (existente) existente.remove();
+
+	
+	const panel = document.createElement('div');
+	panel.className = 'panel-buscados';
+
+	
+	const header = document.createElement('div');
+	header.className = 'panel-buscados-header';
+
+	const titulo = document.createElement('span');
+	titulo.textContent = 'Mensajes encontrados';
+
+	const cerrar = document.createElement('span');
+	cerrar.className = 'panel-buscados-cerrar';
+	cerrar.textContent = '✖';
+	cerrar.onclick = () => panel.remove();
+
+	header.appendChild(titulo);
+	header.appendChild(cerrar);
+
+	const body = document.createElement('div');
+	body.className = 'panel-buscados-body';
+
+	mensajes.forEach(msg => {
+		const item = document.createElement('div');
+		item.className = 'mensaje-buscado';
+		item.innerHTML = `
+			<div class="mensaje-buscado-emisor">${msg.emisor_nombre}</div>
+			<div class="mensaje-buscado-contenido">${msg.contenido}</div>
+			<div class="mensaje-buscado-fecha">
+				${new Date(msg.inserted_at).toLocaleString()}
+			</div>
+		`;
+		body.appendChild(item);
+	});
+
+	panel.appendChild(header);
+	panel.appendChild(body);
+	document.body.appendChild(panel);
+}
+
 function agregarMensajePrivado(tipo, texto) {
 	const div = document.createElement('div');
 	div.className = 'mensaje ' + tipo;
@@ -347,6 +396,33 @@ function formatearUltimaConexion(fechaConexion) {
 		return fecha.toLocaleDateString();
 	}
 }
+
+function buscarMensajes() {
+	const query_text = document.getElementById('buscar-mensaje').value;
+
+	if (!query_text) {
+		alert('Escribe algo para buscar');
+		return;
+	}
+
+	if (!chatActual) {
+		alert('Selecciona un chat primero');
+		return;
+	}
+
+	chatActual
+
+	const payload = {
+		accion: 'buscar_mensajes',
+		emisor: chatActual.id_usuario_cliente,
+		destinatario: chatActual.id,
+		query_text: query_text
+	};
+
+	console.log("Buscando mensajes:", payload);
+	ws.send(JSON.stringify(payload));
+}
+
 function enviarMensaje() {
 	const mensaje = document.getElementById('mensaje').value;
 

@@ -68,6 +68,9 @@ defmodule Tpg.WebSocketHandler do
       {:ok, %{"accion" => "crear_grupo", "miembros" => miembros, "nombre" => nombre_grupo}} ->
         manejar_creacion_grupo(nombre_grupo, miembros, state)
 
+      {:ok, %{"accion" => "buscar_mensajes", "emisor" => emisor, "destinatario" => destinatario, "query_text" => query_text}} ->
+        manejar_buscar_mensajes(emisor, destinatario, query_text, state)
+
       {:ok, payload} ->
         respuesta =
           Jason.encode!(%{
@@ -174,6 +177,15 @@ defmodule Tpg.WebSocketHandler do
       {:error, motivo} ->
         Logger.warning("[ws handeler] #{nombre} no pudo ser agendado")
         NotificationHandler.notificar(:error, motivo, state)
+    end
+  end
+
+  defp manejar_buscar_mensajes(emisor_id, receptor_id, query_text, state) do
+    case ChatService.buscar_mensajes(emisor_id, receptor_id, query_text) do
+      {:ok, mensajes} ->
+        NotificationHandler.handle_notification(:mensajes_buscados, mensajes, state)
+      {:error, motivo} ->
+        NotificationHandler.notificar(:error, "Error buscando mensajes: #{motivo}", state)
     end
   end
 

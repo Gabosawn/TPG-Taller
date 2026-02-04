@@ -151,6 +151,27 @@ defmodule Tpg.Dominio.Mensajeria do
     end
   end
 
+  def buscar_mensajes(emisor_id, receptor_id, query_text) do
+    mensajes_query =
+      from m in Mensaje,
+        join: r in Recibido, on: r.mensaje_id == m.id,
+        join: e in Enviado, on: e.mensaje_id == m.id,
+        join: u in Usuario, on: e.usuario_id == u.receptor_id,
+        where:
+          (r.receptor_id == ^receptor_id and e.usuario_id == ^emisor_id) or
+          (r.receptor_id == ^emisor_id and e.usuario_id == ^receptor_id),
+        where: ilike(m.contenido, ^"%#{query_text}%"),
+        order_by: [asc: m.inserted_at],
+        select: %{
+          contenido: m.contenido,
+          emisor_nombre: u.nombre,
+          inserted_at: m.inserted_at
+        }
+
+    Repo.all(mensajes_query)
+end
+
+
   def mensajes_por_grupo(usuario_id) do
     mensajes_query =
       from(usuario in UsuariosGrupo,
