@@ -1,11 +1,8 @@
 defmodule Tpg.Services.NotificationService do
   require Logger
-  alias Tpg.Repo
-  alias Tpg.Dominio.Mensajes.Enviado
   alias Tpg.Dominio.Receptores
   alias Tpg.Dominio.Mensajeria
   alias Tpg.Services.SessionService
-  import Ecto.Query
 
   @doc """
   Notifica a un usuario o grupo de usuarios 'en_linea' sobre un nuevo mensaje

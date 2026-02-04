@@ -1,8 +1,6 @@
 defmodule Tpg.Dominio.Receptores.Usuario do
   use Ecto.Schema
   import Ecto.Changeset
-  import Ecto.Query
-  alias Tpg.Repo
 
   @primary_key false
   schema "usuarios" do

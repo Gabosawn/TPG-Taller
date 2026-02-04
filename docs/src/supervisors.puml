@@ -1,0 +1,113 @@
+@startuml
+!theme plain
+skinparam componentStyle rectangle
+skinparam backgroundColor white
+skinparam component {
+  BackgroundColor<<supervisor>> LightBlue
+  BackgroundColor<<dynamic>> LightGreen
+  BackgroundColor<<worker>> LightYellow
+  BorderColor Black
+}
+
+package "OTP Application" {
+  component "Tpg.Supervisor\n(one_for_one)" as supervisor <<supervisor>>
+  
+  component "Tpg.Repo" as repo <<worker>>
+  component "Registry\n(Tpg.RoomRegistry)" as registry <<worker>>
+  component "Plug.Cowboy\n(HTTP Server :4000)" as cowboy <<worker>>
+  component "DynamicSupervisor\n(Tpg.DynamicSupervisor)" as dynamic <<dynamic>>
+  
+  supervisor -down-> repo : supervises
+  supervisor -down-> registry : supervises
+  supervisor -down-> cowboy : supervises
+  supervisor -down-> dynamic : supervises
+  
+  package "Dynamic Children" {
+    rectangle "Sessions" <<workers>> {
+      component "Session\n(user_1)" as session1 <<worker>>
+      component "Session\n(user_2)" as session2 <<worker>>
+      component "Session\n(user_N)" as sessionN <<worker>>
+    }
+    
+    rectangle "Group Chats" <<workers>> {
+      component "Room\n(group_1)" as room1 <<worker>>
+      component "Room\n(group_2)" as room2 <<worker>>
+      component "Room\n(group_N)" as roomN <<worker>>
+    }
+    
+    rectangle "Private Chats" <<workers>> {
+      component "PrivateRoom\n({user_1, user_2})" as private1 <<worker>>
+      component "PrivateRoom\n({user_3, user_4})" as private2 <<worker>>
+      component "PrivateRoom\n({user_X, user_Y})" as privateN <<worker>>
+    }
+  }
+  
+  dynamic -down-> session1 
+  dynamic -down-> session2 
+  dynamic -down-> sessionN : supervises
+  dynamic -down-> room1 
+  dynamic -down-> room2 
+  dynamic -down-> roomN : supervises
+  dynamic -down-> private1 
+  dynamic -down-> private2 
+  dynamic -down-> privateN : supervises
+
+note right of supervisor
+  Estrategia: one_for_one
+  Si un hijo falla, solo 
+  ese proceso se reinicia
+end note
+
+note left of dynamic
+  Gestiona 3 tipos de procesos:
+  
+  1. Session (login/logout)
+  2. Room (canales grupales)
+  3. PrivateRoom (canales privados)
+  
+  Todos bajo la misma supervisión
+end note
+
+note bottom of session1
+  Registrado en :global
+  con el user_id
+  
+  Conecta WebSocket
+  con el usuario
+end note
+
+note bottom of room1
+  Registrado en Registry
+  con el group_id
+  
+  Mantiene historial
+  del grupo
+end note
+
+note bottom of private1
+  Registrado en Registry
+  con {min_id, max_id}
+  
+  Mantiene historial
+  entre 2 usuarios
+end note
+package "Procesos NO Supervisados" {
+  component "spawn notificación 1" as notif1 <<efímero>>
+  component "spawn notificación 2" as notif2 <<efímero>>
+  component "spawn notificación N" as notifN <<efímero>>
+  
+  note right of notif1
+    ❌ NO supervisado
+    ❌ NO se reinicia si falla
+    ❌ Sin nombre registrado
+    ✅ Vive solo durante la notificación
+    ✅ Muere automáticamente al terminar
+  end note
+}
+
+private1 --> notif1 : spawn
+room1 --> notif2 : spawn
+room2 --> notifN : spawn
+}
+
+@enduml

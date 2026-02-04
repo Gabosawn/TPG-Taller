@@ -6,15 +6,14 @@ defmodule Tpg.TestHelpers do
   import ExUnit.Assertions
 
   alias Tpg.Dominio.Receptores
-  alias Tpg.Repo
 
   # Contraseña válida que cumple requisitos (si es que los hay)
   @valid_password "Password123!"
-
+  @valid_username "joaquin123"
   @doc """
   Crea un usuario de prueba con contraseña válida
   """
-  def create_test_user(nombre, contrasenia \\ @valid_password) do
+  def create_test_user(nombre \\ @valid_username, contrasenia \\ @valid_password) do
     attrs = %{
       nombre: nombre,
       contrasenia: contrasenia
@@ -28,18 +27,8 @@ defmodule Tpg.TestHelpers do
   """
   def create_random_user() do
     timestamp = System.monotonic_time(:microsecond)
-    nombre = "user_#{timestamp}"
+    nombre = "user#{timestamp}"
     create_test_user(nombre, @valid_password)
-  end
-
-  @doc """
-  Limpia un usuario de la BD
-  """
-  def delete_user(user_id) do
-    case Receptores.obtener(:usuario, user_id) do
-      {:ok, user} -> Repo.delete(user)
-      _ -> {:ok, nil}
-    end
   end
 
   @doc """

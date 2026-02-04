@@ -1,17 +1,16 @@
 defmodule Tpg.Services.SessionService do
-  """
+  @moduledoc """
   Session Services module
   """
 
   require Logger
-  alias Tpg.Services.SessionService
   alias Tpg.Services.NotificationService
-  alias Tpg.Handlers.NotificationHandler
   alias Tpg.Dominio.Receptores
   alias Tpg.Dominio.Receptores.Agendado
   alias Tpg.Services.ChatService
   alias Tpg.Runtime.Session
 
+  @spec loggear(atom(), %{nombre: String.t(), contrasenia: String.t()}) :: {:ok, %{id: integer(), pid: pid()}} | {:error, :invalid_credentials | any()}
   def loggear(typeOp, usuario) do
     Logger.info("Intentando loguear usuario: #{usuario.nombre}")
 
@@ -46,7 +45,7 @@ defmodule Tpg.Services.SessionService do
 
       _ ->
         Logger.warning("Operación desconocida: #{inspect(typeOp)}")
-        {:ok, usuario.nombre}
+        {:error, usuario.nombre}
     end
   end
 
@@ -65,6 +64,7 @@ defmodule Tpg.Services.SessionService do
     end
   end
 
+  @spec desloggear(non_neg_integer()) :: {:ok, pid()} |{:error, :not_found}
   def desloggear(usuario) do
     Logger.info("Intentando desloguear usuario: #{usuario}")
 
