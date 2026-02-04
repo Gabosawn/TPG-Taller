@@ -5,6 +5,18 @@ defmodule Tpg.Handlers.NotificationHandler do
   """
   require Logger
 
+
+  @doc """
+  Notifica al cliente los resultados de la busqueda de mensajes
+  """
+  def handle_notificacion(:mensajes_buscados, mensajes, state) do
+    respuesta = %{
+      tipo: "mensajes_buscados",
+      mensajes: mensajes
+    }
+    {:reply, {:text, Jason.encode!(respuesta)}, state}
+  end
+
   def handle_notification(:mensaje_nuevo, mensaje, state) do
     respuesta = %{
       tipo: "mensaje_nuevo",

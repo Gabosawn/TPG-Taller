@@ -132,10 +132,7 @@ defmodule Tpg.WebSocketHandler do
 
     {:reply, {:text, respuesta}, state}
   end
-  def websocket_info(:cerrar_conexion, state) do
-    Logger.info("[WS] Cerrando conexión por error de autenticación")
-    {:stop, state}
-  end
+
   def websocket_info({:DOWN, _ref, :process, _pid, _reason}, state) do
     respuesta =
       Jason.encode!(%{
@@ -153,14 +150,6 @@ defmodule Tpg.WebSocketHandler do
   def websocket_info(:cerrar_conexion, state) do
     Logger.info("[WS] Cerrando conexión por error de autenticación")
     {:stop, state}
-  end
-
-  def websocket_info({:resultado_busqueda, {:mensajes_buscados, mensajes}}, state) do
-    respuesta = %{
-      tipo: "mensajes_buscados",
-      mensajes: mensajes
-    }
-    {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
 
   def websocket_info({:resultado_busqueda, {:mensajes_buscados, mensajes}}, state) do
