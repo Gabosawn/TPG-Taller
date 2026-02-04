@@ -63,6 +63,7 @@ defmodule Tpg.Services.SessionService do
     end
   end
 
+  @spec desloggear(non_neg_integer()) :: {:ok, pid()} |{:error, :not_found}
   def desloggear(usuario) do
     Logger.info("Intentando desloguear usuario: #{usuario}")
 
