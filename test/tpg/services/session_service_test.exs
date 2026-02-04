@@ -12,7 +12,6 @@ defmodule Tpg.Services.SessionServiceTest do
 
       assert Receptores.obtener_usuario(usuario) != nil
     end
-  end
 
   test "se puede desloggear un usuario" do
       usuario = %{nombre: "usuarioValido", contrasenia: "Contrasenia@1"}
@@ -78,5 +77,48 @@ defmodule Tpg.Services.SessionServiceTest do
     {:error, {:contrasenia, _}} = SessionService.loggear(:crear, %{usuario | contrasenia: "Contrasenia1"})
       # Test con contrasenia sin numero
     {:error, {:contrasenia, _}} = SessionService.loggear(:crear, %{usuario | contrasenia: "Contrasenia@"})
+  end
+
+  test "una operacion desconocida devuelve un error" do
+    usuario = %{nombre: "usuarioValido", contrasenia: "Contrasenia@1"}
+    {:error, _usuario_respuesta} = SessionService.loggear(:desconectar, usuario)
+  end
+  end
+
+  describe "El usuario está en linea" do
+    setup do
+      usuario1 = %{nombre: "usuarioValido", contrasenia: "Contrasenia@1"}
+      {:ok, usuario_respuesta1} = SessionService.loggear(:crear, usuario1)
+
+      usuario2 = %{nombre: "usuarioValido2", contrasenia: "Contrasenia@2"}
+      {:ok, usuario_respuesta2} = SessionService.loggear(:crear, usuario2)
+
+      %{usuario1: usuario1, usuario_respuesta1: usuario_respuesta1,
+        usuario2: usuario2, usuario_respuesta2: usuario_respuesta2}
+  end
+  test "un usuario en linea", %{usuario_respuesta1: usuario_respuesta1} do
+    assert SessionService.en_linea?(usuario_respuesta1.id)
+  end
+
+  test "dos usuarios en linea", %{usuario_respuesta1: usuario_respuesta1, usuario_respuesta2: usuario_respuesta2} do
+    assert SessionService.en_linea?(usuario_respuesta1.id)
+    assert SessionService.en_linea?(usuario_respuesta2.id)
+  end
+  test "un usuario fuera de linea", %{usuario_respuesta1: usuario_respuesta1} do
+    {:ok, _ } = SessionService.desloggear(usuario_respuesta1.id)
+    assert !SessionService.en_linea?(usuario_respuesta1.id)
+  end
+
+  test "dos usuarios fuera de linea", %{usuario_respuesta1: usuario_respuesta1, usuario_respuesta2: usuario_respuesta2} do
+    {:ok, _ } = SessionService.desloggear(usuario_respuesta1.id)
+    {:ok, _ } = SessionService.desloggear(usuario_respuesta2.id)
+    assert !SessionService.en_linea?(usuario_respuesta1.id)
+    assert !SessionService.en_linea?(usuario_respuesta2.id)
+  end
+
+  test "se obtienen la lista de los usuarios en linea", %{usuario_respuesta1: usuario1, usuario_respuesta2: usuario2} do
+    usuarios = SessionService.obtener_usuarios_activos()
+    assert usuarios ==[usuario2.id, usuario1.id,]
+  end
   end
 end
