@@ -414,6 +414,7 @@ function buscarMensajes() {
 
 	const payload = {
 		accion: 'buscar_mensajes',
+		tipo: chatActual.tipo,
 		emisor: chatActual.id_usuario_cliente,
 		destinatario: chatActual.id,
 		query_text: query_text

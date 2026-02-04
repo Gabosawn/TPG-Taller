@@ -151,7 +151,15 @@ defmodule Tpg.Dominio.Mensajeria do
     end
   end
 
-  def buscar_mensajes(emisor_id, receptor_id, query_text) do
+  def buscar_mensajes(tipo_de_chat, emisor_id, receptor_id, query_text) do
+    case tipo_de_chat do
+      "privado" -> buscar_mensajes_privados(emisor_id, receptor_id, query_text)
+      "grupo" -> buscar_mensajes_grupo(receptor_id, query_text)
+      _ -> []
+    end
+  end
+
+  def buscar_mensajes_privados(emisor_id, receptor_id, query_text) do
     mensajes_query =
       from m in Mensaje,
         join: r in Recibido, on: r.mensaje_id == m.id,
@@ -169,8 +177,25 @@ defmodule Tpg.Dominio.Mensajeria do
         }
 
     Repo.all(mensajes_query)
-end
+  end
 
+  def buscar_mensajes_grupo(grupo_id, query_text) do
+    mensajes_query =
+      from m in Mensaje,
+        join: r in Recibido, on: r.mensaje_id == m.id,
+        join: e in Enviado, on: e.mensaje_id == m.id,
+        join: u in Usuario, on: e.usuario_id == u.receptor_id,
+        where: r.receptor_id == ^grupo_id,
+        where: ilike(m.contenido, ^"%#{query_text}%"),
+        order_by: [asc: m.inserted_at],
+        select: %{
+          contenido: m.contenido,
+          emisor_nombre: u.nombre,
+          inserted_at: m.inserted_at
+        }
+
+    Repo.all(mensajes_query)
+  end
 
   def mensajes_por_grupo(usuario_id) do
     mensajes_query =

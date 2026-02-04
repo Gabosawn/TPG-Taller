@@ -60,8 +60,8 @@ defmodule Tpg.Services.ChatService do
     end
   end
 
-  def buscar_mensajes(emisor_id, receptor_id, query_text) do
-    case Mensajeria.buscar_mensajes(emisor_id, receptor_id, query_text) do
+  def buscar_mensajes(tipo_de_chat, emisor_id, receptor_id, query_text) do
+    case Mensajeria.buscar_mensajes(tipo_de_chat, emisor_id, receptor_id, query_text) do
       [] -> {:error, "No se encontraron mensajes que coincidan con la búsqueda."}
       mensajes -> {:ok, mensajes}
     end
