@@ -5,7 +5,7 @@ defmodule Tpg.WebSocketHandler do
   alias Tpg.Services.SessionService
   alias Tpg.Services.NotificationService
   alias Tpg.Dominio.Receptores
-  alias Tpg.Dominio.Mensajeria
+  #alias Tpg.Dominio.Mensajeria
   alias Tpg.Handlers.NotificationHandler
 
   def init(req, _state) do
@@ -48,10 +48,7 @@ defmodule Tpg.WebSocketHandler do
           {:reply, frame, new_state}
         end
   end
-  def websocket_info(:cerrar_conexion, state) do
-    Logger.info("[WS] Cerrando conexión por error de autenticación")
-    {:stop, state}
-  end
+
   # Manejar mensajes entrantes del cliente
   def websocket_handle({:text, json}, state) do
     case Jason.decode(json) do
@@ -68,8 +65,11 @@ defmodule Tpg.WebSocketHandler do
       {:ok, %{"accion" => "crear_grupo", "miembros" => miembros, "nombre" => nombre_grupo}} ->
         manejar_creacion_grupo(nombre_grupo, miembros, state)
 
-      {:ok, %{"accion" => "buscar_mensajes","tipo" => tipo, "emisor" => emisor, "destinatario" => destinatario, "query_text" => query_text}} ->
-        manejar_buscar_mensajes(tipo, emisor, destinatario, query_text, state)
+      {:ok, %{"accion" => "buscar_mensajes", "tipo" => tipo, "emisor" => emisor,"destinatario" => destinatario, "query_text" => query_text}} ->
+        ws_pid = self()
+        Task.start(fn -> ChatService.buscar_mensajes_async( tipo, emisor, destinatario, query_text, ws_pid) end)
+        {:ok, state}
+
 
       {:ok, payload} ->
         respuesta =
@@ -146,6 +146,28 @@ defmodule Tpg.WebSocketHandler do
   @doc """
   Cuando se recibe una notificación desde algun punto del sistema, se delega al handler la respuesta que se debe devolver
   """
+
+  def websocket_info(:cerrar_conexion, state) do
+    Logger.info("[WS] Cerrando conexión por error de autenticación")
+    {:stop, state}
+  end
+
+  def websocket_info({:resultado_busqueda, {:mensajes_buscados, mensajes}}, state) do
+    respuesta = %{
+      tipo: "mensajes_buscados",
+      mensajes: mensajes
+    }
+    {:reply, {:text, Jason.encode!(respuesta)}, state}
+  end
+
+  def websocket_info({:resultado_busqueda, {:mensajes_buscados, mensajes}}, state) do
+    NotificationHandler.handle_notification(:mensajes_buscados, mensajes, state)
+  end
+
+  def websocket_info({:resultado_busqueda, {:error, motivo}}, state) do
+    NotificationHandler.notificar(:error, motivo, state)
+  end
+
   def websocket_info({:notificacion, tipo, notificacion}, state) do
     Logger.info("[ws] usuario #{state.usuario} Recibiendo notificacion...")
     NotificationHandler.handle_notification(tipo, notificacion, state)
@@ -177,15 +199,6 @@ defmodule Tpg.WebSocketHandler do
       {:error, motivo} ->
         Logger.warning("[ws handeler] #{nombre} no pudo ser agendado")
         NotificationHandler.notificar(:error, motivo, state)
-    end
-  end
-
-  defp manejar_buscar_mensajes(tipo_de_chat, emisor_id, receptor_id, query_text, state) do
-    case ChatService.buscar_mensajes(tipo_de_chat, emisor_id, receptor_id, query_text) do
-      {:ok, mensajes} ->
-        NotificationHandler.handle_notification(:mensajes_buscados, mensajes, state)
-      {:error, motivo} ->
-        NotificationHandler.notificar(:error, "Error buscando mensajes: #{motivo}", state)
     end
   end
 
