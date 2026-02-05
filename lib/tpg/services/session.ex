@@ -91,6 +91,16 @@ defmodule Tpg.Services.SessionService do
       {:ok, res} ->
         Tpg.habilitar_canales(user_id)
         Logger.info("[session] usuario #{nombre_usuario} agendado correctamente por #{user_id}")
+        res = %{
+          usuario: %{
+            receptor_id: res.usuario.receptor_id,
+            nombre: res.usuario.nombre
+          },
+          contacto: %{
+            receptor_id: res.contacto.contacto_id,
+            nombre: nombre_usuario
+          }
+        }
         {:ok, res}
       {:error, motivo} ->
         Logger.warning("[session] #{nombre_usuario} no pudo ser agendado")
