@@ -44,17 +44,15 @@ defmodule Tpg.Services.NotificationService do
     Logger.info("[notification] marcando como entregado el mensaje #{mensaje.id} por el usuario #{id_usuario}")
     if mensaje.emisor == id_usuario do
       {:pass, "No se puede marcar como entregado un mensaje desde el mismo emisor"}
-    end
-    Mensajeria.actualizar_estado_mensaje("ENTREGADO", mensaje.id)
+    else Mensajeria.actualizar_estado_mensaje("ENTREGADO", mensaje.id) end
   end
 
   @spec marcar_visto(mensaje:: %{}, id_usuario :: integer()) :: {:ok, String.t()}
   def marcar_visto(mensaje, id_usuario) do
-    Logger.info("[notification] marcando como entregado el mensaje #{mensaje.id} por el usuario #{id_usuario}")
+    Logger.info("[notification] marcando como visto el mensaje #{mensaje.id} por el usuario #{id_usuario}")
     if mensaje.emisor == id_usuario do
-      {:pass, "No se puede marcar como entregado un mensaje desde el mismo emisor"}
-    end
-    Mensajeria.actualizar_estado_mensaje("VISTO", mensaje.id)
+      {:pass, "No se puede marcar como visto un mensaje desde el mismo emisor"}
+    else Mensajeria.actualizar_estado_mensaje("VISTO", mensaje.id) end
   end
 
   @spec enviar_notificacion(usuario_id::integer(), mensaje:: atom(), notificacion:: map()) ::  {:ok, any()} | {:pass | :error, any()}
@@ -144,7 +142,7 @@ defmodule Tpg.Services.NotificationService do
       Enum.each(contactos, fn contacto ->
         enviar_notificacion_si_id_esta_en_linea(:saliendo_de_linea, %{contacto: %{receptor_id: contexto.receptor_id, nombre: contexto.nombre}}, contacto.id, contacto.id)
       end)
-      {:ok, " [notification service] notificaciones distribuidas con exito"}
+      {:ok, "[notification service] notificaciones distribuidas con exito"}
     else
       {:error, motivo} ->
         {:error, motivo}
