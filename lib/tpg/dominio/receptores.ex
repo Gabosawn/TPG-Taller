@@ -105,10 +105,10 @@ defmodule Tpg.Dominio.Receptores do
       {:ok, %{usuario: usuario, contacto: contacto}}
     else
       {:error, :usuario_no_existe} ->
-        {:error, "El usuario con ID #{id_usuario} no existe"}
+        {:error, "El usuario #{id_usuario} no existe"}
 
       {:error, :contacto_ya_agendado} ->
-        {:error, "El usuario con ID #{id_usuario} ya pertenece a la agenda"}
+        {:error, "El usuario #{nombre_usuario} ya pertenece a la agenda"}
 
       {:error, :contacto_no_existe} ->
         {:error, "El usuario '#{nombre_usuario}' no existe"}

@@ -82,9 +82,6 @@ defmodule Tpg.Services.SessionService do
   def obtener_usuarios_activos() do
     usuarios = :global.registered_names()
     Logger.debug("Usuarios activos: #{inspect(usuarios)}")
-    if usuarios == 0 do
-      []
-    end
     usuarios
   end
 

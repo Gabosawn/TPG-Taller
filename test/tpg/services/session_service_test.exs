@@ -121,6 +121,12 @@ defmodule Tpg.Services.SessionServiceTest do
     usuarios = SessionService.obtener_usuarios_activos()
     assert Enum.sort(usuarios) == Enum.sort([usuario1.id, usuario2.id])
   end
+  test "se obtienen la lista vacia de usuarios en linea", %{usuario_respuesta1: usuario1, usuario_respuesta2: usuario2} do
+    {:ok, _ } = SessionService.desloggear(usuario1.id)
+    {:ok, _ } = SessionService.desloggear(usuario2.id)
+    usuarios = SessionService.obtener_usuarios_activos()
+    assert Enum.sort(usuarios) == []
+  end
   test "se obtiene el estado de 'en_linea' del usuario dentro de un mapa de Usuario", %{usuario: usuario1} do
     receptor = %{tipo: "privado", receptor_id: usuario1.id, nombre: usuario1.nombre}
     {:ok, usuario} = SessionService.agregar_ultima_conexion(receptor)
@@ -167,8 +173,18 @@ defmodule Tpg.Services.SessionServiceTest do
       {:error, motivo} = SessionService.agendar(usuario1.id, "usuarioInexistente")
       assert motivo == "El usuario 'usuarioInexistente' no existe"
     end
-    test "" do
-
+    test "agendar/2 devuelve error al agendar dos veces al mismo contacto", %{usuario_1: usuario1, usuario_2: usuario2} do
+      {:ok, agendados} = SessionService.agendar(usuario1.id, usuario2.nombre)
+      {:error, motivo} = SessionService.agendar(usuario1.id, usuario2.nombre)
+      assert motivo == "El usuario #{usuario2.nombre} ya pertenece a la agenda"
+    end
+    test "agendar/2 devuelve error al utilizar un id invalido", %{usuario_1: usuario1} do
+      {:error, motivo} = SessionService.agendar(-1, usuario1.nombre)
+      assert motivo == "El usuario -1 no existe"
+    end
+    test "agendar/2 devuelve error al agendarse a si mismo", %{usuario_1: usuario1} do
+      {:error, motivo} = SessionService.agendar(usuario1.id, usuario1.nombre)
+      assert motivo == "No puede agendarse a si mismo"
     end
   end
 
