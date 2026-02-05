@@ -138,6 +138,9 @@ defmodule Tpg.Services.SessionService do
               Tpg.Runtime.Room.actualizar_estado_mensaje("VISTO", [mensaje.id], id_usuario, receptor)
           end
         end
+      else
+        {:error, :undefined} ->
+          nil
     end
   end
 

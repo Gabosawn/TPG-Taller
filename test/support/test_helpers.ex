@@ -5,6 +5,7 @@ defmodule Tpg.TestHelpers do
 
   import ExUnit.Assertions
 
+  alias Tpg.Dominio.Mensajeria
   alias Tpg.Dominio.Receptores
 
   # Contraseña válida que cumple requisitos (si es que los hay)

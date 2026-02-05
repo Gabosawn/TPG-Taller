@@ -1,4 +1,6 @@
 defmodule Tpg.Services.SessionServiceTest do
+alias Tpg.Dominio.Mensajeria
+alias Tpg.Services.ChatService
   use Tpg.DataCase
   alias Tpg.Services.SessionService
   alias Tpg.Dominio.Receptores
@@ -185,6 +187,283 @@ defmodule Tpg.Services.SessionServiceTest do
     test "agendar/2 devuelve error al agendarse a si mismo", %{usuario_1: usuario1} do
       {:error, motivo} = SessionService.agendar(usuario1.id, usuario1.nombre)
       assert motivo == "No puede agendarse a si mismo"
+    end
+  end
+
+  describe "notificar_mensaje/6" do
+    import Tpg.TestHelpers
+
+    setup do
+      # Crear usuarios de prueba
+      {:ok, usuario_emisor} = create_test_user("usuarioEmisor", "Contrasenia@1")
+      {:ok, usuario_receptor} = create_test_user("usuarioReceptor", "Contrasenia@2")
+
+      {:ok, _agendado} = SessionService.agendar(usuario_emisor.receptor_id, "usuarioReceptor")
+      {:ok, _agendado} = SessionService.agendar(usuario_receptor.receptor_id, "usuarioEmisor")
+      # Loggear usuarios
+      {:ok, emisor_session} = SessionService.loggear(:conectar, %{nombre: "usuarioEmisor", contrasenia: "Contrasenia@1"})
+      {:ok, receptor_session} = SessionService.loggear(:conectar, %{nombre: "usuarioReceptor", contrasenia: "Contrasenia@2"})
+
+
+      # Crear WebSocket mock para el receptor
+      ws_receptor = spawn_websocket_mock()
+      SessionService.registrar_cliente(receptor_session.id, ws_receptor)
+
+      # Mensaje de prueba
+      {:ok, mensaje} = Mensajeria.enviar_mensaje(usuario_receptor.receptor_id, usuario_emisor.receptor_id, "Mensaje de prueba")
+      on_exit(fn ->
+        SessionService.desloggear(emisor_session.id)
+        SessionService.desloggear(receptor_session.id)
+      end)
+
+      %{
+        emisor: emisor_session,
+        receptor: receptor_session,
+        usuario_emisor: usuario_emisor,
+        usuario_receptor: usuario_receptor,
+        mensaje: mensaje,
+        ws_receptor: ws_receptor
+      }
+    end
+
+    test "notifica mensaje privado en bandeja cuando el receptor no es el emisor", %{
+      emisor: emisor,
+      receptor: receptor,
+      mensaje: mensaje,
+      ws_receptor: ws_receptor
+    } do
+
+      # Limpiar mensajes previos
+      clear_websocket_messages(ws_receptor)
+
+      # Notificar mensaje
+      result = SessionService.notificar_mensaje(
+        receptor.id,
+        :notificacion_bandeja,
+        mensaje,
+        emisor.id,
+        receptor.id,
+        "privado"
+      )
+
+      assert result == nil
+
+      # Verificar que el receptor recibió la notificación
+      assert_receive_websocket(ws_receptor, {:notificacion, :mensaje_bandeja, :_})
+    end
+
+    test "notifica cuando el usuario es el mismo emisor en mensaje privado para actualizar la conversacion", %{
+      emisor: emisor,
+      mensaje: mensaje
+    } do
+      # Crear WebSocket mock para el emisor
+      ws_emisor = spawn_websocket_mock()
+      SessionService.registrar_cliente(emisor.id, ws_emisor)
+
+      clear_websocket_messages(ws_emisor)
+
+      # Notificar mensaje donde emisor = receptor
+      result = SessionService.notificar_mensaje(
+        emisor.id,
+        :notificacion_bandeja,
+        mensaje,
+        emisor.id,
+        emisor.id,
+        "privado"
+      )
+
+      assert result == nil
+
+      # Verificar que se recibió la notificación pero no se marcó como entregado
+      assert_receive_websocket(ws_emisor, {:notificacion, :mensaje_nuevo, :_})
+    end
+
+    test "notifica mensaje de grupo en bandeja", %{
+      emisor: emisor,
+      receptor: receptor,
+      mensaje: mensaje,
+      ws_receptor: ws_receptor
+    } do
+      grupo_id = System.unique_integer([:positive])
+
+      clear_websocket_messages(ws_receptor)
+
+      # Modificar mensaje para grupo
+      mensaje_grupo = Map.put(mensaje, :receptor_id, grupo_id)
+
+      result = SessionService.notificar_mensaje(
+        receptor.id,
+        :notificacion_bandeja,
+        mensaje_grupo,
+        emisor.id,
+        grupo_id,
+        "grupo"
+      )
+
+      assert result == nil
+
+      # Verificar notificación
+      assert_receive_websocket(ws_receptor, {:notificacion, :_})
+    end
+
+    test "marca mensaje privado como visto cuando se notifica mensaje_nuevo", %{
+      emisor: emisor,
+      receptor: receptor,
+      mensaje: mensaje,
+      ws_receptor: ws_receptor
+    } do
+      clear_websocket_messages(ws_receptor)
+
+
+      result = SessionService.notificar_mensaje(
+        receptor.id,
+        :mensaje_nuevo,
+        mensaje,
+        emisor.id,
+        receptor.id,
+        "privado"
+      )
+
+      assert result == :ok
+
+      # Verificar que se notificó el mensaje nuevo
+      assert_receive_websocket(ws_receptor, {:notificar, :mensaje_nuevo, :_})
+    end
+
+    test "marca mensaje de grupo como entregado y visto cuando se notifica mensaje_nuevo", %{
+      emisor: emisor,
+      receptor: receptor,
+      mensaje: mensaje,
+      ws_receptor: ws_receptor
+    } do
+      grupo_id = System.unique_integer([:positive])
+      clear_websocket_messages(ws_receptor)
+
+      mensaje_grupo = Map.put(mensaje, :receptor_id, grupo_id)
+
+      result = SessionService.notificar_mensaje(
+        receptor.id,
+        :mensaje_nuevo,
+        mensaje_grupo,
+        emisor.id,
+        grupo_id,
+        "grupo"
+      )
+
+      assert result == nil
+
+      # Verificar notificación
+      assert_receive_websocket(ws_receptor, {:notificar, :_})
+    end
+
+    test "no notifica cuando el usuario no está en línea", %{
+      emisor: emisor,
+      receptor: receptor,
+      mensaje: mensaje
+    } do
+      {:ok, _} = SessionService.desloggear(receptor.id)
+
+      result = SessionService.notificar_mensaje(
+        receptor.id,
+        :notificacion_bandeja,
+        mensaje,
+        emisor.id,
+        receptor.id,
+        "privado"
+      )
+      assert result == nil
+    end
+
+    test "maneja error cuando se intenta notificar a un usuario inexistente", %{
+      emisor: emisor,
+      mensaje: mensaje
+    } do
+      usuario_inexistente_id = 999999
+
+      result = SessionService.notificar_mensaje(
+        usuario_inexistente_id,
+        :notificacion_bandeja,
+        mensaje,
+        emisor.id,
+        usuario_inexistente_id,
+        "privado"
+      )
+
+      assert result == nil # no ejecuta ninguna tarea
+    end
+
+    test "procesa múltiples notificaciones secuenciales correctamente", %{
+      emisor: emisor,
+      receptor: receptor,
+      ws_receptor: ws_receptor
+    } do
+      clear_websocket_messages(ws_receptor)
+
+      # Enviar múltiples mensajes
+      for i <- 1..3 do
+        mensaje = %{
+          id: i,
+          contenido: "Mensaje #{i}",
+          emisor: emisor.id,
+          receptor_id: receptor.id,
+          estado: "ENVIADO",
+          timestamp: DateTime.utc_now()
+        }
+
+        SessionService.notificar_mensaje(
+          receptor.id,
+          :notificacion_bandeja,
+          mensaje,
+          emisor.id,
+          receptor.id,
+          "privado"
+        )
+      end
+
+      # Dar tiempo para procesar
+      Process.sleep(100)
+
+      # Verificar que se recibieron todas las notificaciones
+      messages = get_websocket_messages(ws_receptor)
+      assert length(messages) >= 3
+    end
+
+    test "diferencia entre notificación de bandeja y mensaje nuevo para grupos", %{
+      emisor: emisor,
+      receptor: receptor,
+      mensaje: mensaje,
+      ws_receptor: ws_receptor
+    } do
+      grupo_id = System.unique_integer([:positive])
+      mensaje_grupo = Map.put(mensaje, :receptor_id, grupo_id)
+
+      # Test notificación bandeja
+      clear_websocket_messages(ws_receptor)
+
+      SessionService.notificar_mensaje(
+        receptor.id,
+        :notificacion_bandeja,
+        mensaje_grupo,
+        emisor.id,
+        grupo_id,
+        "grupo"
+      )
+
+      assert_receive_websocket(ws_receptor, {:notificar, :_})
+
+      # Test mensaje nuevo
+      clear_websocket_messages(ws_receptor)
+
+      SessionService.notificar_mensaje(
+        receptor.id,
+        :mensaje_nuevo,
+        mensaje_grupo,
+        emisor.id,
+        grupo_id,
+        "grupo"
+      )
+
+      assert_receive_websocket(ws_receptor, {:notificar, :_})
     end
   end
 
