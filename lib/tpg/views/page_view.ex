@@ -60,10 +60,6 @@ defmodule Tpg.Views.PageView do
 
         </div>
       </div>
-
-      <div>
-        <button onclick="listarUsuarios()">Usuarios Activos</button>
-      </div>
       <div>
         <button onclick="openModal('grupo')">Crear Grupo</button>
         <button onclick="openModal('contacto')">Agregar Contacto</button>
