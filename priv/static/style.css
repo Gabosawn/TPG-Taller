@@ -393,3 +393,84 @@ input, button { padding: 10px; margin: 5px; }
   color: #666;
   font-size: 14px;
 }
+
+/* ===== Panel mensajes buscados ===== */
+.panel-buscados {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 320px;
+  height: 40vh;
+  background: #ffffff;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-shadow: -2px 2px 10px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  z-index: 2000;
+}
+
+.panel-buscados-header {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: #4CAF50;
+  color: white;
+  font-weight: bold;
+  border-radius: 10px 10px 0 0;
+}
+
+.panel-buscados-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.panel-buscados-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.panel-buscados-body::-webkit-scrollbar-thumb {
+  background-color: #bbb;
+  border-radius: 10px;
+}
+
+.panel-buscados-body::-webkit-scrollbar-thumb:hover {
+  background-color: #999;
+}
+
+
+.panel-buscados-cerrar {
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.mensaje-buscado {
+  border-bottom: 1px solid #eee;
+  padding: 8px 0;
+}
+
+.mensaje-buscado-emisor {
+  font-weight: 600;
+  font-size: 13px;
+  color: #333;
+}
+
+.mensaje-buscado-contenido {
+  font-size: 14px;
+  margin: 4px 0;
+}
+
+.mensaje-buscado-fecha {
+  font-size: 11px;
+  color: #888;
+  text-align: right;
+}
+
+.mensaje-buscado-vacio {
+  color: #777;
+  text-align: center;
+  margin-top: 20px;
+}

@@ -45,7 +45,16 @@ defmodule Tpg.Services.NotificationService do
     if mensaje.emisor == id_usuario do
       {:pass, "No se puede marcar como entregado un mensaje desde el mismo emisor"}
     end
-    Mensajeria.actualizar_estado_mensaje("ENTREGADO",mensaje.id)
+    Mensajeria.actualizar_estado_mensaje("ENTREGADO", mensaje.id)
+  end
+
+  @spec marcar_visto(mensaje:: %{}, id_usuario :: integer()) :: {:ok, String.t()}
+  def marcar_visto(mensaje, id_usuario) do
+    Logger.info("[notification] marcando como entregado el mensaje #{mensaje.id} por el usuario #{id_usuario}")
+    if mensaje.emisor == id_usuario do
+      {:pass, "No se puede marcar como entregado un mensaje desde el mismo emisor"}
+    end
+    Mensajeria.actualizar_estado_mensaje("VISTO", mensaje.id)
   end
 
   @spec enviar_notificacion(usuario_id::integer(), mensaje:: atom(), notificacion:: map()) ::  {:ok, any()} | {:pass | :error, any()}
@@ -147,7 +156,6 @@ defmodule Tpg.Services.NotificationService do
     Logger.info("[NOTIFICATION SERVICE] Listando notificaciones para el usuario #{id_usuario}...")
 
     usuarios = Tpg.Dominio.Mensajeria.mensajes_por_usuario(id_usuario)
-    Logger.info("[NOTIFICATION SERVICE] Mensajes por usuario obtenidos: #{inspect(usuarios)}")
 
     Tpg.Dominio.Mensajeria.mensajes_por_grupo(id_usuario)
     |> Enum.concat(usuarios)
@@ -156,5 +164,20 @@ defmodule Tpg.Services.NotificationService do
       |> Enum.max_by(& &1.fecha, fn -> %{fecha: ~N[0000-01-01 00:00:00]} end)
       |> Map.get(:fecha)
     end, :desc)
+    |> Enum.map(fn notificacion ->
+      notificacion.tipo
+      |> case do
+        "privado" ->
+          Tpg.Runtime.PrivateRoom.actualizar_estado_mensaje("ENTREGADO", Enum.map(notificacion.mensajes, & &1.id), id_usuario, notificacion.receptor_id)
+
+        "grupo" ->
+          :ok
+          Tpg.Runtime.Room.actualizar_estado_mensaje("ENTREGADO", Enum.map(notificacion.mensajes, & &1.id), id_usuario, notificacion.receptor_id)
+
+      end
+
+      notificacion
+    end)
+
   end
 end

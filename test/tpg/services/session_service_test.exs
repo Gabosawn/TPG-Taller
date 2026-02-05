@@ -93,9 +93,10 @@ defmodule Tpg.Services.SessionServiceTest do
       usuario2 = %{nombre: "usuarioValido2", contrasenia: "Contrasenia@2"}
       {:ok, usuario_respuesta2} = SessionService.loggear(:crear, usuario2)
 
-      %{usuario1: usuario1, usuario_respuesta1: usuario_respuesta1,
+      %{usuario: Map.merge(usuario1, usuario_respuesta1),
+        usuario1: usuario1, usuario_respuesta1: usuario_respuesta1,
         usuario2: usuario2, usuario_respuesta2: usuario_respuesta2}
-  end
+    end
   test "un usuario en linea", %{usuario_respuesta1: usuario_respuesta1} do
     assert SessionService.en_linea?(usuario_respuesta1.id)
   end
@@ -118,13 +119,24 @@ defmodule Tpg.Services.SessionServiceTest do
 
   test "se obtienen la lista de 2 en linea", %{usuario_respuesta1: usuario1, usuario_respuesta2: usuario2} do
     usuarios = SessionService.obtener_usuarios_activos()
-    assert length(usuarios) == 2
-    assert usuario1.id in usuarios
-    assert usuario2.id in usuarios
-    end
+    assert Enum.sort(usuarios) == Enum.sort([usuario1.id, usuario2.id])
+  end
+  test "se obtiene el estado de 'en_linea' del usuario dentro de un mapa de Usuario", %{usuario: usuario1} do
+    receptor = %{tipo: "privado", receptor_id: usuario1.id, nombre: usuario1.nombre}
+    {:ok, usuario} = SessionService.agregar_ultima_conexion(receptor)
+    usuario_esperado = Map.merge(receptor, %{en_linea: 1})
+    assert usuario == usuario_esperado
+  end
+  test "se obtiene el estado de 'en_linea' del usuario dentro de un mapa de Usuario con valor 0 cuando está fuera de linea", %{usuario: usuario1} do
+    {:ok, _ } = SessionService.desloggear(usuario1.id)
+    receptor = %{tipo: "privado", receptor_id: usuario1.id, nombre: usuario1.nombre}
+    {:ok, usuario} = SessionService.agregar_ultima_conexion(receptor)
+    usuario_esperado = Map.merge(receptor, %{en_linea: 0})
+    assert usuario == usuario_esperado
+  end
   end
 
-  describe "La sesion permite agendar contactos a un usuario" do
+  describe "La session de un usuario agenda a otro usuario" do
     setup do
       usuario1 = %{nombre: "usuarioValido", contrasenia: "Contrasenia@1"}
       {:ok, usuario_respuesta1} = SessionService.loggear(:crear, usuario1)
@@ -132,13 +144,31 @@ defmodule Tpg.Services.SessionServiceTest do
       usuario2 = %{nombre: "usuarioValido2", contrasenia: "Contrasenia@2"}
       {:ok, usuario_respuesta2} = SessionService.loggear(:crear, usuario2)
 
-      %{usuario1: usuario1, usuario_respuesta1: usuario_respuesta1,
-        usuario2: usuario2, usuario_respuesta2: usuario_respuesta2}
+      %{usuario1: usuario1, usuario_respuesta1: usuario_respuesta1, usuario_1: Map.merge(usuario1, usuario_respuesta1),
+        usuario2: usuario2, usuario_respuesta2: usuario_respuesta2, usuario_2: Map.merge(usuario2, usuario_respuesta2),}
     end
 
-    test "agendar un contacto por su nombre usuario devuelve :ok y el contacto agendado", %{usuario_respuesta1: usuario_1, usuario2: usuario2, usuario_respuesta2: usuario_2} do
-      {:ok, respuesta} = SessionService.agendar(usuario_1.id, usuario2.nombre)
-      assert respuesta == %{usuario_id: usuario_1.id, contacto_id: usuario_2.id}
+    test "agendar/2 permite agendar correctamente a un usuario valido", %{usuario_1: usuario1, usuario_2: usuario2} do
+      {:ok, agendados} = SessionService.agendar(usuario1.id, usuario2.nombre)
+      esperado = %{
+      usuario: %{
+        receptor_id: usuario1.id,
+        nombre: usuario1.nombre},
+      contacto: %{
+        receptor_id: usuario2.id,
+        nombre: usuario2.nombre
+        }
+      }
+      assert agendados == esperado
+      contactos_agendados_esperados = [%{id: usuario2.id, tipo: "privado", nombre: usuario2.nombre}]
+      assert Receptores.obtener_contactos_agenda(usuario1.id) == contactos_agendados_esperados
+    end
+    test "agendar/2 devuelve un error cuando se agenda a un contacto que no existe", %{usuario_1: usuario1} do
+      {:error, motivo} = SessionService.agendar(usuario1.id, "usuarioInexistente")
+      assert motivo == "El usuario 'usuarioInexistente' no existe"
+    end
+    test "" do
+
     end
   end
 

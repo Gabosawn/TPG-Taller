@@ -101,3 +101,9 @@ De la misma manera se puede ejecutar el servidor dentro de un contenedor de dock
 
 **Web client**:
 http://localhost:4000 permite abrir multiples ventanas y chatear con otros usuarios en linea a la vez de dejar mensajes a otros usuarios para cuando se reconecten
+
+## Testing
+- `mix test` para correr los tests unitarios
+- `mix test --cover` para correr las pruebas y generar archivos de cobertura
+- `docker compose up -d cover-server` para levantar el servidor de cobertura de codigo y ver los resultados en tiempo real
+- http://localhost:8080 para ver la interfaz de cobertura  

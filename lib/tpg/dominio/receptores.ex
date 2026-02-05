@@ -29,7 +29,6 @@ defmodule Tpg.Dominio.Receptores do
   end
 
   def marcar_mensaje_entregado(mensaje, usuario_id, grupo_id) do
-    IO.inspect(mensaje, label: "Mensaje en marcar_mensaje_entregado")
     case Repo.get_by(UsuariosGrupo, usuario_id: usuario_id, grupo_id: grupo_id) do
       nil -> nil
       grupo ->
@@ -46,19 +45,27 @@ defmodule Tpg.Dominio.Receptores do
         where: usuario.grupo_id == ^grupo_id,
         select: %{
           usuario_id: usuario.usuario_id,
-          ultimo_mensaje_leido: usuario.ultimo_mensaje_leido,
-          ultimo_mensaje_recibido: usuario.ultimo_mensaje_recibido
+          ultimo_mensaje_leido: fragment("COALESCE(?, 0)", usuario.ultimo_mensaje_leido),
+          ultimo_mensaje_recibido: fragment("COALESCE(?, 0)", usuario.ultimo_mensaje_recibido)
         }
       )
     |> Repo.all()
-    |> Enum.reduce(0, fn usuario, acc ->
+    |> Enum.map(fn usuario ->
+      %{
+        usuario_id: usuario.usuario_id,
+        ultimo_mensaje_leido: usuario.ultimo_mensaje_leido,
+        ultimo_mensaje_recibido: usuario.ultimo_mensaje_recibido
+      }
+    end)
+    |> Enum.reduce([], fn usuario, acc ->
       case acc do
-        0 ->
-          usuario.ultimo_mensaje_leido
+        [] ->
+          [usuario.ultimo_mensaje_leido, usuario.ultimo_mensaje_recibido]
         _ ->
-          min(acc, usuario.ultimo_mensaje_leido)
+          [min(List.first(acc), usuario.ultimo_mensaje_leido), min(List.last(acc), usuario.ultimo_mensaje_recibido)]
       end
     end)
+    |> IO.inspect(label: "Mensaje común entre usuarios en grupo #{grupo_id}")
   end
 
   def obtener_usuario(attrs) do

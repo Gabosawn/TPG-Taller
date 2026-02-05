@@ -1,6 +1,6 @@
 defmodule Tpg.Services.ChatService do
   require Logger
-  alias Tpg.Dominio.Receptores
+  alias Tpg.Dominio.{Receptores, Mensajeria}
   alias Tpg.Runtime.{Room, PrivateRoom}
 
   def enviar(tipo, emisor, destinatario, msg) do
@@ -58,6 +58,17 @@ defmodule Tpg.Services.ChatService do
       "privado" ->
         Tuple.insert_at(PrivateRoom.mostrar_mensajes(usuario_id, receptor_id), 0, :ok)
     end
+  end
+
+  def buscar_mensajes_async(tipo, emisor, receptor, query_text, ws_pid) do
+    resultado =
+      case Mensajeria.buscar_mensajes(tipo, emisor, receptor, query_text) do
+        [] ->
+          {:error, "No se encontraron mensajes que coincidan con la búsqueda."}
+        mensajes ->
+          {:mensajes_buscados, mensajes}
+      end
+    send(ws_pid, {:resultado_busqueda, resultado})
   end
 
 end

@@ -94,7 +94,17 @@ defmodule Tpg.Services.SessionService do
       {:ok, res} ->
         Tpg.habilitar_canales(user_id)
         Logger.info("[session] usuario #{nombre_usuario} agendado correctamente por #{user_id}")
-        {:ok, %{usuario_id: user_id, contacto_id: res.contacto.contacto_id}}
+        res = %{
+          usuario: %{
+            receptor_id: res.usuario.receptor_id,
+            nombre: res.usuario.nombre
+          },
+          contacto: %{
+            receptor_id: res.contacto.contacto_id,
+            nombre: nombre_usuario
+          }
+        }
+        {:ok, res}
       {:error, motivo} ->
         Logger.warning("[session] #{nombre_usuario} no pudo ser agendado")
         {:error, motivo}
@@ -108,17 +118,27 @@ defmodule Tpg.Services.SessionService do
         if id_usuario != emisor do
           case {operacion, tipo} do
             {:notificacion_bandeja, "privado"} ->
-              NotificationService.marcar_entregado(mensaje, id_usuario)
+              if id_usuario != emisor do
+                NotificationService.marcar_entregado(mensaje, id_usuario)
+                Tpg.Runtime.PrivateRoom.actualizar_estado_mensaje("ENTREGADO", [mensaje.id], id_usuario, emisor)
+              end
 
             {:notificacion_bandeja, "grupo"} ->
               Receptores.marcar_mensaje_entregado(mensaje, id_usuario, receptor)
+              Tpg.Runtime.Room.actualizar_estado_mensaje("ENTREGADO", [mensaje.id], id_usuario, receptor)
+              #NECESITO VERIFICAR OTRA VEZ SI EL MENSAJE EN SI LO MARCO COMO ENTREGADO
 
             {:mensaje_nuevo, "privado"} ->
-              NotificationService.marcar_leido(id_usuario, mensaje.id)
+              if id_usuario != emisor do
+                NotificationService.marcar_visto(mensaje, id_usuario)
+                Tpg.Runtime.PrivateRoom.actualizar_estado_mensaje("VISTO", [mensaje.id], id_usuario, emisor)
+              end
 
             {:mensaje_nuevo, "grupo"} ->
               Receptores.marcar_mensaje_entregado(mensaje, id_usuario, receptor)
+              Tpg.Runtime.Room.actualizar_estado_mensaje("ENTREGADO", [mensaje.id], id_usuario, receptor)
               Receptores.marcar_mensaje_visto(mensaje, id_usuario, receptor)
+              Tpg.Runtime.Room.actualizar_estado_mensaje("VISTO", [mensaje.id], id_usuario, receptor)
           end
         end
     end

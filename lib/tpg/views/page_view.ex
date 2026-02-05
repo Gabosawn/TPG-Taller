@@ -41,6 +41,9 @@ defmodule Tpg.Views.PageView do
           <div class="chat-header">
             <div id="nombre-chat-actual">Selecciona un chat</div>
             <div id="ultima-conexion"></div>
+            <input id="buscar-mensaje" type="text" placeholder="Buscar en el chat..." />
+            <button onclick="buscarMensajes()">Buscar</button>
+
           </div>
 
           <div id="mensajes"></div>

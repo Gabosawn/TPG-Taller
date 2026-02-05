@@ -30,6 +30,11 @@ defmodule Tpg.Runtime.PrivateRoom do
     GenServer.call(via_tuple(room_id), {:mostrar_mensajes, usuario_chat})
   end
 
+  def actualizar_estado_mensaje(estado, mensajes_ids, id_usuario, id_emisor) do
+    room_id = normalize_room_id(id_usuario, id_emisor)
+    GenServer.call(via_tuple(room_id), {:actualizar_estado_mensaje, estado, mensajes_ids})
+  end
+
   def agregar_mensaje(emisor, destinatario, contenido) do
     room_id = normalize_room_id(emisor, destinatario)
     GenServer.call(via_tuple(room_id), {:agregar_mensaje, emisor, contenido})
@@ -51,12 +56,42 @@ defmodule Tpg.Runtime.PrivateRoom do
   end
 
   @impl true
-  def handle_call({:mostrar_mensajes, usuario_chat}, _from, state) do
-    state.mensajes
-    |> Enum.filter(fn msg -> msg.estado == "ENTREGADO" && msg.emisor == usuario_chat end)
-    |> Mensajeria.marcar_mensajes_como_leidos()
+  def handle_call({:actualizar_estado_mensaje, estado, mensajes_ids}, _from, state) do
+    ids_set = MapSet.new(mensajes_ids)
 
-    {:reply, {state.mensajes, self()}, state}
+    new_mensajes =
+      Enum.map(state.mensajes, fn msg ->
+        if MapSet.member?(ids_set, msg.id) do
+          %{msg | estado: estado}
+        else
+          msg
+        end
+      end)
+
+    {:reply, :ok, %{state | mensajes: new_mensajes}}
+  end
+
+  @impl true
+  def handle_call({:mostrar_mensajes, usuario_chat}, _from, state) do
+    IO.inspect(state.mensajes, label: "[ROOM-PRIVATE] Mensajes antes de actualizar estado para el usuario: ")
+
+    {new_mensajes, mensajes_a_marcar} =
+      Enum.reduce(state.mensajes, {[], []}, fn msg, {acc_mensajes, acc_marcar} ->
+        if usuario_chat == msg.emisor and msg.estado == "ENTREGADO" do
+          {
+            [%{msg | estado: "VISTO"} | acc_mensajes],
+            [msg | acc_marcar]
+          }
+        else
+          {[msg | acc_mensajes], acc_marcar}
+        end
+      end)
+
+    mensajes_a_marcar
+    |> Enum.reverse()
+    |> Mensajeria.marcar_mensajes("VISTO")
+
+    {:reply, {state.mensajes, self()}, %{state | mensajes: Enum.reverse(new_mensajes)}}
   end
 
   @impl true

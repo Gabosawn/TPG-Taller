@@ -65,6 +65,12 @@ defmodule Tpg.WebSocketHandler do
       {:ok, %{"accion" => "crear_grupo", "miembros" => miembros, "nombre" => nombre_grupo}} ->
         manejar_creacion_grupo(nombre_grupo, miembros, state)
 
+      {:ok, %{"accion" => "buscar_mensajes", "tipo" => tipo, "emisor" => emisor,"destinatario" => destinatario, "query_text" => query_text}} ->
+        ws_pid = self()
+        Task.start(fn -> ChatService.buscar_mensajes_async( tipo, emisor, destinatario, query_text, ws_pid) end)
+        {:ok, state}
+
+
       {:ok, payload} ->
         respuesta =
           Jason.encode!(%{
@@ -126,10 +132,7 @@ defmodule Tpg.WebSocketHandler do
 
     {:reply, {:text, respuesta}, state}
   end
-  def websocket_info(:cerrar_conexion, state) do
-    Logger.info("[WS] Cerrando conexión por error de autenticación")
-    {:stop, state}
-  end
+
   def websocket_info({:DOWN, _ref, :process, _pid, _reason}, state) do
     respuesta =
       Jason.encode!(%{
@@ -143,6 +146,20 @@ defmodule Tpg.WebSocketHandler do
   @doc """
   Cuando se recibe una notificación desde algun punto del sistema, se delega al handler la respuesta que se debe devolver
   """
+
+  def websocket_info(:cerrar_conexion, state) do
+    Logger.info("[WS] Cerrando conexión por error de autenticación")
+    {:stop, state}
+  end
+
+  def websocket_info({:resultado_busqueda, {:mensajes_buscados, mensajes}}, state) do
+    NotificationHandler.handle_notification(:mensajes_buscados, mensajes, state)
+  end
+
+  def websocket_info({:resultado_busqueda, {:error, motivo}}, state) do
+    NotificationHandler.notificar(:error, motivo, state)
+  end
+
   def websocket_info({:notificacion, tipo, notificacion}, state) do
     Logger.info("[ws] usuario #{state.usuario} Recibiendo notificacion...")
     NotificationHandler.handle_notification(tipo, notificacion, state)
@@ -165,10 +182,10 @@ defmodule Tpg.WebSocketHandler do
   defp manejar_agregar_usuario(state, nombre) do
     Logger.debug("[ws handeler] agendando #{nombre} en #{state.usuario}...")
     with {:ok, agendado} <- SessionService.agendar(state.id, nombre),
-        {:ok, _} = NotificationService.notificar(:contacto_agregado, agendado.contacto_id, %{receptor_id: state.id, nombre: state.usuario}) do
+        {:ok, _} = NotificationService.notificar(:contacto_agregado, agendado.contacto.receptor_id, %{receptor_id: state.id, nombre: state.usuario}) do
           Logger.info("[ws handeler] #{nombre} agendado con #{state.usuario}")
           {_tipo, frame1, state1} = NotificationHandler.notificar(:sistema, "Usuario #{nombre} agendado correctamente", state)
-          {_tipo, frame2, state2} = NotificationHandler.handle_notification(:contacto_nuevo, %{tipo: "privado", receptor_id: agendado.contacto_id, nombre: nombre}, state1)
+          {_tipo, frame2, state2} = NotificationHandler.handle_notification(:contacto_nuevo, %{tipo: "privado", receptor_id: agendado.contacto.receptor_id, nombre: nombre}, state1)
           {:reply, [frame1, frame2], state2}
   else
       {:error, motivo} ->

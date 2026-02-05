@@ -5,6 +5,18 @@ defmodule Tpg.Handlers.NotificationHandler do
   """
   require Logger
 
+
+  @doc """
+  Notifica al cliente los resultados de la busqueda de mensajes
+  """
+  def handle_notificacion(:mensajes_buscados, mensajes, state) do
+    respuesta = %{
+      tipo: "mensajes_buscados",
+      mensajes: mensajes
+    }
+    {:reply, {:text, Jason.encode!(respuesta)}, state}
+  end
+
   def handle_notification(:mensaje_nuevo, mensaje, state) do
     respuesta = %{
       tipo: "mensaje_nuevo",
@@ -76,6 +88,16 @@ defmodule Tpg.Handlers.NotificationHandler do
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
 
+  def handle_notification(:mensajes_buscados, mensajes, state) do
+    Logger.info("[notification handler] notificacion de mensajes buscados recibida")
+    respuesta = %{
+      tipo: "mensajes_buscados",
+      mensajes: mensajes,
+    }
+    IO.inspect(respuesta)
+    {:reply, {:text, Jason.encode!(respuesta)}, state}
+  end
+
   @doc """
   Notifica al cliente que fué agregado como contacto por alguien
   """
@@ -114,6 +136,7 @@ defmodule Tpg.Handlers.NotificationHandler do
       mensajes: mensajes,
       receptor: state.id,
     }
+    IO.inspect(respuesta)
     {:reply, {:text, Jason.encode!(respuesta)}, state}
   end
 
