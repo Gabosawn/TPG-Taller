@@ -8,18 +8,17 @@ defmodule Tpg.Services.ChatService do
 
     case tipo do
       "grupo" ->
-        Room.agregar_mensaje(emisor, destinatario, msg)
+        case Room.agregar_mensaje(emisor, destinatario, msg) do
+          {:ok, _} -> {:ok, "mensaje enviado"}
+          {:error, reason} -> {:error, reason}
+        end
 
       "privado" ->
-        PrivateRoom.agregar_mensaje(emisor, destinatario, msg)
+        case PrivateRoom.agregar_mensaje(emisor, destinatario, msg) do
+          {:ok, _} -> {:ok, "mensaje enviado"}
+          {:error, reason} -> {:error, reason}
+        end
     end
-
-    {:ok, "mensaje enviado"}
-  end
-
-  def leer_mensajes(usuario) do
-    Logger.debug("Leyendo mensajes de #{inspect(usuario)}")
-    GenServer.call(usuario, :ver_historial)
   end
 
   def crear_grupo(nombre_grupo, miembros) do
@@ -29,6 +28,7 @@ defmodule Tpg.Services.ChatService do
       {:ok, grupo}
     else
       {:error, message} -> {:error, message}
+      {:error, changeset} -> {:error, changeset}
     end
   end
 

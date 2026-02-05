@@ -22,7 +22,7 @@ defmodule Tpg.Runtime.Room do
     GenServer.call(via_tuple(usuario_chat), {:mostrar_mensajes, usuario_sesion})
   end
 
-  def actualizar_estado_mensaje(estado, mensajes_ids, id_usuario, id_emisor) do
+  def actualizar_estado_mensaje(estado, mensajes_ids, _id_usuario, id_emisor) do
     GenServer.call(via_tuple(id_emisor), {:actualizar_estado_mensaje, estado, mensajes_ids})
   end
 
