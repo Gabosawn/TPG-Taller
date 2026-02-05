@@ -116,9 +116,30 @@ defmodule Tpg.Services.SessionServiceTest do
     assert !SessionService.en_linea?(usuario_respuesta2.id)
   end
 
-  test "se obtienen la lista de los usuarios en linea", %{usuario_respuesta1: usuario1, usuario_respuesta2: usuario2} do
+  test "se obtienen la lista de 2 en linea", %{usuario_respuesta1: usuario1, usuario_respuesta2: usuario2} do
     usuarios = SessionService.obtener_usuarios_activos()
-    assert usuarios ==[usuario2.id, usuario1.id,]
+    assert length(usuarios) == 2
+    assert usuario1.id in usuarios
+    assert usuario2.id in usuarios
+    end
   end
+
+  describe "La sesion permite agendar contactos a un usuario" do
+    setup do
+      usuario1 = %{nombre: "usuarioValido", contrasenia: "Contrasenia@1"}
+      {:ok, usuario_respuesta1} = SessionService.loggear(:crear, usuario1)
+
+      usuario2 = %{nombre: "usuarioValido2", contrasenia: "Contrasenia@2"}
+      {:ok, usuario_respuesta2} = SessionService.loggear(:crear, usuario2)
+
+      %{usuario1: usuario1, usuario_respuesta1: usuario_respuesta1,
+        usuario2: usuario2, usuario_respuesta2: usuario_respuesta2}
+    end
+
+    test "agendar un contacto por su nombre usuario devuelve :ok y el contacto agendado", %{usuario_respuesta1: usuario_1, usuario2: usuario2, usuario_respuesta2: usuario_2} do
+      {:ok, respuesta} = SessionService.agendar(usuario_1.id, usuario2.nombre)
+      assert respuesta == %{usuario_id: usuario_1.id, contacto_id: usuario_2.id}
+    end
   end
+
 end

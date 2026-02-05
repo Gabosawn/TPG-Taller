@@ -82,6 +82,9 @@ defmodule Tpg.Services.SessionService do
   def obtener_usuarios_activos() do
     usuarios = :global.registered_names()
     Logger.debug("Usuarios activos: #{inspect(usuarios)}")
+    if usuarios == 0 do
+      []
+    end
     usuarios
   end
 
@@ -91,7 +94,7 @@ defmodule Tpg.Services.SessionService do
       {:ok, res} ->
         Tpg.habilitar_canales(user_id)
         Logger.info("[session] usuario #{nombre_usuario} agendado correctamente por #{user_id}")
-        {:ok, res}
+        {:ok, %{usuario_id: user_id, contacto_id: res.contacto.contacto_id}}
       {:error, motivo} ->
         Logger.warning("[session] #{nombre_usuario} no pudo ser agendado")
         {:error, motivo}
