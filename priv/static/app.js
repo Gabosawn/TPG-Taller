@@ -47,6 +47,34 @@ function setSidebarView(view) {
 	}
 }
 
+function appendLinkifiedText(container, text) {
+	const safeText = String(text ?? '');
+	const urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
+	let lastIndex = 0;
+
+	safeText.replace(urlRegex, (match, _p1, _p2, offset) => {
+		if (offset > lastIndex) {
+			container.appendChild(document.createTextNode(safeText.slice(lastIndex, offset)));
+		}
+		const href = match.startsWith('http://') || match.startsWith('https://')
+			? match
+			: `http://${match}`;
+		const link = document.createElement('a');
+		link.href = href;
+		link.textContent = match;
+		link.target = '_blank';
+		link.rel = 'noopener noreferrer';
+		link.className = 'mensaje-link';
+		container.appendChild(link);
+		lastIndex = offset + match.length;
+		return match;
+	});
+
+	if (lastIndex < safeText.length) {
+		container.appendChild(document.createTextNode(safeText.slice(lastIndex)));
+	}
+}
+
 function registrar() {
 	const usuario = document.getElementById('usuario').value;
 	const contrasenia = document.getElementById('contrasenia').value;
@@ -220,13 +248,21 @@ function mostrarMensajesBuscados(mensajes) {
 	mensajes.forEach(msg => {
 		const item = document.createElement('div');
 		item.className = 'mensaje-buscado';
-		item.innerHTML = `
-			<div class="mensaje-buscado-emisor">${msg.emisor_nombre}</div>
-			<div class="mensaje-buscado-contenido">${msg.contenido}</div>
-			<div class="mensaje-buscado-fecha">
-				${new Date(msg.inserted_at).toLocaleString()}
-			</div>
-		`;
+		const emisor = document.createElement('div');
+		emisor.className = 'mensaje-buscado-emisor';
+		emisor.textContent = msg.emisor_nombre;
+
+		const contenido = document.createElement('div');
+		contenido.className = 'mensaje-buscado-contenido';
+		appendLinkifiedText(contenido, msg.contenido);
+
+		const fecha = document.createElement('div');
+		fecha.className = 'mensaje-buscado-fecha';
+		fecha.textContent = new Date(msg.inserted_at).toLocaleString();
+
+		item.appendChild(emisor);
+		item.appendChild(contenido);
+		item.appendChild(fecha);
 		body.appendChild(item);
 	});
 
@@ -528,7 +564,7 @@ function mostrarMensaje(data) {
 	}
 	
 	const contenido = document.createElement('span');
-	contenido.textContent = data.contenido;
+	appendLinkifiedText(contenido, data.contenido);
 	
 	const timestamp = document.createElement('small');
 	timestamp.className = 'timestamp';
